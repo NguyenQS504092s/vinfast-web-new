@@ -165,14 +165,10 @@ export default function NhanSuPage() {
         ].sort();
         setAvailableFilters((prev) => ({ ...prev, departments }));
 
-        // Apply role/team filtering
+        // Initial filtering based on role/team only (filter logic will be handled by separate useEffect)
         let filtered = usersArray;
         if (userRole === 'leader' && userTeam) {
           filtered = usersArray.filter((user) => user.Team === userTeam);
-        } else if (filters.departments && filters.departments.length > 0) {
-          filtered = usersArray.filter((user) =>
-            filters.departments.includes(user['Bộ phận'] || user.phongBan || user.department)
-          );
         }
 
         setFilteredUsers(filtered);
@@ -194,7 +190,7 @@ export default function NhanSuPage() {
       setFilteredUsers([]);
       setLoading(false);
     }
-  }, [userRole, userTeam, filters.departments]);
+  }, [userRole, userTeam]); // Removed filters.departments to prevent reloading when filter changes
 
   // Apply search filter
   useEffect(() => {

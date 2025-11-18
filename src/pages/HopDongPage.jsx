@@ -297,13 +297,25 @@ export default function HopDongPage() {
     setQuickSelectValue(value);
     if (!value) return;
 
+    // Helper function to format date as YYYY-MM-DD in local timezone
+    const formatLocalDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Get today's date at local midnight
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // helper: get start of week (Monday) and end of week (Sunday)
     const getWeekRange = (refDate) => {
       const d = new Date(refDate);
+      d.setHours(0, 0, 0, 0);
       const day = d.getDay(); // 0 (Sun) - 6 (Sat)
       // calculate Monday of current week
+      // If Sunday (0), go back 6 days. If Monday (1), no change. Otherwise, go back (day - 1) days
       const mondayDiff = day === 0 ? -6 : 1 - day;
       const monday = new Date(d);
       monday.setDate(d.getDate() + mondayDiff);
@@ -335,24 +347,30 @@ export default function HopDongPage() {
       endDate = range.end;
     } else if (value === 'last-week') {
       const range = getWeekRange(today);
-      range.start.setDate(range.start.getDate() - 7);
-      range.end.setDate(range.end.getDate() - 7);
-      startDate = range.start;
-      endDate = range.end;
+      const lastWeekStart = new Date(range.start);
+      lastWeekStart.setDate(range.start.getDate() - 7);
+      const lastWeekEnd = new Date(range.end);
+      lastWeekEnd.setDate(range.end.getDate() - 7);
+      startDate = lastWeekStart;
+      endDate = lastWeekEnd;
     } else if (value === 'next-week') {
       const range = getWeekRange(today);
-      range.start.setDate(range.start.getDate() + 7);
-      range.end.setDate(range.end.getDate() + 7);
-      startDate = range.start;
-      endDate = range.end;
+      const nextWeekStart = new Date(range.start);
+      nextWeekStart.setDate(range.start.getDate() + 7);
+      const nextWeekEnd = new Date(range.end);
+      nextWeekEnd.setDate(range.end.getDate() + 7);
+      startDate = nextWeekStart;
+      endDate = nextWeekEnd;
     } else if (value.startsWith('month-')) {
       // month-N (1-12) -> use current year
       const parts = value.split('-');
       const m = parseInt(parts[1], 10);
       if (!Number.isNaN(m) && m >= 1 && m <= 12) {
         const year = today.getFullYear();
+        // First day of month
         startDate = new Date(year, m - 1, 1);
         startDate.setHours(0, 0, 0, 0);
+        // Last day of month: use next month, day 0 to get last day of current month
         endDate = new Date(year, m, 0);
         endDate.setHours(23, 59, 59, 999);
       }
@@ -361,23 +379,27 @@ export default function HopDongPage() {
       const q = parseInt(value.slice(1), 10);
       if (!Number.isNaN(q) && q >= 1 && q <= 4) {
         const year = today.getFullYear();
-        const startMonth = (q - 1) * 3; // 0-based
+        const startMonth = (q - 1) * 3; // 0-based: Q1=0, Q2=3, Q3=6, Q4=9
+        // First day of quarter
         startDate = new Date(year, startMonth, 1);
         startDate.setHours(0, 0, 0, 0);
+        // Last day of quarter: use (startMonth + 3), day 0 to get last day of last month in quarter
         endDate = new Date(year, startMonth + 3, 0);
         endDate.setHours(23, 59, 59, 999);
       }
     } else if (value === 'this-month') {
-      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      startDate = new Date(year, month, 1);
       startDate.setHours(0, 0, 0, 0);
-      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      endDate = new Date(year, month + 1, 0);
       endDate.setHours(23, 59, 59, 999);
     }
 
     setFilters((prev) => ({
       ...prev,
-      startDate: startDate ? startDate.toISOString().split('T')[0] : '',
-      endDate: endDate ? endDate.toISOString().split('T')[0] : '',
+      startDate: startDate ? formatLocalDate(startDate) : '',
+      endDate: endDate ? formatLocalDate(endDate) : '',
     }));
   };
 
