@@ -4,14 +4,11 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
-  memo,
 } from "react";
-import { createPortal } from "react-dom";
 import CheckboxFilter from "./FilterPanel/CheckboxFilter";
 import CollapsibleSection from "./FilterPanel/CollapsibleSection";
-import useFilterPanelState from "./FilterPanel/useFilterPanelState";
-import { ref, get } from 'firebase/database';
-import { database } from '../firebase/config';
+import { ref, get } from "firebase/database";
+import { database } from "../firebase/config";
 
 export default function FilterPanel({
   activeTab,
@@ -35,7 +32,12 @@ export default function FilterPanel({
   const teamsRef = useRef(null); // used as anchorRef for departments checkbox
   const marketsRef = useRef(null);
   const refs = useMemo(
-    () => ({ products: productsRef, payment: paymentRef, teams: teamsRef, markets: marketsRef }),
+    () => ({
+      products: productsRef,
+      payment: paymentRef,
+      teams: teamsRef,
+      markets: marketsRef,
+    }),
     // refs themselves are stable refs, empty deps ok
     []
   );
@@ -45,13 +47,18 @@ export default function FilterPanel({
   const [localDepartments, setLocalDepartments] = useState(() => {
     const deps = availableFilters?.departments || [];
     // normalize to array of strings: availableFilters may supply objects {value,label}
-    if (deps.length > 0 && typeof deps[0] === 'object') return deps.map(d => d.value ?? d.label ?? '');
+    if (deps.length > 0 && typeof deps[0] === "object")
+      return deps.map((d) => d.value ?? d.label ?? "");
     return deps;
   });
 
   useEffect(() => {
     // if parent already supplies departments, don't fetch
-    if (availableFilters && Array.isArray(availableFilters.departments) && availableFilters.departments.length > 0) {
+    if (
+      availableFilters &&
+      Array.isArray(availableFilters.departments) &&
+      availableFilters.departments.length > 0
+    ) {
       setLocalDepartments(availableFilters.departments);
       return;
     }
@@ -59,14 +66,19 @@ export default function FilterPanel({
     let cancelled = false;
     async function loadDepartments() {
       try {
-        const snap = await get(ref(database, 'employees'));
+        const snap = await get(ref(database, "employees"));
         if (!snap.exists()) return;
         const items = Object.values(snap.val());
-        const unique = [...new Set(
-          items
-            .map(i => i.phongBan || i['Phòng Ban'] || i.department || i['Bộ phận'])
-            .filter(Boolean)
-        )].sort();
+        const unique = [
+          ...new Set(
+            items
+              .map(
+                (i) =>
+                  i.phongBan || i["Phòng Ban"] || i.department || i["Bộ phận"]
+              )
+              .filter(Boolean)
+          ),
+        ].sort();
 
         if (!cancelled) {
           // store as array of strings to match CheckboxFilter expectation
@@ -74,16 +86,17 @@ export default function FilterPanel({
         }
       } catch (err) {
         // fail silently; keep localDepartments as-is
-        console.error('Error loading departments for filter panel:', err);
+        console.error("Error loading departments for filter panel:", err);
       }
     }
 
     loadDepartments();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [availableFilters]);
 
-  // Đóng dropdown khi click ngoài
   useEffect(() => {
     const handler = (e) => {
       if (
@@ -123,21 +136,39 @@ export default function FilterPanel({
         <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              <svg
+                className="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-gray-800">
-              Bộ lọc
-            </h3>
+            <h3 className="text-xl font-bold text-gray-800">Bộ lọc</h3>
           </div>
           {hasActiveFilters?.() && (
             <button
               onClick={clearAllFilters}
               className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-2 hover:scale-105"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
               Xóa tất cả
             </button>
@@ -150,8 +181,18 @@ export default function FilterPanel({
             id="search"
             title="Tìm kiếm"
             icon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
             }
           >
@@ -159,15 +200,27 @@ export default function FilterPanel({
               <input
                 type="text"
                 value={filters.searchText || ""}
-                onChange={(e) => handleFilterChange("searchText", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("searchText", e.target.value)
+                }
                 placeholder={
                   // Make it clear the search applies to the whole table
                   "Tìm kiếm"
                 }
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
               />
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
             </div>
           </CollapsibleSection>
@@ -179,8 +232,18 @@ export default function FilterPanel({
             id="date"
             title="Ngày tháng"
             icon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             }
           >
@@ -209,30 +272,50 @@ export default function FilterPanel({
               </optgroup>
               <optgroup label="Quý">
                 {[1, 2, 3, 4].map((q) => (
-                  <option key={q} value={`q${q}`}>Quý {q}</option>
+                  <option key={q} value={`q${q}`}>
+                    Quý {q}
+                  </option>
                 ))}
               </optgroup>
             </select>
-            <svg className="pointer-events-none absolute right-3 top-10 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="pointer-events-none absolute right-3 top-10 w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
 
             <div className="grid grid-cols-1 gap-3 mt-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Từ</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Từ
+                </label>
                 <input
                   type="date"
                   value={filters.startDate || ""}
-                  onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("startDate", e.target.value)
+                  }
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Đến</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Đến
+                </label>
                 <input
                   type="date"
                   value={filters.endDate || ""}
-                  onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("endDate", e.target.value)
+                  }
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -245,8 +328,18 @@ export default function FilterPanel({
           id="filters"
           title="Bộ lọc chi tiết"
           icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+              />
             </svg>
           }
         >
@@ -259,8 +352,18 @@ export default function FilterPanel({
             onToggle={(v) => handleToggle("products", v)}
             visible={activeTab !== "users"}
             icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
               </svg>
             }
           />
@@ -276,8 +379,18 @@ export default function FilterPanel({
             onToggle={(v) => handleToggle("markets", v)}
             visible={showMarkets && activeTab !== "users"}
             icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             }
           />
@@ -287,12 +400,24 @@ export default function FilterPanel({
             title="Thanh toán"
             anchorRef={refs.payment}
             items={availableFilters.paymentMethods || []}
-            selected={Array.isArray(filters.paymentMethod) ? filters.paymentMethod : []}
+            selected={
+              Array.isArray(filters.paymentMethod) ? filters.paymentMethod : []
+            }
             onToggle={(v) => handleToggle("paymentMethod", v)}
             visible={showPaymentMethodSearch}
             icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                />
               </svg>
             }
           />
@@ -301,17 +426,31 @@ export default function FilterPanel({
             id="departments"
             title="Phòng ban"
             anchorRef={refs.teams}
-            items={localDepartments && localDepartments.length ? localDepartments : (availableFilters?.departments || [])}
+            items={
+              localDepartments && localDepartments.length
+                ? localDepartments
+                : availableFilters?.departments || []
+            }
             selected={filters.departments || []}
             onToggle={(v) => handleToggle("departments", v)}
             // Show departments checkbox filter for admin, but hide on HopDong page per requirements
             visible={userRole === "admin" && activeTab !== "hopdong"}
             icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
               </svg>
             }
-          />     
+          />
         </CollapsibleSection>
       </div>
     </div>
