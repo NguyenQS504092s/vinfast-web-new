@@ -40,6 +40,7 @@ function App() {
           <Route path="/hop-dong" element={<ProtectedRoute><HopDongPage /></ProtectedRoute>} />
           <Route path="/hop-dong/them-moi" element={<ProtectedRoute><ContractFormPage /></ProtectedRoute>} />
           <Route path="/hop-dong/chinh-sua" element={<ProtectedRoute><ContractFormPage /></ProtectedRoute>} />
+          <Route path="/hop-dong/chi-tiet" element={<ProtectedRoute><ContractFormPage /></ProtectedRoute>} />
           <Route path="/hop-dong-da-xuat" element={<ProtectedRoute><HopDongDaXuatPage /></ProtectedRoute>} />
           <Route path="/hop-dong-da-xuat/edit/:id" element={<ProtectedRoute><EditHopDongDaXuatPage /></ProtectedRoute>} />
           <Route path="/nhan-su" element={<ProtectedRoute><NhanSuPage /></ProtectedRoute>} />

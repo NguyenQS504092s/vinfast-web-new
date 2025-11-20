@@ -12,7 +12,10 @@ export default function ContractFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const contractData = location.state?.contract || null;
-  const isEditMode = !!contractData;
+  const mode = location.state?.mode || (contractData ? 'edit' : 'create'); // 'create', 'edit', or 'details'
+  const isEditMode = mode === 'edit';
+  const isDetailsMode = mode === 'details';
+  const isCreateMode = mode === 'create';
 
   // Get all branches for showroom dropdown
   const branches = getAllBranches();
@@ -345,7 +348,7 @@ export default function ContractFormPage() {
         <div className="bg-gradient-to-r from-primary-600 to-primary-400 px-6 py-5 rounded-t-2xl shadow-lg">
           <div className="flex items-center justify-between relative">
           <button
-              onClick={() => navigate("/hop-dong")}
+              onClick={() => navigate(isDetailsMode ? "/dashboard" : "/hop-dong")}
               className="text-white hover:text-gray-200 transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/10"
               aria-label="Quay lại"
             >
@@ -353,7 +356,11 @@ export default function ContractFormPage() {
               <span className="hidden sm:inline">Quay lại</span>
             </button>
             <h2 className="text-2xl lg:text-3xl font-bold text-white absolute left-1/2 transform -translate-x-1/2">
-              {isEditMode ? "Chỉnh sửa thông tin hợp đồng" : "Thêm hợp đồng mới"}
+              {isDetailsMode 
+                ? "Chi tiết hợp đồng" 
+                : isEditMode 
+                ? "Chỉnh sửa thông tin hợp đồng" 
+                : "Thêm hợp đồng mới"}
             </h2>
           </div>
         </div>
@@ -377,7 +384,8 @@ export default function ContractFormPage() {
                     type="date"
                     value={(contract.createdAt || "").slice(0, 10)}
                     onChange={(e) => handleInputChange("createdAt", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -389,7 +397,8 @@ export default function ContractFormPage() {
                   <select
                     value={contract.tvbh || ""}
                     onChange={(e) => handleInputChange("tvbh", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn TVBH</option>
                     {employees.map((emp) => (
@@ -414,7 +423,8 @@ export default function ContractFormPage() {
                   <select
                     value={contract.showroom || ""}
                     onChange={(e) => handleInputChange("showroom", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn showroom</option>
                     {branches.map((branch) => (
@@ -440,7 +450,8 @@ export default function ContractFormPage() {
                     type="text"
                     value={contract.vso || ""}
                     onChange={(e) => handleInputChange("vso", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="VSO"
                   />
                 </div>
@@ -463,7 +474,8 @@ export default function ContractFormPage() {
                     type="text"
                     value={contract.customerName || ""}
                     onChange={(e) => handleInputChange("customerName", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Tên khách hàng"
                   />
                 </div>
@@ -477,7 +489,8 @@ export default function ContractFormPage() {
                     type="tel"
                     value={contract.phone || ""}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Số điện thoại"
                   />
                 </div>
@@ -491,7 +504,8 @@ export default function ContractFormPage() {
                     type="email"
                     value={contract.email || ""}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Email"
                   />
                 </div>
@@ -505,7 +519,8 @@ export default function ContractFormPage() {
                     type="text"
                     value={contract.address || ""}
                     onChange={(e) => handleInputChange("address", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Địa chỉ"
                   />
                 </div>
@@ -519,7 +534,8 @@ export default function ContractFormPage() {
                     type="text"
                     value={contract.cccd || ""}
                     onChange={(e) => handleInputChange("cccd", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="CCCD"
                   />
                 </div>
@@ -533,7 +549,8 @@ export default function ContractFormPage() {
                     type="date"
                     value={(contract.issueDate || "").slice(0, 10)}
                     onChange={(e) => handleInputChange("issueDate", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -545,7 +562,8 @@ export default function ContractFormPage() {
                   <select
                     value={contract.issuePlace || ""}
                     onChange={(e) => handleInputChange("issuePlace", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn nơi cấp</option>
                     {provinces.map((province) => (
@@ -579,7 +597,8 @@ export default function ContractFormPage() {
                   <select
                     value={contract.model || ""}
                     onChange={(e) => handleInputChange("model", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn dòng xe</option>
                     {carModels.map((model) => (
@@ -604,7 +623,7 @@ export default function ContractFormPage() {
                   <select
                     value={contract.variant || ""}
                     onChange={(e) => handleInputChange("variant", e.target.value)}
-                    disabled={!contract.model}
+                    disabled={isDetailsMode || !contract.model}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn phiên bản</option>
@@ -630,7 +649,7 @@ export default function ContractFormPage() {
                   <select
                     value={contract.exterior || ""}
                     onChange={(e) => handleInputChange("exterior", e.target.value)}
-                    disabled={!contract.model || !contract.variant}
+                    disabled={isDetailsMode || !contract.model || !contract.variant}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn màu ngoại thất</option>
@@ -656,7 +675,7 @@ export default function ContractFormPage() {
                   <select
                     value={contract.interior || ""}
                     onChange={(e) => handleInputChange("interior", e.target.value)}
-                    disabled={!contract.model || !contract.variant}
+                    disabled={isDetailsMode || !contract.model || !contract.variant}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn màu nội thất</option>
@@ -692,7 +711,8 @@ export default function ContractFormPage() {
                     type="text"
                     value={formatCurrency(contract.contractPrice)}
                     onChange={(e) => handleCurrencyChange("contractPrice", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Nhập giá hợp đồng"
                   />
                 </div>
@@ -706,7 +726,8 @@ export default function ContractFormPage() {
                     type="text"
                     value={formatCurrency(contract.deposit)}
                     onChange={(e) => handleCurrencyChange("deposit", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Nhập số tiền cọc"
                   />
                 </div>
@@ -720,7 +741,8 @@ export default function ContractFormPage() {
                     type="text"
                     value={contract.payment || ""}
                     onChange={(e) => handleInputChange("payment", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Phương thức thanh toán"
                   />
                 </div>
@@ -733,7 +755,8 @@ export default function ContractFormPage() {
                   <select
                     value={contract.bank || ""}
                     onChange={(e) => handleInputChange("bank", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Chọn ngân hàng</option>
                     <option value="VPbank">VPbank</option>
@@ -757,7 +780,8 @@ export default function ContractFormPage() {
                   <select
                     value={contract.status || ""}
                     onChange={(e) => handleInputChange("status", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white"
+                    disabled={isDetailsMode}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="mới">mới</option>
                     <option value="hoàn">hoàn</option>
@@ -780,21 +804,23 @@ export default function ContractFormPage() {
           {/* Footer Actions */}
           <div className="bg-gray-50 px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-end items-center gap-4 border-t border-gray-200">
             <button
-              onClick={() => navigate("/hop-dong")}
+              onClick={() => navigate(isDetailsMode ? "/dashboard" : "/hop-dong")}
               className="w-full sm:w-auto px-6 py-3 bg-gray-500 text-white font-medium rounded-lg hover:bg-gray-600 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
-              aria-label="Hủy"
+              aria-label={isDetailsMode ? "Quay lại" : "Hủy"}
             >
               <X className="w-4 h-4" />
-              <span>Hủy</span>
+              <span>{isDetailsMode ? "Quay lại" : "Hủy"}</span>
             </button>
-            <button
-              onClick={handleSubmit}
-              className="w-full sm:w-auto px-8 py-3 bg-secondary-600 text-white font-medium rounded-lg hover:bg-secondary-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
-              aria-label={isEditMode ? "Lưu thay đổi" : "Thêm hợp đồng"}
-            >
-              <Check className="w-5 h-5" />
-              <span>{isEditMode ? "Lưu thay đổi" : "Thêm hợp đồng"}</span>
-            </button>
+            {!isDetailsMode && (
+              <button
+                onClick={handleSubmit}
+                className="w-full sm:w-auto px-8 py-3 bg-secondary-600 text-white font-medium rounded-lg hover:bg-secondary-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                aria-label={isEditMode ? "Lưu thay đổi" : "Thêm hợp đồng"}
+              >
+                <Check className="w-5 h-5" />
+                <span>{isEditMode ? "Lưu thay đổi" : "Thêm hợp đồng"}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

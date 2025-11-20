@@ -287,17 +287,8 @@ export default function CalculatorPage() {
     return 0;
   };
 
-  // Initialize dates and default values
+  // Initialize default values
   useEffect(() => {
-    const today = new Date();
-    const deposit = new Date(today);
-    deposit.setDate(today.getDate() + 5);
-    const delivery = new Date(today);
-    delivery.setMonth(today.getMonth() + 1);
-
-    setDepositDate(deposit.toISOString().split('T')[0]);
-    setDeliveryDate(delivery.toISOString().split('T')[0]);
-
     // Set default car model
     if (Object.keys(carModels).length > 0 && !carModel) {
       const firstModel = Object.keys(carModels)[0];
@@ -720,30 +711,6 @@ export default function CalculatorPage() {
                     {formatCurrency(depositAmount)}
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Ngày nhận cọc
-                  </label>
-                  <input
-                    type="date"
-                    value={depositDate}
-                    onChange={(e) => setDepositDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Ngày hẹn giao xe
-                  </label>
-                  <input
-                    type="date"
-                    value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
               </div>
             </div>
 
@@ -1109,6 +1076,8 @@ export default function CalculatorPage() {
                         <option value="48">48 tháng</option>
                         <option value="60">60 tháng (5 năm)</option>
                         <option value="72">72 tháng</option>
+                        <option value="84">84 tháng (7 năm)</option>
+                        <option value="96">96 tháng (8 năm)</option>
                       </select>
                     </div>
 

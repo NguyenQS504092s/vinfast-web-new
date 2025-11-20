@@ -1,18 +1,33 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ref, get } from "firebase/database";
 import { database } from "../firebase/config";
-import { Calendar, Users, FileText, Car, TrendingUp, UserPlus } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  FileText,
+  Car,
+  TrendingUp,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [contracts, setContracts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("month"); // day, month, quarter, year
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedQuarter, setSelectedQuarter] = useState(1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedEmployee, setSelectedEmployee] = useState("all"); // "all" or specific employee name
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEmployeeContracts, setSelectedEmployeeContracts] = useState([]);
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState("");
   const [reportData, setReportData] = useState({
     byEmployee: [],
     byModel: [],
@@ -24,8 +39,8 @@ export default function Dashboard() {
       cancelled: 0,
       completed: 0,
       transferred: 0,
-      newCustomers: 0
-    }
+      newCustomers: 0,
+    },
   });
 
   // Fetch contracts from Firebase
@@ -37,7 +52,11 @@ export default function Dashboard() {
         const snapshot = await get(contractsRef);
         const data = snapshot.exists() ? snapshot.val() : {};
 
-        console.log("Firebase data loaded:", Object.keys(data).length, "contracts");
+        console.log(
+          "Firebase data loaded:",
+          Object.keys(data).length,
+          "contracts"
+        );
 
         const contractsArray = Object.entries(data).map(([key, contract]) => {
           // Handle date - can be createdDate or createdAt, and might be empty
@@ -51,12 +70,21 @@ export default function Dashboard() {
             firebaseKey: key,
             id: contract.id || "",
             createdAt: createdAt,
+            createdDate: contract.createdDate || createdAt,
             TVBH: contract.tvbh || contract.TVBH || "Không xác định",
+            tvbh: contract.tvbh || contract.TVBH || "Không xác định",
             customerName: contract.customerName || contract["Tên KH"] || "",
+            "Tên KH": contract["Tên KH"] || contract.customerName || "",
             model: contract.dongXe || contract["Dòng xe"] || "Không xác định",
+            dongXe: contract.dongXe || contract["Dòng xe"] || "Không xác định",
             status: contract.trangThai || contract.status || "mới",
+            trangThai: contract.trangThai || contract.status || "mới",
             contractPrice: contract.giaHD || contract["Giá HD"] || 0,
+            giaHD: contract.giaHD || contract["Giá HD"] || 0,
             deposit: contract.soTienCoc || contract["Số tiền cọc"] || 0,
+            soTienCoc: contract.soTienCoc || contract["Số tiền cọc"] || 0,
+            // Lưu toàn bộ thông tin từ Firebase để có thể navigate
+            ...contract,
           };
         });
 
@@ -112,6 +140,17 @@ export default function Dashboard() {
     loadCustomers();
   }, []);
 
+  // Get unique list of employees from contracts
+  const getUniqueEmployees = () => {
+    const employees = new Set();
+    contracts.forEach((contract) => {
+      if (contract.TVBH && contract.TVBH !== "Không xác định") {
+        employees.add(contract.TVBH);
+      }
+    });
+    return Array.from(employees).sort();
+  };
+
   // Generate report based on filters
   useEffect(() => {
     if (contracts.length === 0 && customers.length === 0) {
@@ -127,20 +166,49 @@ export default function Dashboard() {
           cancelled: 0,
           completed: 0,
           transferred: 0,
-          newCustomers: 0
-        }
+          newCustomers: 0,
+        },
       });
       return;
     }
 
-    const filteredContracts = contracts.length > 0 ? filterContractsByTimeRange(contracts) : [];
-    const filteredCustomers = customers.length > 0 ? filterCustomersByTimeRange(customers) : [];
-    
-    console.log("Filtered contracts:", filteredContracts.length, "out of", contracts.length);
-    console.log("Filtered customers:", filteredCustomers.length, "out of", customers.length);
-    
+    let filteredContracts =
+      contracts.length > 0 ? filterContractsByTimeRange(contracts) : [];
+
+    // Filter by employee if selected
+    if (selectedEmployee !== "all" && filteredContracts.length > 0) {
+      filteredContracts = filteredContracts.filter(
+        (contract) => contract.TVBH === selectedEmployee
+      );
+    }
+
+    const filteredCustomers =
+      customers.length > 0 ? filterCustomersByTimeRange(customers) : [];
+
+    console.log(
+      "Filtered contracts:",
+      filteredContracts.length,
+      "out of",
+      contracts.length
+    );
+    console.log(
+      "Filtered customers:",
+      filteredCustomers.length,
+      "out of",
+      customers.length
+    );
+
     generateReports(filteredContracts, filteredCustomers);
-  }, [contracts, customers, timeRange, selectedDate, selectedMonth, selectedQuarter, selectedYear]);
+  }, [
+    contracts,
+    customers,
+    timeRange,
+    selectedDate,
+    selectedMonth,
+    selectedQuarter,
+    selectedYear,
+    selectedEmployee,
+  ]);
 
   const filterContractsByTimeRange = (contracts) => {
     let startDate, endDate;
@@ -158,7 +226,15 @@ export default function Dashboard() {
       case "quarter":
         const quarterStartMonth = (selectedQuarter - 1) * 3;
         startDate = new Date(selectedYear, quarterStartMonth, 1);
-        endDate = new Date(selectedYear, quarterStartMonth + 3, 0, 23, 59, 59, 999);
+        endDate = new Date(
+          selectedYear,
+          quarterStartMonth + 3,
+          0,
+          23,
+          59,
+          59,
+          999
+        );
         break;
       case "year":
         startDate = new Date(selectedYear, 0, 1);
@@ -168,19 +244,19 @@ export default function Dashboard() {
         return contracts;
     }
 
-    return contracts.filter(contract => {
+    return contracts.filter((contract) => {
       if (!contract.createdAt) {
         return false; // Skip contracts without date
       }
-      
+
       // Parse date - handle both ISO string and date string formats
       let contractDate;
-      if (typeof contract.createdAt === 'string') {
+      if (typeof contract.createdAt === "string") {
         // If it's a date string like "2024-01-15", parse it
         contractDate = new Date(contract.createdAt);
         // If parsing failed, try adding time component
         if (isNaN(contractDate.getTime())) {
-          contractDate = new Date(contract.createdAt + 'T00:00:00');
+          contractDate = new Date(contract.createdAt + "T00:00:00");
         }
       } else {
         contractDate = new Date(contract.createdAt);
@@ -188,7 +264,11 @@ export default function Dashboard() {
 
       // Check if date is valid
       if (isNaN(contractDate.getTime())) {
-        console.warn("Invalid date for contract:", contract.firebaseKey, contract.createdAt);
+        console.warn(
+          "Invalid date for contract:",
+          contract.firebaseKey,
+          contract.createdAt
+        );
         return false;
       }
 
@@ -212,7 +292,15 @@ export default function Dashboard() {
       case "quarter":
         const quarterStartMonth = (selectedQuarter - 1) * 3;
         startDate = new Date(selectedYear, quarterStartMonth, 1);
-        endDate = new Date(selectedYear, quarterStartMonth + 3, 0, 23, 59, 59, 999);
+        endDate = new Date(
+          selectedYear,
+          quarterStartMonth + 3,
+          0,
+          23,
+          59,
+          59,
+          999
+        );
         break;
       case "year":
         startDate = new Date(selectedYear, 0, 1);
@@ -222,19 +310,19 @@ export default function Dashboard() {
         return customers;
     }
 
-    return customers.filter(customer => {
+    return customers.filter((customer) => {
       if (!customer.ngay) {
         return false; // Skip customers without date
       }
-      
+
       // Parse date - handle both ISO string and date string formats
       let customerDate;
-      if (typeof customer.ngay === 'string') {
+      if (typeof customer.ngay === "string") {
         // If it's a date string like "2024-01-15", parse it
         customerDate = new Date(customer.ngay);
         // If parsing failed, try adding time component
         if (isNaN(customerDate.getTime())) {
-          customerDate = new Date(customer.ngay + 'T00:00:00');
+          customerDate = new Date(customer.ngay + "T00:00:00");
         }
       } else {
         customerDate = new Date(customer.ngay);
@@ -242,7 +330,11 @@ export default function Dashboard() {
 
       // Check if date is valid
       if (isNaN(customerDate.getTime())) {
-        console.warn("Invalid date for customer:", customer.firebaseKey, customer.ngay);
+        console.warn(
+          "Invalid date for customer:",
+          customer.firebaseKey,
+          customer.ngay
+        );
         return false;
       }
 
@@ -254,7 +346,7 @@ export default function Dashboard() {
     // Group by employee
     const byEmployee = {};
     const byModel = {};
-    
+
     let total = 0;
     let signed = 0;
     let exported = 0;
@@ -264,9 +356,9 @@ export default function Dashboard() {
     let transferred = 0;
     let newCustomers = filteredCustomers.length;
 
-    filteredContracts.forEach(contract => {
+    filteredContracts.forEach((contract) => {
       total++;
-      
+
       // Count by status
       switch (contract.status) {
         case "mới":
@@ -299,8 +391,26 @@ export default function Dashboard() {
           pending: 0,
           cancelled: 0,
           completed: 0,
-          transferred: 0
+          transferred: 0,
+          models: new Set(), // Track unique models for this employee
+          pendingContracts: [], // Track pending contracts (đã ký nhưng chưa xuất)
         };
+      }
+
+      // Add model to employee's model set
+      const model = contract.model || "Không xác định";
+      byEmployee[employee].models.add(model);
+
+      // Track pending contracts (status = "mới" - đã ký nhưng chưa xuất)
+      if (contract.status === "mới") {
+        byEmployee[employee].pendingContracts.push({
+          ...contract, // Lưu toàn bộ thông tin hợp đồng để có thể navigate
+          firebaseKey: contract.firebaseKey,
+          id: contract.id || contract.firebaseKey,
+          customerName: contract.customerName || "",
+          model: contract.model || "",
+          createdAt: contract.createdAt || "",
+        });
       }
 
       byEmployee[employee].total++;
@@ -324,8 +434,7 @@ export default function Dashboard() {
           byEmployee[employee].pending++;
       }
 
-      // Group by model
-      const model = contract.model || "Không xác định";
+      // Group by model (reuse the model variable declared above)
       if (!byModel[model]) {
         byModel[model] = {
           model,
@@ -335,7 +444,7 @@ export default function Dashboard() {
           pending: 0,
           cancelled: 0,
           completed: 0,
-          transferred: 0
+          transferred: 0,
         };
       }
 
@@ -362,7 +471,12 @@ export default function Dashboard() {
     });
 
     setReportData({
-      byEmployee: Object.values(byEmployee).sort((a, b) => b.total - a.total),
+      byEmployee: Object.values(byEmployee)
+        .map((emp) => ({
+          ...emp,
+          models: Array.from(emp.models).sort(), // Convert Set to sorted Array
+        }))
+        .sort((a, b) => b.total - a.total),
       byModel: Object.values(byModel).sort((a, b) => b.total - a.total),
       summary: {
         total,
@@ -372,8 +486,8 @@ export default function Dashboard() {
         cancelled,
         completed,
         transferred,
-        newCustomers
-      }
+        newCustomers,
+      },
     });
   };
 
@@ -392,6 +506,18 @@ export default function Dashboard() {
     }
   };
 
+  const openPendingContractsModal = (employeeName, pendingContracts) => {
+    setSelectedEmployeeName(employeeName);
+    setSelectedEmployeeContracts(pendingContracts || []);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedEmployeeContracts([]);
+    setSelectedEmployeeName("");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -407,19 +533,23 @@ export default function Dashboard() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-primary-700">Dashboard Báo Cáo</h1>
+        <h1 className="text-3xl font-bold text-primary-700">
+          Dashboard Báo Cáo
+        </h1>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Calendar className="w-5 h-5" />
-          Bộ lọc thời gian
+          Bộ lọc
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Loại báo cáo</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Loại báo cáo
+            </label>
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
@@ -434,7 +564,9 @@ export default function Dashboard() {
 
           {timeRange === "day" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ngày</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ngày
+              </label>
               <input
                 type="date"
                 value={selectedDate}
@@ -447,7 +579,9 @@ export default function Dashboard() {
           {timeRange === "month" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tháng</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tháng
+                </label>
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -461,7 +595,9 @@ export default function Dashboard() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Năm</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Năm
+                </label>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -483,7 +619,9 @@ export default function Dashboard() {
           {timeRange === "quarter" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quý</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quý
+                </label>
                 <select
                   value={selectedQuarter}
                   onChange={(e) => setSelectedQuarter(parseInt(e.target.value))}
@@ -496,7 +634,9 @@ export default function Dashboard() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Năm</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Năm
+                </label>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -517,7 +657,9 @@ export default function Dashboard() {
 
           {timeRange === "year" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Năm</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Năm
+              </label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -534,6 +676,25 @@ export default function Dashboard() {
               </select>
             </div>
           )}
+
+          {/* Employee Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nhân viên
+            </label>
+            <select
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="all">Tất cả nhân viên</option>
+              {getUniqueEmployees().map((employee) => (
+                <option key={employee} value={employee}>
+                  {employee}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -543,7 +704,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng hợp đồng</p>
-              <p className="text-2xl font-bold text-primary-600">{reportData.summary.total}</p>
+              <p className="text-2xl font-bold text-primary-600">
+                {reportData.summary.total}
+              </p>
             </div>
             <div className="p-3 bg-primary-100 rounded-full">
               <FileText className="w-6 h-6 text-primary-600" />
@@ -555,7 +718,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Đã ký</p>
-              <p className="text-2xl font-bold text-green-600">{reportData.summary.signed}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {reportData.summary.signed}
+              </p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
               <TrendingUp className="w-6 h-6 text-green-600" />
@@ -567,7 +732,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Đã xuất</p>
-              <p className="text-2xl font-bold text-blue-600">{reportData.summary.exported}</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {reportData.summary.exported}
+              </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <Car className="w-6 h-6 text-blue-600" />
@@ -579,7 +746,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Tồn kho</p>
-              <p className="text-2xl font-bold text-orange-600">{reportData.summary.pending}</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {reportData.summary.pending}
+              </p>
             </div>
             <div className="p-3 bg-orange-100 rounded-full">
               <Users className="w-6 h-6 text-orange-600" />
@@ -590,8 +759,12 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Khách hàng mới</p>
-              <p className="text-2xl font-bold text-purple-600">{reportData.summary.newCustomers}</p>
+              <p className="text-sm font-medium text-gray-600">
+                Khách hàng mới
+              </p>
+              <p className="text-2xl font-bold text-purple-600">
+                {reportData.summary.newCustomers}
+              </p>
             </div>
             <div className="p-3 bg-purple-100 rounded-full">
               <UserPlus className="w-6 h-6 text-purple-600" />
@@ -607,34 +780,104 @@ export default function Dashboard() {
             <Users className="w-5 h-5" />
             Báo cáo theo Nhân viên ({getTimeRangeText()})
           </h2>
-          
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhân viên</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đã ký</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đã xuất</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tồn</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hoàn thành</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hủy</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chuyển tên</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    STT
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nhân viên
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dòng xe
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tổng
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Đã ký
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Đã xuất
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tồn
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Hoàn thành
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Hủy
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Chuyển tên
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Hợp đồng tồn
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {reportData.byEmployee.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.employee}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.total}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.signed}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.exported}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.pending}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.completed}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.cancelled}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.transferred}</td>
+                  <tr key={index} className="hover:bg-gray-50 text-center">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.employee}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {item.models && item.models.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {item.models.map((model, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                            >
+                              {model}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.total}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.signed}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.exported}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.pending}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.completed}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.cancelled}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.transferred}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {item.pendingContracts && item.pendingContracts.length > 0 ? (
+                        <button
+                          onClick={() => openPendingContractsModal(item.employee, item.pendingContracts)}
+                          className="bg-slate-300 hover:bg-slate-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                        >
+                          {item.pendingContracts.length}
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">0</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -648,34 +891,70 @@ export default function Dashboard() {
             <Car className="w-5 h-5" />
             Báo cáo theo Mẫu xe ({getTimeRangeText()})
           </h2>
-          
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mẫu xe</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đã ký</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đã xuất</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tồn</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hoàn thành</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hủy</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chuyển tên</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    STT
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mẫu xe
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tổng
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Đã ký
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Đã xuất
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tồn
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Hoàn thành
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Hủy
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Chuyển tên
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {reportData.byModel.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.model}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.total}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.signed}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.exported}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.pending}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.completed}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.cancelled}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.transferred}</td>
+                  <tr key={index} className="hover:bg-gray-50 text-center">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.model}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.total}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.signed}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.exported}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.pending}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.completed}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.cancelled}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {item.transferred}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -683,6 +962,105 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modal hiển thị hợp đồng tồn */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Hợp đồng tồn - {selectedEmployeeName}
+              </h2>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4 overflow-y-auto flex-1">
+              {selectedEmployeeContracts.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedEmployeeContracts.map((contract, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        closeModal();
+                        navigate("/hop-dong/chi-tiet", {
+                          state: { contract: contract, mode: 'details' },
+                        });
+                      }}
+                      className="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-100"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-800 text-lg mb-2">
+                            {contract.customerName || `Hợp đồng ${contract.id || idx + 1}`}
+                          </div>
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                            {contract.model && (
+                              <div className="flex items-center gap-1">
+                                <Car className="w-4 h-4" />
+                                <span className="font-medium">{contract.model}</span>
+                              </div>
+                            )}
+                            {contract.createdAt && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>
+                                  {new Date(contract.createdAt).toLocaleDateString("vi-VN", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                            {contract.customerName && (
+                              <div className="text-gray-500">
+                                Tên khách hàng: {contract.customerName}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Không có hợp đồng tồn
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={closeModal}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
