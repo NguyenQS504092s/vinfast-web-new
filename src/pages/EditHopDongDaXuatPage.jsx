@@ -13,7 +13,7 @@ export default function EditHopDongDaXuatPage() {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   // State for employees list
   const [employees, setEmployees] = useState([]);
 
@@ -37,7 +37,7 @@ export default function EditHopDongDaXuatPage() {
       try {
         const employeesRef = ref(database, 'employees');
         const snapshot = await get(employeesRef);
-        
+
         if (snapshot.exists()) {
           const data = snapshot.val();
           const employeesList = Object.values(data)
@@ -47,7 +47,7 @@ export default function EditHopDongDaXuatPage() {
             }))
             .filter((emp) => emp.TVBH) // Only include employees with TVBH
             .sort((a, b) => a.TVBH.localeCompare(b.TVBH)); // Sort by name
-          
+
           setEmployees(employeesList);
         }
       } catch (err) {
@@ -85,6 +85,13 @@ export default function EditHopDongDaXuatPage() {
     quaTang: "",
     quaTangKhac: "",
     giamGia: "",
+    // Company customer fields
+    khachHangLa: "",
+    msdn: "",
+    daiDien: "",
+    chucVu: "",
+    giayUyQuyen: "",
+    giayUyQuyenNgay: "",
   });
 
   // Load contract data
@@ -156,10 +163,17 @@ export default function EditHopDongDaXuatPage() {
           quaTang: contractData.quaTang || contractData["Quà tặng"] || contractData["quà tặng"] || "",
           quaTangKhac: contractData.quaTangKhac || contractData["Quà tặng khác"] || contractData["quà tặng khác"] || "",
           giamGia: contractData.giamGia || contractData["Giảm giá"] || contractData["giảm giá"] || "",
+          // Company customer fields
+          khachHangLa: contractData.khachHangLa || "",
+          msdn: contractData.msdn || "",
+          daiDien: contractData.daiDien || "",
+          chucVu: contractData.chucVu || "",
+          giayUyQuyen: contractData.giayUyQuyen || "",
+          giayUyQuyenNgay: contractData.giayUyQuyenNgay || "",
         };
 
         setContract(mapped);
-        
+
         // Load images if they exist
         setDepositImage(contractData.depositImage || contractData["Ảnh chụp hình đặt cọc"] || "");
         setCounterpartImage(contractData.counterpartImage || contractData["Ảnh chụp đối ứng"] || "");
@@ -198,7 +212,25 @@ export default function EditHopDongDaXuatPage() {
     carPriceData.forEach((car) => {
       if (car.model) uniqueModels.add(car.model);
     });
-    return Array.from(uniqueModels).sort();
+
+    // Custom sort order: VF series first, then other models
+    const modelOrder = ['VF 3', 'VF 5', 'VF 6', 'VF 7', 'VF 8', 'VF 9', 'Minio', 'Herio', 'Nerio', 'Limo', 'EC', 'EC Nâng Cao'];
+
+    return Array.from(uniqueModels).sort((a, b) => {
+      const indexA = modelOrder.indexOf(a);
+      const indexB = modelOrder.indexOf(b);
+
+      // If both are in the order list, sort by their position
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      // If only A is in the list, it comes first
+      if (indexA !== -1) return -1;
+      // If only B is in the list, it comes first
+      if (indexB !== -1) return 1;
+      // If neither is in the list, sort alphabetically
+      return a.localeCompare(b);
+    });
   }, []);
 
   // Get available trims (variants) for selected model
@@ -322,17 +354,17 @@ export default function EditHopDongDaXuatPage() {
     try {
       setUploadingImage(true);
       setUploadingImageType(imageType);
-      
+
       // Upload to Cloudinary
       const imageUrl = await uploadImageToCloudinary(file);
-      
+
       // Update the corresponding image state
       if (imageType === 'deposit') {
         setDepositImage(imageUrl);
       } else if (imageType === 'counterpart') {
         setCounterpartImage(imageUrl);
       }
-      
+
       toast.success("Upload ảnh thành công!");
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -413,6 +445,13 @@ export default function EditHopDongDaXuatPage() {
         "Giảm giá": safeValue(contract.giamGia),
         quaTang: safeValue(contract.quaTang),
         quaTangKhac: safeValue(contract.quaTangKhac),
+        // Company customer fields
+        khachHangLa: safeValue(contract.khachHangLa),
+        msdn: safeValue(contract.msdn),
+        daiDien: safeValue(contract.daiDien),
+        chucVu: safeValue(contract.chucVu),
+        giayUyQuyen: safeValue(contract.giayUyQuyen),
+        giayUyQuyenNgay: safeValue(contract.giayUyQuyenNgay),
         giamGia: safeValue(contract.giamGia),
         "Ảnh chụp hình đặt cọc": safeValue(depositImage),
         "Ảnh chụp đối ứng": safeValue(counterpartImage),
@@ -531,7 +570,23 @@ export default function EditHopDongDaXuatPage() {
                 Thông tin khách hàng
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                    {/* Customer Name */}
+                {/* Customer Type */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Khách hàng là <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={contract.khachHangLa || ""}
+                    onChange={(e) => handleChange("khachHangLa", e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white"
+                  >
+                    <option value="">Chọn loại khách hàng</option>
+                    <option value="Cá nhân">Cá nhân</option>
+                    <option value="Công ty">Công ty</option>
+                  </select>
+                </div>
+
+                {/* Customer Name */}
                 <div className="sm:col-span-2 lg:col-span-1">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Tên khách hàng <span className="text-red-500">*</span>
@@ -544,6 +599,80 @@ export default function EditHopDongDaXuatPage() {
                     placeholder="Tên khách hàng"
                   />
                 </div>
+
+                {/* Company fields - shown only when customer type is "Công ty" */}
+                {contract.khachHangLa === "Công ty" && (
+                  <>
+                    {/* Mã số doanh nghiệp */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Mã số doanh nghiệp <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.msdn || ""}
+                        onChange={(e) => handleChange("msdn", e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm"
+                        placeholder="Mã số doanh nghiệp"
+                      />
+                    </div>
+
+                    {/* Người đại diện */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Người đại diện <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.daiDien || ""}
+                        onChange={(e) => handleChange("daiDien", e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm"
+                        placeholder="Người đại diện"
+                      />
+                    </div>
+
+                    {/* Chức vụ */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Chức vụ <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.chucVu || ""}
+                        onChange={(e) => handleChange("chucVu", e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm"
+                        placeholder="Chức vụ"
+                      />
+                    </div>
+
+                    {/* Giấy ủy quyền */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Giấy ủy quyền <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.giayUyQuyen || ""}
+                        onChange={(e) => handleChange("giayUyQuyen", e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm"
+                        placeholder="Số giấy ủy quyền"
+                      />
+                    </div>
+
+                    {/* Ngày giấy ủy quyền */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Ngày giấy ủy quyền <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={contract.giayUyQuyenNgay || ""}
+                        onChange={(e) => handleChange("giayUyQuyenNgay", e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm"
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Phone */}
                 <div>
@@ -647,7 +776,7 @@ export default function EditHopDongDaXuatPage() {
                 Thông tin xe
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                    {/* Model (Dòng xe) */}
+                {/* Model (Dòng xe) */}
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Dòng xe
@@ -786,7 +915,7 @@ export default function EditHopDongDaXuatPage() {
                 Thông tin thanh toán
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                    {/* List Price */}
+                {/* List Price */}
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Giá Niêm Yết
@@ -967,14 +1096,13 @@ export default function EditHopDongDaXuatPage() {
                     placeholder="Nhập URL ảnh hoặc upload file"
                   />
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <label className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${
-                      uploadingImage && uploadingImageType === 'deposit' 
-                        ? 'bg-gray-200 cursor-not-allowed opacity-50' 
-                        : 'cursor-pointer hover:bg-gray-50'
-                    }`}>
+                    <label className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${uploadingImage && uploadingImageType === 'deposit'
+                      ? 'bg-gray-200 cursor-not-allowed opacity-50'
+                      : 'cursor-pointer hover:bg-gray-50'
+                      }`}>
                       <span className="text-gray-700">
-                        {uploadingImage && uploadingImageType === 'deposit' 
-                          ? 'Đang upload...' 
+                        {uploadingImage && uploadingImageType === 'deposit'
+                          ? 'Đang upload...'
                           : 'Chọn file ảnh'}
                       </span>
                       <input
@@ -1024,14 +1152,13 @@ export default function EditHopDongDaXuatPage() {
                     placeholder="Nhập URL ảnh hoặc upload file"
                   />
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <label className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${
-                      uploadingImage && uploadingImageType === 'counterpart' 
-                        ? 'bg-gray-200 cursor-not-allowed opacity-50' 
-                        : 'cursor-pointer hover:bg-gray-50'
-                    }`}>
+                    <label className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${uploadingImage && uploadingImageType === 'counterpart'
+                      ? 'bg-gray-200 cursor-not-allowed opacity-50'
+                      : 'cursor-pointer hover:bg-gray-50'
+                      }`}>
                       <span className="text-gray-700">
-                        {uploadingImage && uploadingImageType === 'counterpart' 
-                          ? 'Đang upload...' 
+                        {uploadingImage && uploadingImageType === 'counterpart'
+                          ? 'Đang upload...'
                           : 'Chọn file ảnh'}
                       </span>
                       <input

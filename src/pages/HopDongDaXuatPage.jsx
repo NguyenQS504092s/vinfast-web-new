@@ -1137,11 +1137,10 @@ export default function HopDongDaXuatPage() {
                       return (
                         <tr
                           key={contract.firebaseKey || contract.id}
-                          className={`hover:bg-secondary-50 ${
-                            isMissingData
+                          className={`hover:bg-secondary-50 ${isMissingData
                               ? "bg-yellow-50 border-l-4 border-yellow-400"
                               : ""
-                          }`}
+                            }`}
                         >
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm font-semibold text-black border border-secondary-400">
                             {startIndex + index + 1}
@@ -1217,15 +1216,15 @@ export default function HopDongDaXuatPage() {
                               className="max-w-[100px] sm:max-w-none truncate"
                               title={getColorName(
                                 contract.ngoaiThat ||
-                                  contract["Ngoại Thất"] ||
-                                  contract.exterior,
+                                contract["Ngoại Thất"] ||
+                                contract.exterior,
                                 true
                               )}
                             >
                               {getColorName(
                                 contract.ngoaiThat ||
-                                  contract["Ngoại Thất"] ||
-                                  contract.exterior,
+                                contract["Ngoại Thất"] ||
+                                contract.exterior,
                                 true
                               )}
                             </div>
@@ -1235,15 +1234,15 @@ export default function HopDongDaXuatPage() {
                               className="max-w-[100px] sm:max-w-none truncate"
                               title={getColorName(
                                 contract.noiThat ||
-                                  contract["Nội Thất"] ||
-                                  contract.interior,
+                                contract["Nội Thất"] ||
+                                contract.interior,
                                 false
                               )}
                             >
                               {getColorName(
                                 contract.noiThat ||
-                                  contract["Nội Thất"] ||
-                                  contract.interior,
+                                contract["Nội Thất"] ||
+                                contract.interior,
                                 false
                               )}
                             </div>
@@ -1296,9 +1295,8 @@ export default function HopDongDaXuatPage() {
                               <button
                                 onClick={() => openImageModal(contract)}
                                 className="px-1.5 sm:px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                                aria-label={`Quản lý ảnh ${
-                                  contract.tenKh || contract.id
-                                }`}
+                                aria-label={`Quản lý ảnh ${contract.tenKh || contract.id
+                                  }`}
                                 title="Quản lý ảnh"
                               >
                                 <Image className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1307,15 +1305,13 @@ export default function HopDongDaXuatPage() {
                               <button
                                 onClick={() =>
                                   navigate(
-                                    `/hop-dong-da-xuat/edit/${
-                                      contract.firebaseKey || contract.id
+                                    `/hop-dong-da-xuat/edit/${contract.firebaseKey || contract.id
                                     }`
                                   )
                                 }
                                 className="px-1.5 sm:px-3 py-1 bg-secondary-600 text-white rounded-md hover:bg-secondary-700 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                                aria-label={`Sửa hợp đồng ${
-                                  contract.tenKh || contract.id
-                                }`}
+                                aria-label={`Sửa hợp đồng ${contract.tenKh || contract.id
+                                  }`}
                               >
                                 <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <span className="hidden sm:inline">Sửa</span>
@@ -1323,9 +1319,8 @@ export default function HopDongDaXuatPage() {
                               <button
                                 onClick={() => openDeleteConfirm(contract)}
                                 className="px-1.5 sm:px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                                aria-label={`Xóa hợp đồng ${
-                                  contract.tenKh || contract.id
-                                }`}
+                                aria-label={`Xóa hợp đồng ${contract.tenKh || contract.id
+                                  }`}
                               >
                                 <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <span className="hidden sm:inline">Xóa</span>
@@ -1384,30 +1379,27 @@ export default function HopDongDaXuatPage() {
                                   setCurrentContractKey(contractKey);
                                   setBankLoanFile(
                                     contract.bankLoanFile ||
-                                      contract["File cho vay ngân hàng"] ||
-                                      null
+                                    contract["File cho vay ngân hàng"] ||
+                                    null
                                   );
                                   setIsPrintModalOpen(true);
                                 }}
                                 disabled={isMissingData}
-                                className={`px-1.5 sm:px-3 py-1 rounded-md transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${
-                                  isMissingData
+                                className={`px-1.5 sm:px-3 py-1 rounded-md transition-colors flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${isMissingData
                                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                                     : "bg-green-600 text-white hover:bg-green-700"
-                                }`}
+                                  }`}
                                 title={
                                   isMissingData
                                     ? "Vui lòng điền đầy đủ thông tin hợp đồng trước khi in"
-                                    : `Chọn mẫu in ${
-                                        contract.tenKh || contract.id
-                                      }`
+                                    : `Chọn mẫu in ${contract.tenKh || contract.id
+                                    }`
                                 }
                                 aria-label={
                                   isMissingData
                                     ? "Không thể in - thiếu dữ liệu"
-                                    : `Chọn mẫu in ${
-                                        contract.tenKh || contract.id
-                                      }`
+                                    : `Chọn mẫu in ${contract.tenKh || contract.id
+                                    }`
                                 }
                               >
                                 <svg
@@ -1708,18 +1700,17 @@ export default function HopDongDaXuatPage() {
                             </label>
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                               <label
-                                className={`flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-md transition-colors text-xs sm:text-sm text-center ${
-                                  uploadingBankLoanFile
+                                className={`flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-md transition-colors text-xs sm:text-sm text-center ${uploadingBankLoanFile
                                     ? "bg-gray-200 cursor-not-allowed opacity-50"
                                     : "cursor-pointer hover:bg-gray-50"
-                                }`}
+                                  }`}
                               >
                                 <span className="text-gray-700">
                                   {uploadingBankLoanFile
                                     ? "Đang upload..."
                                     : bankLoanFile
-                                    ? "Đã upload file"
-                                    : "Chọn file (Ảnh)"}
+                                      ? "Đã upload file"
+                                      : "Chọn file (Ảnh)"}
                                 </span>
                                 <input
                                   type="file"
@@ -1942,7 +1933,7 @@ export default function HopDongDaXuatPage() {
                           <button
                             onClick={() =>
                               handlePrintNavigate(
-                                "/thoa-thuan-ho-tro-lai-suat-vay-cdx-vinfast-va-lfvn"
+                                "/giay-thoa-thuan-htls-vpbank"
                               )
                             }
                             className="w-full px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm"
@@ -2041,11 +2032,10 @@ export default function HopDongDaXuatPage() {
                       />
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <label
-                          className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${
-                            uploadingImage && uploadingImageType === "deposit"
+                          className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${uploadingImage && uploadingImageType === "deposit"
                               ? "bg-gray-200 cursor-not-allowed opacity-50"
                               : "cursor-pointer hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           <span className="text-gray-700">
                             {uploadingImage && uploadingImageType === "deposit"
@@ -2107,16 +2097,15 @@ export default function HopDongDaXuatPage() {
                       />
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <label
-                          className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${
-                            uploadingImage &&
-                            uploadingImageType === "counterpart"
+                          className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg transition-colors text-xs sm:text-sm text-center ${uploadingImage &&
+                              uploadingImageType === "counterpart"
                               ? "bg-gray-200 cursor-not-allowed opacity-50"
                               : "cursor-pointer hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           <span className="text-gray-700">
                             {uploadingImage &&
-                            uploadingImageType === "counterpart"
+                              uploadingImageType === "counterpart"
                               ? "Đang upload..."
                               : "Chọn file ảnh"}
                           </span>

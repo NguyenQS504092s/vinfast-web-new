@@ -796,7 +796,8 @@ const TT_HTLV_CĐX_TPB = () => {
 
             {/* Khách Hàng */}
             <div>
-              <p className="font-bold mb-2">
+              <p className="mb-2">
+                <span className="font-normal">Ông/Bà: </span>
                 <span className="print:hidden">
                   <input
                     type="text"
@@ -805,7 +806,7 @@ const TT_HTLV_CĐX_TPB = () => {
                     className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
                   />
                 </span>
-                <span className="hidden print:inline">{tenKH}</span>
+                <span className="hidden print:inline font-normal">{tenKH}</span>
               </p>
               <p className="mb-1">
                 Địa chỉ:{" "}

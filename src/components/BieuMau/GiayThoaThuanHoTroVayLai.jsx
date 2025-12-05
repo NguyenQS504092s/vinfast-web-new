@@ -308,7 +308,8 @@ const GiayThoaThuanHoTroVayLai = () => {
 
             {/* Khách Hàng */}
             <div>
-              <p className="font-bold mb-2">
+              <p className="mb-2">
+                <span className="font-normal">Ông/Bà: </span>
                 <span className="print:hidden">
                   <input
                     type="text"
@@ -317,7 +318,7 @@ const GiayThoaThuanHoTroVayLai = () => {
                     className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
                   />
                 </span>
-                <span className="hidden print:inline underline">
+                <span className="hidden print:inline font-normal">
                   {tenKhachHang}
                 </span>
               </p>

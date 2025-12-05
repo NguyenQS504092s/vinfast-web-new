@@ -129,9 +129,11 @@ const HopDongMuaBanXe = () => {
           cccdIssuePlace:
             incoming.issuePlace || incoming.noiCap || incoming["Nơi Cấp"] || "",
           // Thông tin tổ chức (nếu có)
-          taxCode: incoming.taxCode || incoming.MSDN || "",
+          taxCode: incoming.taxCode || incoming.MSDN || incoming.msdn || "",
           representative: incoming.representative || incoming.daiDien || "",
           position: incoming.position || incoming.chucVu || "",
+          giayUyQuyen: incoming.giayUyQuyen || "",
+          giayUyQuyenNgay: formatDateString(incoming.giayUyQuyenNgay || ""),
           // Thông tin xe
           model: incoming.model || incoming.dongXe || "",
           variant: incoming.variant || incoming.phienBan || "",
@@ -154,6 +156,18 @@ const HopDongMuaBanXe = () => {
         setTaxCodeOrg(processedData.taxCode || "");
         setRepresentativeOrg(processedData.representative || "");
         setPositionOrg(processedData.position || "");
+        setGiayUyQuyen1(processedData.giayUyQuyen || "");
+        setGiayUyQuyen1Ngay(processedData.giayUyQuyenNgay || "");
+        setGiayUyQuyen2(processedData.giayUyQuyen || "");
+        setGiayUyQuyen2Ngay(processedData.giayUyQuyenNgay || "");
+        if (processedData.giayUyQuyenNgay) {
+          setGiayUyQuyen2NgayRaw(processedData.giayUyQuyenNgay.includes('/') ? 
+            (() => {
+              const [day, month, year] = processedData.giayUyQuyenNgay.split('/');
+              return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            })() : processedData.giayUyQuyenNgay
+          );
+        }
         // Initialize company fields from branch
         setCompanyName(branchInfo.name || "");
         setCompanyAddress(branchInfo.address || "");
@@ -375,7 +389,7 @@ const HopDongMuaBanXe = () => {
           {/* Two Column Layout - CÔNG TY and KHÁCH HÀNG */}
           <div className="grid grid-cols-2 gap-4 mb-2">
             {/* Left Column - CÔNG TY */}
-            <div className="border border-gray-300">
+            <div className="border-2 border-black">
               <div className="p-3 text-sm space-y-2">
                 <p>
                   <strong>CÔNG TY: </strong>
@@ -503,7 +517,7 @@ const HopDongMuaBanXe = () => {
             </div>
 
             {/* Right Column - KHÁCH HÀNG */}
-            <div className="border border-gray-300">
+            <div className="border-2 border-black">
               <div className="p-3 text-sm space-y-2">
                 <p>
                   <strong className="uppercase">KHÁCH HÀNG: </strong>
@@ -687,35 +701,35 @@ const HopDongMuaBanXe = () => {
               <h3 className="">1.1. Thông tin về xe và giá trị mua bán</h3>
 
               {/* Table */}
-              <table className="w-full border border-gray-800 text-sm mb-4">
+              <table className="w-full border-2 border-black text-sm mb-4">
                 <thead>
                   <tr className="bg-gray-100">
                     <th
-                      className="border border-gray-800 p-2 text-center"
+                      className="border-2 border-black p-2 text-center"
                       style={{ width: "5%" }}
                     >
                       TT
                     </th>
                     <th
-                      className="border border-gray-800 p-2 text-left"
+                      className="border-2 border-black p-2 text-left"
                       style={{ width: "50%" }}
                     >
                       Mô tả xe
                     </th>
                     <th
-                      className="border border-gray-800 p-2 text-center"
+                      className="border-2 border-black p-2 text-center"
                       style={{ width: "10%" }}
                     >
                       Số lượng
                     </th>
                     <th
-                      className="border border-gray-800 p-2 text-right"
+                      className="border-2 border-black p-2 text-right"
                       style={{ width: "17.5%" }}
                     >
                       Đơn Giá (VNĐ)
                     </th>
                     <th
-                      className="border border-gray-800 p-2 text-right"
+                      className="border-2 border-black p-2 text-right"
                       style={{ width: "17.5%" }}
                     >
                       Thành tiền (VNĐ)
@@ -724,10 +738,10 @@ const HopDongMuaBanXe = () => {
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-gray-800 p-2 text-center">
+                    <td className="border-2 border-black p-2 text-center">
                       1
                     </td>
-                    <td className="border border-gray-800 p-2">
+                    <td className="border-2 border-black p-2">
                       <div className="space-y-1">
                         <p>
                           VinFast {data.model || "[---]"} - Phiên bản:{" "}
@@ -778,24 +792,24 @@ const HopDongMuaBanXe = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="border border-gray-800 p-2 text-center">
+                    <td className="border-2 border-black p-2 text-center">
                       1
                     </td>
-                    <td className="border border-gray-800 p-2 text-right">
+                    <td className="border-2 border-black p-2 text-right">
                       {formatCurrency(data.contractPrice) || "[---]"}
                     </td>
-                    <td className="border border-gray-800 p-2 text-right">
+                    <td className="border-2 border-black p-2 text-right">
                       {formatCurrency(data.contractPrice) || "[---]"}
                     </td>
                   </tr>
                   <tr>
                     <td
                       colSpan="4"
-                      className="border border-gray-800 p-2 font-bold text-left"
+                      className="border-2 border-black p-2 font-bold text-left"
                     >
                       Tổng cộng:
                     </td>
-                    <td className="border border-gray-800 p-2 font-bold text-right">
+                    <td className="border-2 border-black p-2 font-bold text-right">
                       {formatCurrency(data.contractPrice) || "[---]"}
                     </td>
                   </tr>
@@ -825,7 +839,7 @@ const HopDongMuaBanXe = () => {
                     value={uuDai}
                     onChange={(e) => setUuDai(e.target.value)}
                     onBlur={() => setIsEditingUuDai(false)}
-                    className="border border-gray-400 px-2 py-1 text-sm font-normal w-full focus:outline-none focus:border-blue-500 resize-y min-h-[80px]"
+                    className="border-2 border-black px-2 py-1 text-sm font-normal w-full focus:outline-none focus:border-blue-500 resize-y min-h-[80px]"
                     placeholder="Nhập các ưu đãi, phân cách bằng dấu phẩy (,) hoặc xuống dòng..."
                     rows={4}
                     autoFocus
@@ -833,7 +847,7 @@ const HopDongMuaBanXe = () => {
                 ) : (
                   <div
                     onClick={() => setIsEditingUuDai(true)}
-                    className="border border-gray-400 px-2 py-1 text-sm font-normal w-full min-h-[80px] cursor-text bg-white"
+                    className="border-2 border-black px-2 py-1 text-sm font-normal w-full min-h-[80px] cursor-text bg-white"
                   >
                     {uuDai ? (
                       <div className="space-y-1">

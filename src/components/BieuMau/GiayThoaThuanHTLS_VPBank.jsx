@@ -691,7 +691,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
             {/* Khách Hàng */}
             <div>
               <p className="mb-2">
-                <strong>Ông/Bà</strong>{" "}
+                <span>Ông/Bà: </span>
                 <span className="print:hidden">
                   <input
                     type="text"
@@ -700,7 +700,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                     className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
                   />
                 </span>
-                <span className="hidden print:inline underline">{ongBaKH}</span>
+                <span className="hidden print:inline">{ongBaKH}</span>
               </p>
               <p className="mb-1">
                 Địa chỉ:{" "}
@@ -802,7 +802,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                 <>
                   <p className="italic mb-2 font-bold">Có vợ/chồng là</p>
                   <p className="mb-2">
-                    <strong>Ông/Bà</strong>{" "}
+                    <span>Ông/Bà: </span>
                     <span className="print:hidden">
                       <input
                         type="text"
@@ -811,9 +811,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                         className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
                       />
                     </span>
-                    <span className="hidden print:inline underline">
-                      {ongBaVC}
-                    </span>
+                    <span className="hidden print:inline">{ongBaVC}</span>
                   </p>
                   <p className="mb-1">
                     Địa chỉ:{" "}

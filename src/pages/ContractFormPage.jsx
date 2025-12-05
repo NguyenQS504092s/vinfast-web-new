@@ -28,6 +28,55 @@ export default function ContractFormPage() {
 
   // State for employees list
   const [employees, setEmployees] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomerKey, setSelectedCustomerKey] = useState('');
+
+  // Load customers from Firebase
+  useEffect(() => {
+    const loadCustomers = async () => {
+      try {
+        const customersRef = ref(database, 'customers');
+        const snapshot = await get(customersRef);
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const customersList = Object.entries(data || {}).map(([key, customer]) => ({
+            firebaseKey: key,
+            ...customer,
+          }));
+
+          customersList.sort((a, b) => {
+            const nameA = (a.tenKhachHang || '').toLowerCase();
+            const nameB = (b.tenKhachHang || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+
+          setCustomers(customersList);
+        } else {
+          setCustomers([]);
+        }
+      } catch (error) {
+        console.error('Error loading customers:', error);
+        setCustomers([]);
+      }
+    };
+
+    loadCustomers();
+  }, []);
+
+  const mapContractValue = (value, customer) => {
+    if (value) return value;
+    if (!customer) return '';
+    return (
+      customer.customerName ||
+      customer.tenKhachHang ||
+      customer.phone ||
+      customer.email ||
+      customer.address ||
+      customer.cccd ||
+      ''
+    );
+  };
 
   // Load employees from Firebase
   useEffect(() => {
@@ -35,7 +84,7 @@ export default function ContractFormPage() {
       try {
         const employeesRef = ref(database, 'employees');
         const snapshot = await get(employeesRef);
-        
+
         if (snapshot.exists()) {
           const data = snapshot.val();
           const employeesList = Object.values(data)
@@ -45,7 +94,7 @@ export default function ContractFormPage() {
             }))
             .filter((emp) => emp.TVBH) // Only include employees with TVBH
             .sort((a, b) => a.TVBH.localeCompare(b.TVBH)); // Sort by name
-          
+
           setEmployees(employeesList);
         }
       } catch (err) {
@@ -104,6 +153,12 @@ export default function ContractFormPage() {
     quaTangKhac: "",
     giamGia: "",
     status: "mới",
+    khachHangLa: '',
+    msdn: '',
+    daiDien: '',
+    chucVu: '',
+    giayUyQuyen: '',
+    giayUyQuyenNgay: '',
   });
 
   // State for dropdown visibility
@@ -202,6 +257,17 @@ export default function ContractFormPage() {
         quaTangKhac: contractData.quaTangKhac || contractData["Quà tặng khác"] || contractData["quà tặng khác"] || "",
         giamGia: contractData.giamGia || contractData["Giảm giá"] || contractData["giảm giá"] || "",
         status: contractData.status || contractData.trangThai || "mới",
+        khachHangLa: contractData.khachHangLa || '',
+        msdn: contractData.msdn || '',
+        daiDien: contractData.daiDien || '',
+        chucVu: contractData.chucVu || '',
+        giayUyQuyen: contractData.giayUyQuyen || '',
+        giayUyQuyenNgay: contractData.giayUyQuyenNgay || '',
+        congTy: contractData.congTy || '',
+        congTyDiaChi: contractData.congTyDiaChi || '',
+        congTyMST: contractData.congTyMST || '',
+        congTySDT: contractData.congTySDT || '',
+        congTyEmail: contractData.congTyEmail || '',
       });
     }
   }, [contractData]);
@@ -209,7 +275,7 @@ export default function ContractFormPage() {
   // Close dropdown when clicking outside
   const dropdownRef = useRef(null);
   const dropdownButtonRef = useRef(null);
-  
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -219,14 +285,14 @@ export default function ContractFormPage() {
 
     if (isUuDaiDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      
+
       // Calculate dropdown direction based on available space
       if (dropdownButtonRef.current) {
         const buttonRect = dropdownButtonRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - buttonRect.bottom;
         const spaceAbove = buttonRect.top;
         const estimatedDropdownHeight = 240; // max-h-60 = 240px
-        
+
         // Show dropdown above if not enough space below but enough space above
         if (spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow) {
           setDropdownDirection('up');
@@ -247,7 +313,25 @@ export default function ContractFormPage() {
     carPriceData.forEach((car) => {
       if (car.model) uniqueModels.add(car.model);
     });
-    return Array.from(uniqueModels).sort();
+
+    // Custom sort order: VF series first, then other models
+    const modelOrder = ['VF 3', 'VF 5', 'VF 6', 'VF 7', 'VF 8', 'VF 9', 'Minio', 'Herio', 'Nerio', 'Limo', 'EC', 'EC Nâng Cao'];
+
+    return Array.from(uniqueModels).sort((a, b) => {
+      const indexA = modelOrder.indexOf(a);
+      const indexB = modelOrder.indexOf(b);
+
+      // If both are in the order list, sort by their position
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      // If only A is in the list, it comes first
+      if (indexA !== -1) return -1;
+      // If only B is in the list, it comes first
+      if (indexB !== -1) return 1;
+      // If neither is in the list, sort alphabetically
+      return a.localeCompare(b);
+    });
   }, []);
 
   // Get available trims (variants) for selected model
@@ -352,6 +436,96 @@ export default function ContractFormPage() {
     });
   };
 
+  // Helper to normalize date values
+  const normalizeDateInputValue = (value) => {
+    if (!value) return '';
+    if (value instanceof Date) {
+      return value.toISOString().split('T')[0];
+    }
+
+    const str = String(value).trim();
+    if (!str) return '';
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        const [day, month, year] = parts;
+        if (day && month && year) {
+          const dd = day.padStart(2, '0');
+          const mm = month.padStart(2, '0');
+          const yyyy = year.length === 2 ? `20${year}` : year.padStart(4, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        }
+      }
+    }
+
+    return str;
+  };
+
+  const handleCustomerSelect = (customerKey) => {
+    setSelectedCustomerKey(customerKey);
+    const selected = customers.find((customer) => customer.firebaseKey === customerKey);
+
+    if (!selected) return;
+
+    const issueDate = selected.issueDate || selected.ngayCap || '';
+
+    const formattedIssueDate = issueDate && issueDate.includes('/')
+      ? (() => {
+        const [day, month, year] = issueDate.split('/');
+        if (day && month && year) {
+          const dd = day.padStart(2, '0');
+          const mm = month.padStart(2, '0');
+          const yyyy = year.length === 2 ? `20${year}` : year.padStart(4, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        }
+        return issueDate;
+      })()
+      : issueDate;
+
+    handleInputChange('customerName', selected.tenKhachHang || '');
+    handleInputChange('phone', selected.soDienThoai || '');
+    handleInputChange('email', selected.email || '');
+    handleInputChange('address', selected.diaChi || selected.address || '');
+    handleInputChange('cccd', selected.cccd || '');
+    handleInputChange('issueDate', formattedIssueDate);
+    handleInputChange('issuePlace', selected.noiCap || '');
+    handleInputChange('model', selected.dongXe || '');
+    handleInputChange('variant', selected.phienBan || '');
+    handleInputChange('exterior', selected.mauSac || selected.ngoaiThat || '');
+    handleInputChange('payment', selected.thanhToan || '');
+    handleInputChange('bank', selected.nganHang || '');
+
+    if (selected.mauSacTrong || selected.noiThat) {
+      handleInputChange('interior', selected.mauSacTrong || selected.noiThat || '');
+    }
+
+    if (selected.thanhToan) {
+      handleInputChange('payment', selected.thanhToan);
+    }
+
+    if (selected.tvbh) {
+      handleInputChange('tvbh', selected.tvbh);
+    }
+
+    // Populate customer type and company fields if available
+    handleInputChange('khachHangLa', selected.khachHangLa || '');
+    if (selected.khachHangLa === 'Công ty') {
+      handleInputChange('msdn', selected.msdn || '');
+      handleInputChange('daiDien', selected.daiDien || '');
+      handleInputChange('chucVu', selected.chucVu || '');
+      handleInputChange('giayUyQuyen', selected.giayUyQuyen || '');
+      handleInputChange('giayUyQuyenNgay', normalizeDateInputValue(selected.giayUyQuyenNgay || ''));
+    } else {
+      // Clear company fields if not a company
+      handleInputChange('msdn', '');
+      handleInputChange('daiDien', '');
+      handleInputChange('chucVu', '');
+      handleInputChange('giayUyQuyen', '');
+      handleInputChange('giayUyQuyenNgay', '');
+    }
+  };
+
   // Handle currency input change (format on display, store raw number)
   const handleCurrencyChange = (field, value) => {
     // Parse the input to get raw number
@@ -420,6 +594,13 @@ export default function ContractFormPage() {
           quaTangKhac: safeValue(contract.quaTangKhac),
           giamGia: safeValue(contract.giamGia),
           trangThai: newStatus,
+          // Company fields
+          khachHangLa: safeValue(contract.khachHangLa),
+          msdn: safeValue(contract.msdn),
+          daiDien: safeValue(contract.daiDien),
+          chucVu: safeValue(contract.chucVu),
+          giayUyQuyen: safeValue(contract.giayUyQuyen),
+          giayUyQuyenNgay: safeValue(contract.giayUyQuyenNgay),
         });
 
         // Sync with exportedContracts based on status change
@@ -510,6 +691,13 @@ export default function ContractFormPage() {
           quaTangKhac: safeValue(contract.quaTangKhac),
           giamGia: safeValue(contract.giamGia),
           trangThai: safeValue(contract.status) || "mới",
+          // Company fields
+          khachHangLa: safeValue(contract.khachHangLa),
+          msdn: safeValue(contract.msdn),
+          daiDien: safeValue(contract.daiDien),
+          chucVu: safeValue(contract.chucVu),
+          giayUyQuyen: safeValue(contract.giayUyQuyen),
+          giayUyQuyenNgay: safeValue(contract.giayUyQuyenNgay),
         });
 
         // If new contract status is "xuất", also add to exportedContracts
@@ -585,7 +773,7 @@ export default function ContractFormPage() {
         {/* Header */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-400 px-4 sm:px-6 py-4 sm:py-5 rounded-t-2xl shadow-lg">
           <div className="flex items-center justify-between relative">
-          <button
+            <button
               onClick={() => navigate(isDetailsMode ? "/dashboard" : "/hop-dong")}
               className="text-white hover:text-gray-200 transition-colors flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg hover:bg-white/10 z-10"
               aria-label="Quay lại"
@@ -594,11 +782,11 @@ export default function ContractFormPage() {
               <span className="hidden sm:inline">Quay lại</span>
             </button>
             <h2 className="text-base sm:text-xl lg:text-2xl xl:text-3xl font-bold text-white absolute left-1/2 transform -translate-x-1/2 px-2 text-center">
-              {isDetailsMode 
-                ? "Chi tiết hợp đồng" 
-                : isEditMode 
-                ? "Chỉnh sửa thông tin hợp đồng" 
-                : "Thêm hợp đồng mới"}
+              {isDetailsMode
+                ? "Chi tiết hợp đồng"
+                : isEditMode
+                  ? "Chỉnh sửa thông tin hợp đồng"
+                  : "Thêm hợp đồng mới"}
             </h2>
           </div>
         </div>
@@ -703,8 +891,29 @@ export default function ContractFormPage() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
+                {/* Customer selector */}
+                {!isDetailsMode && (
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                      Chọn khách hàng đã có
+                    </label>
+                    <select
+                      value={selectedCustomerKey}
+                      onChange={(e) => handleCustomerSelect(e.target.value)}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white"
+                    >
+                      <option value="">-- Chọn khách hàng --</option>
+                      {customers.map((customer) => (
+                        <option key={customer.firebaseKey} value={customer.firebaseKey}>
+                          {customer.tenKhachHang || customer.customerName || customer.soDienThoai || 'Khách hàng không tên'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Customer Name */}
-                <div className="sm:col-span-2 lg:col-span-1">
+                <div className={`sm:col-span-2 lg:col-span-1 ${!isDetailsMode ? 'mt-3 sm:mt-0' : ''}`}>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Tên khách hàng <span className="text-red-500">*</span>
                   </label>
@@ -747,6 +956,93 @@ export default function ContractFormPage() {
                     placeholder="Email"
                   />
                 </div>
+
+                {/* Customer Type */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Khách hàng là
+                  </label>
+                  <select
+                    value={contract.khachHangLa || ""}
+                    onChange={(e) => handleInputChange("khachHangLa", e.target.value)}
+                    disabled={isDetailsMode}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">-- Chọn loại khách hàng --</option>
+                    <option value="Cá nhân">Cá nhân</option>
+                    <option value="Công ty">Công ty</option>
+                  </select>
+                </div>
+
+                {/* Company Fields */}
+                {contract.khachHangLa === 'Công ty' && (
+                  <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        MSDN / Mã số thuế
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.msdn || ""}
+                        onChange={(e) => handleInputChange("msdn", e.target.value)}
+                        disabled={isDetailsMode}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        placeholder="MSDN / Mã số thuế"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Người đại diện
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.daiDien || ""}
+                        onChange={(e) => handleInputChange("daiDien", e.target.value)}
+                        disabled={isDetailsMode}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        placeholder="Người đại diện"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Chức vụ
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.chucVu || ""}
+                        onChange={(e) => handleInputChange("chucVu", e.target.value)}
+                        disabled={isDetailsMode}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        placeholder="Chức vụ"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Số giấy ủy quyền
+                      </label>
+                      <input
+                        type="text"
+                        value={contract.giayUyQuyen || ""}
+                        onChange={(e) => handleInputChange("giayUyQuyen", e.target.value)}
+                        disabled={isDetailsMode}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        placeholder="Số giấy ủy quyền"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Ngày giấy ủy quyền
+                      </label>
+                      <input
+                        type="date"
+                        value={normalizeDateInputValue(contract.giayUyQuyenNgay || "")}
+                        onChange={(e) => handleInputChange("giayUyQuyenNgay", e.target.value)}
+                        disabled={isDetailsMode}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Address */}
                 <div className="sm:col-span-2 lg:col-span-3">
@@ -1019,18 +1315,16 @@ export default function ContractFormPage() {
                           : "Chọn ưu đãi"}
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${
-                          isUuDaiDropdownOpen ? "transform rotate-180" : ""
-                        }`}
+                        className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isUuDaiDropdownOpen ? "transform rotate-180" : ""
+                          }`}
                       />
                     </button>
                     {isUuDaiDropdownOpen && !isDetailsMode && (
                       <div
-                        className={`absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${
-                          dropdownDirection === 'up'
+                        className={`absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${dropdownDirection === 'up'
                             ? 'bottom-full mb-1'
                             : 'top-full mt-1'
-                        }`}
+                          }`}
                       >
                         {availablePromotions.map((promotion) => {
                           const isSelected = contract.uuDai && contract.uuDai.includes(promotion);

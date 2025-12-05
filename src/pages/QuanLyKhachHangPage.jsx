@@ -33,7 +33,7 @@ export default function QuanLyKhachHangPage() {
   const [customers, setCustomers] = useState([]); // Filtered customers based on permissions
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // User permissions
   const [username, setUsername] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -48,13 +48,14 @@ export default function QuanLyKhachHangPage() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [contracts, setContracts] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const [customerTypeFilter, setCustomerTypeFilter] = useState('');
   const [isWorkHistoryModalOpen, setIsWorkHistoryModalOpen] = useState(false);
   const [workHistoryCustomer, setWorkHistoryCustomer] = useState(null);
   const [workHistoryEntries, setWorkHistoryEntries] = useState([]);
   const [openDropdown, setOpenDropdown] = useState(null); // Format: 'mucDo-{firebaseKey}' or 'tinhTrang-{firebaseKey}' or 'tvbh-{firebaseKey}'
   const [dropdownPosition, setDropdownPosition] = useState({}); // Store position for each dropdown: { 'mucDo-key': { side: 'bottom' | 'top', left: number, top: number } }
   const [employees, setEmployees] = useState([]);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     ngay: new Date().toISOString().split('T')[0],
@@ -65,6 +66,7 @@ export default function QuanLyKhachHangPage() {
     dongXe: '',
     phienBan: '',
     mauSac: '',
+    noiThat: '',
     nhuCau: '',
     thanhToan: '',
     nguon: 'Hợp đồng',
@@ -73,7 +75,37 @@ export default function QuanLyKhachHangPage() {
     noiDung: '',
     selectedContractId: '',
     tvbh: '',
+    msdn: '',
+    daiDien: '',
+    chucVu: '',
+    giayUyQuyen: '',
+    giayUyQuyenNgay: '',
   });
+
+  const normalizeDateInputValue = (value) => {
+    if (!value) return '';
+    if (value instanceof Date) {
+      return value.toISOString().split('T')[0];
+    }
+
+    const str = String(value).trim();
+    if (!str) return '';
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        const [day, month, year] = parts;
+        if (day && month && year) {
+          const dd = day.padStart(2, '0');
+          const mm = month.padStart(2, '0');
+          const yyyy = year.length === 2 ? `20${year}` : year.padStart(4, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        }
+      }
+    }
+
+    return str;
+  };
 
   // Helper function to map color code to name
   const getColorName = (colorCode, isExterior = true) => {
@@ -103,8 +135,48 @@ export default function QuanLyKhachHangPage() {
   };
 
   // Get list of colors (màu sắc) - exterior colors
-  const getColors = () => {
-    return uniqueNgoaiThatColors.map(color => color.name);
+  const getColors = (selectedModel, selectedTrim) => {
+    if (!selectedModel) return [];
+
+    const validColorCodes = new Set();
+
+    carPriceData.forEach(car => {
+      if (car.model === selectedModel) {
+        if (!selectedTrim || car.trim === selectedTrim) {
+          if (car.exterior_color) {
+            validColorCodes.add(car.exterior_color);
+          }
+        }
+      }
+    });
+
+    return uniqueNgoaiThatColors
+      .filter(color => validColorCodes.has(color.code))
+      .map(color => color.name);
+  };
+
+  // Get list of interior colors (nội thất) based on selected model and trim
+  const getInteriorColors = (selectedModel, selectedTrim) => {
+    if (!selectedModel) return [];
+
+    const validInteriorCodes = new Set();
+
+    carPriceData.forEach(car => {
+      if (car.model === selectedModel) {
+        // If trim is selected, filter by trim as well
+        if (!selectedTrim || car.trim === selectedTrim) {
+          if (car.interior_color) {
+            validInteriorCodes.add(car.interior_color);
+          }
+        }
+      }
+    });
+
+    // Map codes to names using uniqueNoiThatColors
+    // Also include colors that might be just names in carPriceData (though unlikely based on structure)
+    return uniqueNoiThatColors
+      .filter(color => validInteriorCodes.has(color.code))
+      .map(color => color.name);
   };
 
   // Helper function to get color classes for mucDo (level)
@@ -164,7 +236,7 @@ export default function QuanLyKhachHangPage() {
     if (!address && !showroom) return '';
 
     const searchText = (address || showroom || '').toLowerCase();
-    
+
     for (const province of provinces) {
       if (searchText.includes(province.toLowerCase())) {
         return province;
@@ -189,7 +261,7 @@ export default function QuanLyKhachHangPage() {
     const userEmailValue = localStorage.getItem("userEmail") || "";
     const userRoleValue = localStorage.getItem("userRole") || "user";
     const userDepartmentValue = localStorage.getItem("userDepartment") || "";
-    
+
     setUsername(usernameValue);
     setUserEmail(userEmailValue);
     setUserRole(userRoleValue);
@@ -200,7 +272,7 @@ export default function QuanLyKhachHangPage() {
   useEffect(() => {
     const loadEmployeesData = async () => {
       setEmployeesLoaded(false);
-      
+
       if (!userEmail && !userRole) {
         setEmployeesLoaded(true);
         return;
@@ -238,7 +310,7 @@ export default function QuanLyKhachHangPage() {
 
           if (employeeName) {
             employeesMapping[employeeName] = employeeDept;
-            
+
             // For leader: collect all employees in same department
             if (userRole === "leader" && userDepartment && employeeDept === userDepartment) {
               teamNames.push(employeeName);
@@ -247,7 +319,7 @@ export default function QuanLyKhachHangPage() {
         });
 
         setEmployeesMap(employeesMapping);
-        
+
         if (userRole === "leader") {
           // Include current user in team if found
           if (foundEmployeeName && !teamNames.includes(foundEmployeeName)) {
@@ -258,7 +330,7 @@ export default function QuanLyKhachHangPage() {
           // Admin can see all employees
           setTeamEmployeeNames(Object.keys(employeesMapping));
         }
-        
+
         setEmployeesLoaded(true);
       } catch (err) {
         toast.error("Lỗi khi tải dữ liệu nhân viên: " + err.message);
@@ -277,7 +349,7 @@ export default function QuanLyKhachHangPage() {
       try {
         const employeesRef = ref(database, 'employees');
         const snapshot = await get(employeesRef);
-        
+
         if (snapshot.exists()) {
           const data = snapshot.val();
           const employeesList = Object.values(data)
@@ -288,7 +360,7 @@ export default function QuanLyKhachHangPage() {
             }))
             .filter((emp) => emp.TVBH) // Only include employees with TVBH
             .sort((a, b) => a.TVBH.localeCompare(b.TVBH)); // Sort by name
-          
+
           setEmployees(employeesList);
         }
       } catch (err) {
@@ -303,11 +375,11 @@ export default function QuanLyKhachHangPage() {
   const getTVBHFromUserEmail = () => {
     const userEmail = localStorage.getItem('userEmail') || '';
     if (!userEmail) return '';
-    
-    const employee = employees.find(emp => 
+
+    const employee = employees.find(emp =>
       emp.email && emp.email.toLowerCase() === userEmail.toLowerCase()
     );
-    
+
     return employee ? employee.TVBH : '';
   };
 
@@ -318,7 +390,7 @@ export default function QuanLyKhachHangPage() {
         const contractsRef = ref(database, 'contracts');
         const snapshot = await get(contractsRef);
         const data = snapshot.exists() ? snapshot.val() : {};
-        
+
         const contractsList = Object.entries(data || {}).map(([key, contract]) => ({
           firebaseKey: key,
           id: contract.id || key,
@@ -332,6 +404,11 @@ export default function QuanLyKhachHangPage() {
           thanhToan: contract.thanhToan || contract.payment || '',
           tvbh: contract.tvbh || contract.TVBH || '',
           createdAt: contract.createdDate || contract.createdAt || '',
+          taxCode: contract.taxCode || contract.MSDN || contract.taxCodeOrg || contract.companyTaxCode || '',
+          taxCodeOrg: contract.taxCodeOrg || '',
+          representative: contract.representative || contract.daiDien || contract.companyRepresentative || '',
+          position: contract.position || contract.chucVu || contract.companyPosition || '',
+          khachHangLa: contract.khachHangLa || '',
         }));
 
         setContracts(contractsList);
@@ -405,8 +482,8 @@ export default function QuanLyKhachHangPage() {
         // Filter by actual employee name
         filtered = allCustomers.filter((customer) => {
           const customerTVBH = customer.tvbh || "";
-          return customerTVBH === actualEmployeeName || 
-                 customerTVBH.toLowerCase() === actualEmployeeName.toLowerCase();
+          return customerTVBH === actualEmployeeName ||
+            customerTVBH.toLowerCase() === actualEmployeeName.toLowerCase();
         });
       } else {
         // Employee name not found, show empty
@@ -447,13 +524,17 @@ export default function QuanLyKhachHangPage() {
 
   // Apply search filter
   useEffect(() => {
+    const customersByType = customerTypeFilter
+      ? customers.filter((customer) => (customer.khachHangLa || '').toLowerCase() === customerTypeFilter.toLowerCase())
+      : customers;
+
     if (!searchText.trim()) {
-      setFilteredCustomers(customers);
+      setFilteredCustomers(customersByType);
       return;
     }
 
     const searchLower = searchText.toLowerCase();
-    const filtered = customers.filter((customer) => {
+    const filtered = customersByType.filter((customer) => {
       return Object.values(customer).some((val) => {
         if (val === null || val === undefined) return false;
         if (typeof val === 'object') return false;
@@ -462,7 +543,7 @@ export default function QuanLyKhachHangPage() {
     });
 
     setFilteredCustomers(filtered);
-  }, [searchText, customers]);
+  }, [searchText, customers, customerTypeFilter]);
 
   // Handle contract selection
   const handleContractSelect = (contractId) => {
@@ -470,35 +551,68 @@ export default function QuanLyKhachHangPage() {
     if (selectedContract) {
       const province = extractProvince(selectedContract.address, selectedContract.showroom);
       const colorName = getColorName(selectedContract.ngoaiThat, true);
+      const interiorColorName = getColorName(selectedContract.noiThat, false);
+      const hasTaxCode = Boolean(selectedContract.taxCode || selectedContract.MSDN || selectedContract.taxCodeOrg);
+      const inferredType = selectedContract.khachHangLa || (hasTaxCode ? 'Công ty' : 'Cá nhân');
 
-      setFormData({
-        ...formData,
-        selectedContractId: contractId,
-        tenKhachHang: selectedContract.customerName || '',
-        soDienThoai: selectedContract.phone || '',
-        tinhThanh: province,
-        dongXe: selectedContract.dongXe || '',
-        phienBan: selectedContract.phienBan || '',
-        mauSac: colorName,
-        thanhToan: selectedContract.thanhToan || '',
-        tvbh: selectedContract.tvbh || '',
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          selectedContractId: contractId,
+          tenKhachHang: selectedContract.customerName || '',
+          soDienThoai: selectedContract.phone || '',
+          tinhThanh: province,
+          dongXe: selectedContract.dongXe || '',
+          phienBan: selectedContract.phienBan || '',
+          mauSac: colorName,
+          noiThat: interiorColorName,
+          thanhToan: selectedContract.thanhToan || '',
+          tvbh: selectedContract.tvbh || '',
+          khachHangLa: inferredType,
+        };
+
+        if (inferredType === 'Công ty') {
+          updated.msdn = selectedContract.taxCode || selectedContract.MSDN || selectedContract.taxCodeOrg || prev.msdn || '';
+          updated.daiDien = selectedContract.representative || prev.daiDien || '';
+          updated.chucVu = selectedContract.position || prev.chucVu || '';
+        } else {
+          updated.msdn = '';
+          updated.daiDien = '';
+          updated.chucVu = '';
+          updated.giayUyQuyen = '';
+          updated.giayUyQuyenNgay = '';
+        }
+
+        return updated;
       });
     }
   };
 
   // Handle form input change
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+
+      if (field === 'khachHangLa' && value !== 'Công ty') {
+        updated.msdn = '';
+        updated.daiDien = '';
+        updated.chucVu = '';
+        updated.giayUyQuyen = '';
+        updated.giayUyQuyenNgay = '';
+      }
+
+      return updated;
+    });
   };
 
   // Open add modal
   const openAddModal = () => {
     // Auto-get TVBH from userEmail
     const tvbh = getTVBHFromUserEmail();
-    
+
     setFormData({
       ngay: new Date().toISOString().split('T')[0],
       tenKhachHang: '',
@@ -508,6 +622,7 @@ export default function QuanLyKhachHangPage() {
       dongXe: '',
       phienBan: '',
       mauSac: '',
+      noiThat: '',
       nhuCau: '',
       thanhToan: '',
       nguon: 'Hợp đồng',
@@ -516,6 +631,11 @@ export default function QuanLyKhachHangPage() {
       noiDung: '',
       selectedContractId: '',
       tvbh: tvbh,
+      msdn: '',
+      daiDien: '',
+      chucVu: '',
+      giayUyQuyen: '',
+      giayUyQuyenNgay: '',
     });
     setIsAddModalOpen(true);
   };
@@ -532,6 +652,7 @@ export default function QuanLyKhachHangPage() {
       dongXe: customer.dongXe || '',
       phienBan: customer.phienBan || '',
       mauSac: customer.mauSac || '',
+      noiThat: customer.noiThat || '',
       nhuCau: customer.nhuCau || '',
       thanhToan: customer.thanhToan || '',
       nguon: customer.nguon || 'Hợp đồng',
@@ -540,6 +661,11 @@ export default function QuanLyKhachHangPage() {
       noiDung: customer.noiDung || '',
       selectedContractId: customer.selectedContractId || '',
       tvbh: customer.tvbh || '',
+      msdn: customer.msdn || '',
+      daiDien: customer.daiDien || '',
+      chucVu: customer.chucVu || '',
+      giayUyQuyen: customer.giayUyQuyen || '',
+      giayUyQuyenNgay: normalizeDateInputValue(customer.giayUyQuyenNgay || ''),
     });
     setIsEditModalOpen(true);
   };
@@ -556,6 +682,7 @@ export default function QuanLyKhachHangPage() {
       dongXe: '',
       phienBan: '',
       mauSac: '',
+      noiThat: '',
       nhuCau: '',
       thanhToan: '',
       nguon: 'Hợp đồng',
@@ -564,6 +691,11 @@ export default function QuanLyKhachHangPage() {
       noiDung: '',
       selectedContractId: '',
       tvbh: '',
+      msdn: '',
+      daiDien: '',
+      chucVu: '',
+      giayUyQuyen: '',
+      giayUyQuyenNgay: '',
     });
   };
 
@@ -580,6 +712,7 @@ export default function QuanLyKhachHangPage() {
     }
 
     try {
+      const isCompany = formData.khachHangLa === 'Công ty';
       const customerData = {
         ngay: formData.ngay,
         tenKhachHang: formData.tenKhachHang,
@@ -589,6 +722,7 @@ export default function QuanLyKhachHangPage() {
         dongXe: formData.dongXe,
         phienBan: formData.phienBan,
         mauSac: formData.mauSac,
+        noiThat: formData.noiThat,
         nhuCau: formData.nhuCau || '',
         thanhToan: formData.thanhToan,
         nguon: formData.nguon || 'Hợp đồng',
@@ -598,6 +732,20 @@ export default function QuanLyKhachHangPage() {
         selectedContractId: formData.selectedContractId || '',
         tvbh: formData.tvbh || '',
       };
+
+      if (isCompany) {
+        customerData.msdn = formData.msdn || '';
+        customerData.daiDien = formData.daiDien || '';
+        customerData.chucVu = formData.chucVu || '';
+        customerData.giayUyQuyen = formData.giayUyQuyen || '';
+        customerData.giayUyQuyenNgay = formData.giayUyQuyenNgay || '';
+      } else {
+        customerData.msdn = '';
+        customerData.daiDien = '';
+        customerData.chucVu = '';
+        customerData.giayUyQuyen = '';
+        customerData.giayUyQuyenNgay = '';
+      }
 
       if (isEditModalOpen && editingCustomer) {
         // Update existing customer
@@ -670,11 +818,11 @@ export default function QuanLyKhachHangPage() {
     if (!dateStr) return '';
     // If already in dd/mm/yyyy format, return as is
     if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) return dateStr;
-    
+
     // Try to parse YYYY-MM-DD format
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
-    
+
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
@@ -684,10 +832,10 @@ export default function QuanLyKhachHangPage() {
   // Helper function to convert dd/mm/yyyy to YYYY-MM-DD
   const parseDateFromDDMMYYYY = (dateStr) => {
     if (!dateStr) return '';
-    
+
     // If already in YYYY-MM-DD format, return as is
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-    
+
     // Try to parse dd/mm/yyyy format
     const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (match) {
@@ -696,7 +844,7 @@ export default function QuanLyKhachHangPage() {
       const year = match[3];
       return `${year}-${month}-${day}`;
     }
-    
+
     // Try to parse other formats (MM-DD, etc.)
     const datePattern = /^\d{1,2}[-/]\d{1,2}$/;
     if (datePattern.test(dateStr)) {
@@ -704,38 +852,38 @@ export default function QuanLyKhachHangPage() {
       const currentYear = new Date().getFullYear();
       return `${currentYear}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
     }
-    
+
     return dateStr;
   };
 
   // Parse work history from content string
   const parseWorkHistory = (content) => {
     if (!content || !content.trim()) return [];
-    
+
     const entries = [];
     const lines = content.split('\n').filter(line => line.trim());
-    
+
     lines.forEach((line) => {
       // Match pattern: "Lần x: Ngày - Nội dung"
       // First extract the "Lần x:" part
       const lanMatch = line.match(/Lần\s*(\d+):\s*(.+)/);
       if (!lanMatch) return;
-      
+
       const lan = parseInt(lanMatch[1]);
       const rest = lanMatch[2].trim();
-      
+
       let ngay = '';
       let noiDung = '';
-      
+
       // Try to split by " - " (space-dash-space) from the end
       // This handles cases like "11-19 - ABC" where date has dash
       const lastDashIndex = rest.lastIndexOf(' - ');
-      
+
       if (lastDashIndex > 0) {
         // Found separator " - "
         ngay = rest.substring(0, lastDashIndex).trim();
         noiDung = rest.substring(lastDashIndex + 3).trim();
-        
+
         // If ngay is empty or doesn't look like a date, check if date is in noiDung
         if (!ngay || (!/^\d/.test(ngay))) {
           const contentDateMatch = noiDung.match(/^(\d{1,2}[-/]\d{1,2}(?:[-/]\d{1,4})?)\s*-\s*(.+)/);
@@ -762,7 +910,7 @@ export default function QuanLyKhachHangPage() {
           }
         }
       }
-      
+
       // If we still don't have a date but have content with date pattern, extract it
       if (!ngay && noiDung) {
         const contentDateMatch = noiDung.match(/^(\d{1,2}[-/]\d{1,2}(?:[-/]\d{1,4})?)\s*-\s*(.+)/);
@@ -771,9 +919,9 @@ export default function QuanLyKhachHangPage() {
           noiDung = contentDateMatch[2].trim();
         }
       }
-      
+
       if (ngay || noiDung) {
-        
+
         // Format date to dd/mm/yyyy for display
         if (ngay) {
           // If already in dd/mm/yyyy format, keep it
@@ -823,7 +971,7 @@ export default function QuanLyKhachHangPage() {
           const year = today.getFullYear();
           ngay = `${day}/${month}/${year}`;
         }
-        
+
         entries.push({
           lan: lan,
           ngay: ngay,
@@ -831,7 +979,7 @@ export default function QuanLyKhachHangPage() {
         });
       }
     });
-    
+
     return entries;
   };
 
@@ -851,7 +999,7 @@ export default function QuanLyKhachHangPage() {
   const openWorkHistoryModal = (customer) => {
     setWorkHistoryCustomer(customer);
     const existingEntries = parseWorkHistory(customer.noiDung || '');
-    
+
     if (existingEntries.length > 0) {
       // Dates are already in dd/mm/yyyy format from parseWorkHistory
       setWorkHistoryEntries(existingEntries);
@@ -863,7 +1011,7 @@ export default function QuanLyKhachHangPage() {
       const year = today.getFullYear();
       setWorkHistoryEntries([{ lan: 1, ngay: `${day}/${month}/${year}`, noiDung: '' }]);
     }
-    
+
     setIsWorkHistoryModalOpen(true);
   };
 
@@ -876,8 +1024,8 @@ export default function QuanLyKhachHangPage() {
 
   // Add new work history entry
   const addWorkHistoryEntry = () => {
-    const maxLan = workHistoryEntries.length > 0 
-      ? Math.max(...workHistoryEntries.map(e => e.lan)) 
+    const maxLan = workHistoryEntries.length > 0
+      ? Math.max(...workHistoryEntries.map(e => e.lan))
       : 0;
     // Format today's date as dd/mm/yyyy
     const today = new Date();
@@ -913,22 +1061,22 @@ export default function QuanLyKhachHangPage() {
     if (!dateStr) return false;
     const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (!match) return false;
-    
+
     const day = parseInt(match[1], 10);
     const month = parseInt(match[2], 10);
     const year = parseInt(match[3], 10);
-    
+
     // Basic validation
     if (month < 1 || month > 12) return false;
     if (day < 1 || day > 31) return false;
     if (year < 1900 || year > 2100) return false;
-    
+
     // Check if date is valid (e.g., not 31/02)
     const date = new Date(year, month - 1, day);
     if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -987,13 +1135,13 @@ export default function QuanLyKhachHangPage() {
       await update(customerRef, { [field]: value });
 
       // Update allCustomers (permission filter will be applied in separate useEffect)
-      const updatedAllCustomers = allCustomers.map(c => 
-        c.firebaseKey === customer.firebaseKey 
+      const updatedAllCustomers = allCustomers.map(c =>
+        c.firebaseKey === customer.firebaseKey
           ? { ...c, [field]: value }
           : c
       );
       setAllCustomers(updatedAllCustomers);
-      
+
       setOpenDropdown(null);
       toast.success('Cập nhật thành công!');
     } catch (err) {
@@ -1005,12 +1153,12 @@ export default function QuanLyKhachHangPage() {
   // Send notification to employee
   const sendNotificationToEmployee = async (employeeEmail, customerName, customerPhone, tvbh) => {
     if (!employeeEmail) return;
-    
+
     try {
       // Normalize email for Firebase key (replace . and @ with safe characters)
       const normalizedEmail = employeeEmail.replace(/\./g, '_').replace(/@/g, '_at_');
       const notificationsRef = ref(database, `notifications/${normalizedEmail}`);
-      
+
       const notification = {
         title: "Khách hàng mới được phân chia",
         message: `Bạn đã được phân chia khách hàng: ${customerName}${customerPhone ? ` (${customerPhone})` : ''}`,
@@ -1021,7 +1169,7 @@ export default function QuanLyKhachHangPage() {
         customerPhone: customerPhone,
         tvbh: tvbh,
       };
-      
+
       await push(notificationsRef, notification);
     } catch (error) {
       console.error("Error sending notification:", error);
@@ -1032,17 +1180,17 @@ export default function QuanLyKhachHangPage() {
   // Get employee email from TVBH
   const getEmployeeEmailByTVBH = async (tvbh) => {
     if (!tvbh) return null;
-    
+
     try {
       const employeesRef = ref(database, 'employees');
       const snapshot = await get(employeesRef);
-      
+
       if (snapshot.exists()) {
         const data = snapshot.val();
         const employee = Object.values(data).find(
           (emp) => (emp.TVBH || emp['TVBH'] || '').trim() === tvbh.trim()
         );
-        
+
         if (employee) {
           return employee.mail || employee.Mail || employee.email || null;
         }
@@ -1050,7 +1198,7 @@ export default function QuanLyKhachHangPage() {
     } catch (error) {
       console.error("Error getting employee email:", error);
     }
-    
+
     return null;
   };
 
@@ -1061,13 +1209,13 @@ export default function QuanLyKhachHangPage() {
       await update(customerRef, { tvbh: tvbh });
 
       // Update allCustomers (permission filter will be applied in separate useEffect)
-      const updatedAllCustomers = allCustomers.map(c => 
-        c.firebaseKey === customer.firebaseKey 
+      const updatedAllCustomers = allCustomers.map(c =>
+        c.firebaseKey === customer.firebaseKey
           ? { ...c, tvbh: tvbh }
           : c
       );
       setAllCustomers(updatedAllCustomers);
-      
+
       // Send notification to employee if TVBH is assigned
       if (tvbh && tvbh.trim() !== '') {
         const employeeEmail = await getEmployeeEmailByTVBH(tvbh);
@@ -1080,7 +1228,7 @@ export default function QuanLyKhachHangPage() {
           );
         }
       }
-      
+
       setOpenDropdown(null);
       toast.success(`Đã phân chia khách hàng cho ${tvbh || 'chưa gán'}!`);
     } catch (err) {
@@ -1093,7 +1241,7 @@ export default function QuanLyKhachHangPage() {
   const calculateDropdownPosition = (dropdownKey) => {
     const container = document.querySelector(`[data-dropdown-key="${dropdownKey}"]`);
     if (!container) return { side: 'bottom', left: 0, top: 0 };
-    
+
     const rect = container.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
@@ -1101,17 +1249,17 @@ export default function QuanLyKhachHangPage() {
     const spaceAbove = rect.top;
     const estimatedDropdownHeight = 400; // Approximate height of dropdown with all options
     const estimatedDropdownWidth = 180; // Approximate width of dropdown
-    
+
     let side = 'bottom';
     let top = rect.bottom + 8; // 8px = mt-2
     let left = rect.left;
-    
+
     // If not enough space below but enough space above, show on top
     if (spaceBelow < estimatedDropdownHeight && spaceAbove > estimatedDropdownHeight) {
       side = 'top';
       top = rect.top - estimatedDropdownHeight - 8; // 8px = mb-2
     }
-    
+
     // Adjust horizontal position if dropdown would overflow
     if (left + estimatedDropdownWidth > viewportWidth) {
       left = viewportWidth - estimatedDropdownWidth - 10; // 10px padding from edge
@@ -1119,7 +1267,7 @@ export default function QuanLyKhachHangPage() {
     if (left < 10) {
       left = 10; // 10px padding from edge
     }
-    
+
     return { side, left, top };
   };
 
@@ -1137,7 +1285,7 @@ export default function QuanLyKhachHangPage() {
 
       // Initial calculation
       setTimeout(updatePosition, 0);
-      
+
       // Recalculate after a short delay to get actual dropdown height
       setTimeout(() => {
         const dropdownElement = document.querySelector(`[data-dropdown-menu="${openDropdown}"]`);
@@ -1148,16 +1296,16 @@ export default function QuanLyKhachHangPage() {
           const viewportHeight = window.innerHeight;
           const spaceBelow = viewportHeight - rect.bottom;
           const spaceAbove = rect.top;
-          
+
           let side = 'bottom';
           let top = rect.bottom + 8;
           let left = rect.left;
-          
+
           if (spaceBelow < actualHeight && spaceAbove > actualHeight) {
             side = 'top';
             top = rect.top - actualHeight - 8;
           }
-          
+
           const estimatedDropdownWidth = 180;
           const viewportWidth = window.innerWidth;
           if (left + estimatedDropdownWidth > viewportWidth) {
@@ -1166,7 +1314,7 @@ export default function QuanLyKhachHangPage() {
           if (left < 10) {
             left = 10;
           }
-          
+
           setDropdownPosition(prev => ({
             ...prev,
             [openDropdown]: { side, left, top }
@@ -1295,7 +1443,7 @@ export default function QuanLyKhachHangPage() {
                     Phiên Bản
                   </th>
                   <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400">
-                    Màu Sắc
+                    Ngoại Thất
                   </th>
                   <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400">
                     Nhu Cầu
@@ -1322,10 +1470,10 @@ export default function QuanLyKhachHangPage() {
               </thead>
               <tbody className="bg-neutral-white divide-y divide-secondary-100 relative" style={{ isolation: 'isolate' }}>
                 {filteredCustomers.map((customer, index) => (
-                  <tr 
-                    key={customer.firebaseKey} 
+                  <tr
+                    key={customer.firebaseKey}
                     className="hover:bg-secondary-50"
-                    style={{ 
+                    style={{
                       zIndex: (openDropdown === `mucDo-${customer.firebaseKey}` || openDropdown === `tinhTrang-${customer.firebaseKey}` || openDropdown === `tvbh-${customer.firebaseKey}`) ? 9999 : 'auto',
                       position: 'relative'
                     }}
@@ -1344,8 +1492,8 @@ export default function QuanLyKhachHangPage() {
                     </td>
                     <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400 relative" style={{ overflow: 'visible', zIndex: openDropdown === `tvbh-${customer.firebaseKey}` ? 9999 : 'auto' }}>
                       {userRole === 'admin' ? (
-                        <div 
-                          className="dropdown-container relative inline-block w-full" 
+                        <div
+                          className="dropdown-container relative inline-block w-full"
                           style={{ zIndex: openDropdown === `tvbh-${customer.firebaseKey}` ? 9999 : 'auto' }}
                           data-dropdown-key={`tvbh-${customer.firebaseKey}`}
                         >
@@ -1361,10 +1509,10 @@ export default function QuanLyKhachHangPage() {
                             <ChevronDown className="w-3 h-3 flex-shrink-0" />
                           </button>
                           {openDropdown === `tvbh-${customer.firebaseKey}` && dropdownPosition[`tvbh-${customer.firebaseKey}`] && (
-                            <div 
+                            <div
                               className="fixed bg-white border overflow-y-auto max-h-[300px] border-gray-300 rounded-2xl shadow-xl p-2 z-[9999] flex flex-col gap-1 min-w-[180px]"
                               data-dropdown-menu={`tvbh-${customer.firebaseKey}`}
-                              style={{ 
+                              style={{
                                 position: 'fixed',
                                 left: `${dropdownPosition[`tvbh-${customer.firebaseKey}`].left}px`,
                                 top: `${dropdownPosition[`tvbh-${customer.firebaseKey}`].top}px`,
@@ -1376,11 +1524,10 @@ export default function QuanLyKhachHangPage() {
                                   e.stopPropagation();
                                   updateCustomerTVBH(customer, '');
                                 }}
-                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                                  !customer.tvbh 
-                                    ? 'bg-gray-200 text-gray-800 ring-2 ring-gray-300' 
-                                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                                }`}
+                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${!customer.tvbh
+                                  ? 'bg-gray-200 text-gray-800 ring-2 ring-gray-300'
+                                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                  }`}
                               >
                                 Chưa phân chia
                               </button>
@@ -1391,11 +1538,10 @@ export default function QuanLyKhachHangPage() {
                                     e.stopPropagation();
                                     updateCustomerTVBH(customer, employee.TVBH);
                                   }}
-                                  className={`inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                                    customer.tvbh === employee.TVBH 
-                                      ? 'bg-blue-200 text-blue-900 ring-2 ring-blue-300' 
-                                      : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                                  }`}
+                                  className={`inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${customer.tvbh === employee.TVBH
+                                    ? 'bg-blue-200 text-blue-900 ring-2 ring-blue-300'
+                                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                    }`}
                                 >
                                   {employee.TVBH}
                                 </button>
@@ -1431,8 +1577,8 @@ export default function QuanLyKhachHangPage() {
                       {customer.nguon || '-'}
                     </td>
                     <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400 relative" style={{ overflow: 'visible', zIndex: openDropdown === `mucDo-${customer.firebaseKey}` ? 9999 : 'auto' }}>
-                      <div 
-                        className="dropdown-container relative inline-block" 
+                      <div
+                        className="dropdown-container relative inline-block"
                         style={{ zIndex: openDropdown === `mucDo-${customer.firebaseKey}` ? 9999 : 'auto' }}
                         data-dropdown-key={`mucDo-${customer.firebaseKey}`}
                       >
@@ -1441,20 +1587,19 @@ export default function QuanLyKhachHangPage() {
                             e.stopPropagation();
                             setOpenDropdown(openDropdown === `mucDo-${customer.firebaseKey}` ? null : `mucDo-${customer.firebaseKey}`);
                           }}
-                          className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-colors whitespace-nowrap ${
-                            customer.mucDo 
-                              ? getMucDoColorClasses(customer.mucDo, false)
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                          }`}
+                          className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-colors whitespace-nowrap ${customer.mucDo
+                            ? getMucDoColorClasses(customer.mucDo, false)
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            }`}
                         >
                           <span className="max-w-[60px] sm:max-w-[80px] truncate">{customer.mucDo || '-'}</span>
                           <ChevronDown className="w-3 h-3 flex-shrink-0" />
                         </button>
                         {openDropdown === `mucDo-${customer.firebaseKey}` && dropdownPosition[`mucDo-${customer.firebaseKey}`] && (
-                          <div 
+                          <div
                             className="fixed bg-white border overflow-hidden border-gray-300 rounded-2xl shadow-xl p-2 z-[9999] flex flex-col gap-1"
                             data-dropdown-menu={`mucDo-${customer.firebaseKey}`}
-                            style={{ 
+                            style={{
                               position: 'fixed',
                               left: `${dropdownPosition[`mucDo-${customer.firebaseKey}`].left}px`,
                               top: `${dropdownPosition[`mucDo-${customer.firebaseKey}`].top}px`,
@@ -1468,9 +1613,8 @@ export default function QuanLyKhachHangPage() {
                                   e.stopPropagation();
                                   updateCustomerField(customer, 'mucDo', option);
                                 }}
-                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                                  getMucDoColorClasses(option, customer.mucDo === option)
-                                }`}
+                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${getMucDoColorClasses(option, customer.mucDo === option)
+                                  }`}
                               >
                                 {option}
                               </button>
@@ -1480,8 +1624,8 @@ export default function QuanLyKhachHangPage() {
                       </div>
                     </td>
                     <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400 relative" style={{ overflow: 'visible', zIndex: openDropdown === `tinhTrang-${customer.firebaseKey}` ? 9999 : 'auto' }}>
-                      <div 
-                        className="dropdown-container relative inline-block" 
+                      <div
+                        className="dropdown-container relative inline-block"
                         style={{ zIndex: openDropdown === `tinhTrang-${customer.firebaseKey}` ? 9999 : 'auto' }}
                         data-dropdown-key={`tinhTrang-${customer.firebaseKey}`}
                       >
@@ -1496,10 +1640,10 @@ export default function QuanLyKhachHangPage() {
                           <ChevronDown className="w-3 h-3 flex-shrink-0" />
                         </button>
                         {openDropdown === `tinhTrang-${customer.firebaseKey}` && dropdownPosition[`tinhTrang-${customer.firebaseKey}`] && (
-                          <div 
+                          <div
                             className="fixed bg-white border border-gray-300 rounded-2xl shadow-xl p-2 z-[9999] flex flex-col gap-1 min-w-[180px]"
                             data-dropdown-menu={`tinhTrang-${customer.firebaseKey}`}
-                            style={{ 
+                            style={{
                               position: 'fixed',
                               left: `${dropdownPosition[`tinhTrang-${customer.firebaseKey}`].left}px`,
                               top: `${dropdownPosition[`tinhTrang-${customer.firebaseKey}`].top}px`,
@@ -1513,11 +1657,10 @@ export default function QuanLyKhachHangPage() {
                                   e.stopPropagation();
                                   updateCustomerField(customer, 'tinhTrang', option);
                                 }}
-                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                                  customer.tinhTrang === option 
-                                    ? 'bg-green-100 text-green-800 ring-2 ring-green-300' 
-                                    : 'bg-green-50 text-green-700 hover:bg-green-100'
-                                }`}
+                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${customer.tinhTrang === option
+                                  ? 'bg-green-100 text-green-800 ring-2 ring-green-300'
+                                  : 'bg-green-50 text-green-700 hover:bg-green-100'
+                                  }`}
                               >
                                 {option}
                               </button>
@@ -1654,6 +1797,66 @@ export default function QuanLyKhachHangPage() {
                   </select>
                 </div>
 
+                {formData.khachHangLa === 'Công ty' && (
+                  <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        MSDN / Mã số thuế
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.msdn}
+                        onChange={(e) => handleInputChange('msdn', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Người đại diện
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.daiDien}
+                        onChange={(e) => handleInputChange('daiDien', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Chức vụ
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.chucVu}
+                        onChange={(e) => handleInputChange('chucVu', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Số giấy ủy quyền
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.giayUyQuyen}
+                        onChange={(e) => handleInputChange('giayUyQuyen', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Ngày giấy ủy quyền
+                      </label>
+                      <input
+                        type="date"
+                        value={normalizeDateInputValue(formData.giayUyQuyenNgay)}
+                        onChange={(e) => handleInputChange('giayUyQuyenNgay', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Tỉnh Thành
@@ -1729,23 +1932,48 @@ export default function QuanLyKhachHangPage() {
 
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Màu Sắc
+                    Ngoại Thất
                   </label>
                   <select
                     value={formData.mauSac}
                     onChange={(e) => handleInputChange('mauSac', e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!formData.dongXe}
                   >
-                    <option value="">-- Chọn màu sắc --</option>
-                    {getColors().map((color) => (
+                    <option value="">-- Chọn ngoại thất --</option>
+                    {getColors(formData.dongXe, formData.phienBan).map((color) => (
                       <option key={color} value={color}>
                         {color}
                       </option>
                     ))}
                     {/* Show current value if it doesn't match any option (for editing existing customers or contract selection) */}
-                    {formData.mauSac && !getColors().includes(formData.mauSac) && (
+                    {formData.mauSac && !getColors(formData.dongXe, formData.phienBan).includes(formData.mauSac) && (
                       <option value={formData.mauSac}>
                         {formData.mauSac} (giá trị hiện tại)
+                      </option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Nội Thất
+                  </label>
+                  <select
+                    value={formData.noiThat}
+                    onChange={(e) => handleInputChange('noiThat', e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!formData.dongXe}
+                  >
+                    <option value="">-- Chọn nội thất --</option>
+                    {getInteriorColors(formData.dongXe, formData.phienBan).map((color) => (
+                      <option key={color} value={color}>
+                        {color}
+                      </option>
+                    ))}
+                    {formData.noiThat && !getInteriorColors(formData.dongXe, formData.phienBan).includes(formData.noiThat) && (
+                      <option value={formData.noiThat}>
+                        {formData.noiThat} (giá trị hiện tại)
                       </option>
                     )}
                   </select>
@@ -1965,6 +2193,66 @@ export default function QuanLyKhachHangPage() {
                   </select>
                 </div>
 
+                {formData.khachHangLa === 'Công ty' && (
+                  <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        MSDN / Mã số thuế
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.msdn}
+                        onChange={(e) => handleInputChange('msdn', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Người đại diện
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.daiDien}
+                        onChange={(e) => handleInputChange('daiDien', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Chức vụ
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.chucVu}
+                        onChange={(e) => handleInputChange('chucVu', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Số giấy ủy quyền
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.giayUyQuyen}
+                        onChange={(e) => handleInputChange('giayUyQuyen', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                        Ngày giấy ủy quyền
+                      </label>
+                      <input
+                        type="date"
+                        value={normalizeDateInputValue(formData.giayUyQuyenNgay)}
+                        onChange={(e) => handleInputChange('giayUyQuyenNgay', e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Tỉnh Thành
@@ -2040,23 +2328,48 @@ export default function QuanLyKhachHangPage() {
 
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Màu Sắc
+                    Ngoại Thất
                   </label>
                   <select
                     value={formData.mauSac}
                     onChange={(e) => handleInputChange('mauSac', e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!formData.dongXe}
                   >
-                    <option value="">-- Chọn màu sắc --</option>
-                    {getColors().map((color) => (
+                    <option value="">-- Chọn ngoại thất --</option>
+                    {getColors(formData.dongXe, formData.phienBan).map((color) => (
                       <option key={color} value={color}>
                         {color}
                       </option>
                     ))}
                     {/* Show current value if it doesn't match any option (for editing existing customers or contract selection) */}
-                    {formData.mauSac && !getColors().includes(formData.mauSac) && (
+                    {formData.mauSac && !getColors(formData.dongXe, formData.phienBan).includes(formData.mauSac) && (
                       <option value={formData.mauSac}>
                         {formData.mauSac} (giá trị hiện tại)
+                      </option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Nội Thất
+                  </label>
+                  <select
+                    value={formData.noiThat}
+                    onChange={(e) => handleInputChange('noiThat', e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!formData.dongXe}
+                  >
+                    <option value="">-- Chọn nội thất --</option>
+                    {getInteriorColors(formData.dongXe, formData.phienBan).map((color) => (
+                      <option key={color} value={color}>
+                        {color}
+                      </option>
+                    ))}
+                    {formData.noiThat && !getInteriorColors(formData.dongXe, formData.phienBan).includes(formData.noiThat) && (
+                      <option value={formData.noiThat}>
+                        {formData.noiThat} (giá trị hiện tại)
                       </option>
                     )}
                   </select>
@@ -2215,7 +2528,7 @@ export default function QuanLyKhachHangPage() {
                       </button>
                     )}
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                       Ngày <span className="text-red-500">*</span>

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import VinfastLogo from "../assets/vinfast.svg";
 
 function Home() {
   const [currentDate, setCurrentDate] = useState("");
+  const [quotes, setQuotes] = useState([]);
 
   useEffect(() => {
     const today = new Date();
@@ -12,7 +14,30 @@ function Home() {
       day: "numeric",
     });
     setCurrentDate(formattedDate);
+
+    // Load quotes from localStorage
+    loadQuotes();
   }, []);
+
+  const loadQuotes = () => {
+    const savedQuotes = JSON.parse(localStorage.getItem('homepageQuotes') || '[]');
+    setQuotes(savedQuotes);
+  };
+
+  const deleteQuote = (id) => {
+    const updatedQuotes = quotes.filter(q => q.id !== id);
+    setQuotes(updatedQuotes);
+    localStorage.setItem('homepageQuotes', JSON.stringify(updatedQuotes));
+  };
+
+  const formatCurrency = (value) => {
+    if (!value) return "0 ₫";
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   return (
     <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 min-h-screen bg-gradient-to-br from-slate-100 to-slate-200">
@@ -36,84 +61,86 @@ function Home() {
       {/* Models / Quick Quote Section */}
       <div className="bg-neutral-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
         <h2 className="text-xl sm:text-2xl font-bold text-secondary-900 mb-3 sm:mb-4">
-          Nhận báo giá nhanh cho các mẫu xe nổi bật
+          Báo giá các mẫu xe
         </h2>
-        <p className="text-sm sm:text-base text-secondary-600 mb-3 sm:mb-4">
-          Chọn mẫu xe, cấu hình và gói dịch vụ để nhận báo giá chi tiết, bao gồm chi
-          phí lăn bánh và các chương trình ưu đãi.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 mt-4 sm:mt-6">
-          <div className="bg-primary-50 p-4 sm:p-5 lg:p-6 rounded-lg border-l-4 border-primary-500">
-            <h3 className="text-base sm:text-lg font-semibold text-primary-700 mb-2">VF e34</h3>
-            <p className="text-xs sm:text-sm text-secondary-600">SUV điện đô thị, phù hợp di chuyển hàng ngày.</p>
-            <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-secondary-600">Từ 750.000.000 VNĐ</p>
+
+        {quotes.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm sm:text-base">Chưa có báo giá nào. Vui lòng tạo báo giá từ trang Calculator.</p>
           </div>
-          <div className="bg-primary-50 p-4 sm:p-5 lg:p-6 rounded-lg border-l-4 border-primary-500">
-            <h3 className="text-base sm:text-lg font-semibold text-primary-700 mb-2">VF 8</h3>
-            <p className="text-xs sm:text-sm text-secondary-600">SUV cỡ lớn, tầm hoạt động dài, tiện nghi cao cấp.</p>
-            <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-secondary-600">Từ 1.200.000.000 VNĐ</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    STT
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ảnh xe
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tên xe
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Giá gốc (gồm VAT)
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Giá XHĐ
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {quotes.map((quote, index) => (
+                  <tr key={quote.id} className="hover:bg-gray-50">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {index + 1}
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <img
+                        src={quote.carImageUrl}
+                        alt={`${quote.carModel} ${quote.carVersion}`}
+                        className="h-16 w-24 object-contain rounded"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                      <div className="font-semibold">{quote.carModel}</div>
+                      <div className="text-gray-500">{quote.carVersion}</div>
+                      <div className="text-gray-400 text-xs">{quote.exteriorColorName}</div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      {formatCurrency(quote.basePrice)}
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
+                      {formatCurrency(quote.totalCost)}
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => deleteQuote(quote.id)}
+                        className="text-red-600 hover:text-red-900 transition-colors"
+                        title="Xóa báo giá"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="bg-primary-50 p-4 sm:p-5 lg:p-6 rounded-lg border-l-4 border-primary-500 sm:col-span-2 lg:col-span-1">
-            <h3 className="text-base sm:text-lg font-semibold text-primary-700 mb-2">VF 9</h3>
-            <p className="text-xs sm:text-sm text-secondary-600">Flagship - công nghệ tiên tiến, trải nghiệm hạng sang.</p>
-            <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-secondary-600">Liên hệ để nhận báo giá</p>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Features Section */}
       <div className="bg-neutral-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8">
         <h2 className="text-xl sm:text-2xl font-bold text-secondary-900 mb-3 sm:mb-4">Dịch vụ & Ưu đãi</h2>
-        <ul className="space-y-2 sm:space-y-3">
-          <li className="flex items-start">
-            <span className="text-primary-700 text-lg sm:text-xl mr-2 sm:mr-3 flex-shrink-0 mt-0.5">✓</span>
-            <div className="text-sm sm:text-base">
-              <strong className="text-secondary-900">Bảo hành & Hậu mãi:</strong>
-              <span className="text-secondary-600"> 5 năm / 100.000 km cho xe điện.</span>
-            </div>
-          </li>
-          <li className="flex items-start">
-            <span className="text-primary-700 text-lg sm:text-xl mr-2 sm:mr-3 flex-shrink-0 mt-0.5">✓</span>
-            <div className="text-sm sm:text-base">
-              <strong className="text-secondary-900">Gói tài chính:</strong>
-              <span className="text-secondary-600"> Hỗ trợ vay ưu đãi cùng ngân hàng đối tác.</span>
-            </div>
-          </li>
-          <li className="flex items-start">
-            <span className="text-primary-700 text-lg sm:text-xl mr-2 sm:mr-3 flex-shrink-0 mt-0.5">✓</span>
-            <div className="text-sm sm:text-base">
-              <strong className="text-secondary-900">Lắp đặt & Giao xe:</strong>
-              <span className="text-secondary-600"> Dịch vụ giao xe tận nơi và đăng ký biển số.</span>
-            </div>
-          </li>
-          <li className="flex items-start">
-            <span className="text-primary-700 text-lg sm:text-xl mr-2 sm:mr-3 flex-shrink-0 mt-0.5">✓</span>
-            <div className="text-sm sm:text-base">
-              <strong className="text-secondary-900">Ưu đãi khách hàng thân thiết:</strong>
-              <span className="text-secondary-600"> Ưu đãi đặc biệt cho khách hàng doanh nghiệp và đại lý.</span>
-            </div>
-          </li>
-        </ul>
-      </div>
-
-      {/* CTA Section */}
-      <div className="mt-6 sm:mt-8 bg-gradient-to-r from-primary-500 to-accent-ocean rounded-lg shadow-lg p-4 sm:p-6 lg:p-8 text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-neutral-white mb-3 sm:mb-4">Nhận báo giá ngay</h2>
-        <p className="text-sm sm:text-base text-neutral-white mb-4 sm:mb-6">Chọn mẫu xe và cấu hình để nhận báo giá chi tiết trong 24h.</p>
-        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-          <a
-            href="/bang-gia"
-            className="inline-block bg-neutral-white text-primary-700 px-5 sm:px-6 lg:px-8 py-2.5 sm:py-3 rounded-lg font-semibold hover:brightness-95 transition shadow-md text-sm sm:text-base text-center"
-          >
-            � Xem bảng giá
-          </a>
-          <a
-            href="/lien-he"
-            className="inline-block bg-neutral-white text-primary-700 px-5 sm:px-6 lg:px-8 py-2.5 sm:py-3 rounded-lg font-semibold hover:brightness-95 transition shadow-md text-sm sm:text-base text-center"
-          >
-            ✉️ Liên hệ tư vấn
-          </a>
-        </div>
+        // ở đây
       </div>
     </div>
   );

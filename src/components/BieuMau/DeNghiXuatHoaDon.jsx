@@ -122,8 +122,9 @@ const DeNghiXuatHoaDon = () => {
   useEffect(() => {
     const loadData = async () => {
       let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let tvbhName = "";
 
-      // Nếu có firebaseKey, thử lấy showroom từ contracts
+      // Nếu có firebaseKey, thử lấy showroom và TVBH từ contracts
       if (location.state?.firebaseKey) {
         try {
           const contractId = location.state.firebaseKey;
@@ -134,10 +135,43 @@ const DeNghiXuatHoaDon = () => {
             if (contractData.showroom) {
               showroomName = contractData.showroom;
             }
+            if (contractData.tvbh) {
+              tvbhName = contractData.tvbh;
+            }
           }
         } catch (err) {
           console.error("Error loading showroom from contracts:", err);
         }
+      }
+
+      // Nếu có firebaseKey, thử từ exportedContracts
+      if (location.state?.firebaseKey) {
+        try {
+          const contractRef = ref(
+            database,
+            `exportedContracts/${location.state.firebaseKey}`
+          );
+          const snapshot = await get(contractRef);
+          if (snapshot.exists()) {
+            const contractData = snapshot.val();
+            if (contractData.showroom) {
+              showroomName = contractData.showroom;
+            }
+            if (contractData.tvbh) {
+              tvbhName = contractData.tvbh;
+            }
+          }
+        } catch (err) {
+          console.error("Error loading from exportedContracts:", err);
+        }
+      }
+
+      // Set TVBH name
+      if (tvbhName) {
+        setNguoiDeNghi(tvbhName);
+      } else {
+        // Fallback to localStorage nếu không có TVBH
+        setNguoiDeNghi(localStorage.getItem("username") || "");
       }
 
       const branchInfo =
@@ -194,6 +228,11 @@ const DeNghiXuatHoaDon = () => {
         setNganHangSoTien(bankAmount || "");
         setNganHangTen(incoming.bank || incoming.nganHang || "");
         setNganHangChiNhanh(incoming.recipientInfo || "TT Thế Chấp Vùng 9");
+        
+        // Set TVBH from incoming data if available
+        if (incoming.tvbh) {
+          setNguoiDeNghi(incoming.tvbh);
+        }
       } else {
         // Default data
         setData({

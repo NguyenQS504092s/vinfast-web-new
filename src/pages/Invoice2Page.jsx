@@ -185,87 +185,87 @@ export default function Invoice2Page() {
           </tbody>
         </table>
 
-        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-300 text-xs">
+        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-900 text-xs">
           Thông tin sản phẩm
         </div>
         <table className="w-full border-collapse mb-0 text-sm bg-white">
           <tbody>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "33%" }}
               >
                 <strong>Dòng xe</strong>
               </td>
-              <td className="border border-gray-300 p-1">
+              <td className="border border-gray-900 p-1">
                 {invoiceData.carModel || "VF 3"}
               </td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "33%" }}
               >
                 <strong>Phiên bản</strong>
               </td>
-              <td className="border border-gray-300 p-1">
+              <td className="border border-gray-900 p-1">
                 {invoiceData.carVersion || "Base"}
               </td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "33%" }}
               >
                 <strong>Ngoại thất</strong>
               </td>
-              <td className="border border-gray-300 p-1">
+              <td className="border border-gray-900 p-1">
                 {getExteriorColorName()}
               </td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "33%" }}
               >
                 <strong>Nội thất</strong>
               </td>
-              <td className="border border-gray-300 p-1">
+              <td className="border border-gray-900 p-1">
                 {getInteriorColorName()}
               </td>
             </tr>
           </tbody>
         </table>
 
-        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-300 text-xs">
+        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-900 text-xs">
           Giá xe & Chương trình khuyến mãi
         </div>
         <table className="w-full border-collapse mb-0 text-sm bg-white">
           <tbody>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "50%" }}
               >
                 <strong>Giá Xe Đã Bao Gồm VAT</strong>
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 <strong>{formatCurrency(invoiceData.carBasePrice || 0)}</strong>
               </td>
             </tr>
             <tr>
-              <td className="border border-gray-300 p-1 bg-blue-50" colSpan="2">
+              <td className="border border-gray-900 p-1 bg-blue-50" colSpan="2">
                 <strong>Chương trình khuyến mãi</strong>
               </td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "50%" }}
               >
                 Giảm giá khuyến mãi cơ bản
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(
                   Math.max(
                     0,
@@ -277,53 +277,53 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "50%" }}
               >
                 Giảm giá hạng thành viên
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(invoiceData.vinClubDiscount || 0)}
               </td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "50%" }}
               >
                 Ưu đãi BHVC (Quy đổi 2 năm)
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(invoiceData.bhvc2Discount || 0)}
               </td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "50%" }}
               >
                 Hỗ trợ đổi xe xăng → điện
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(invoiceData.convertSupportDiscount || 0)}
               </td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "50%" }}
               >
                 Miễn Phí Màu Nâng Cao
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(invoiceData.premiumColorDiscount || 0)}
               </td>
             </tr>
             <tr>
-              <td className="border border-gray-300 p-1 bg-blue-50">
+              <td className="border border-gray-900 p-1 bg-blue-50">
                 <strong>Giá xuất hóa đơn</strong>
               </td>
-              <td className="border border-gray-300 p-1 text-right bg-blue-50">
+              <td className="border border-gray-900 p-1 text-right bg-blue-50">
                 <strong>
                   {formatCurrency(
                     invoiceData.priceFinalPayment || invoiceData.carTotal || 0
@@ -334,26 +334,26 @@ export default function Invoice2Page() {
           </tbody>
         </table>
 
-        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-300 text-xs">
+        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-900 text-xs">
           Chi phí lăn bánh
         </div>
         <table className="w-full border-collapse mb-0 text-sm bg-white">
           <tbody>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 1
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Lệ phí trước bạ
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "15%" }}
               >
                 {invoiceData.carModel && invoiceData.carModel.includes("VF")
@@ -361,13 +361,13 @@ export default function Invoice2Page() {
                   : "10%"}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
                 Miễn Phí
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "17%" }}
               >
                 Hóa đơn
@@ -375,29 +375,29 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 2
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Phí 01 năm BH Dân sự
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "15%" }}
               ></td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
                 {formatCurrency(invoiceData.liabilityInsurance || 0)}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "17%" }}
               >
                 Hóa đơn
@@ -405,31 +405,31 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 3
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Phí cấp biển số
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "15%" }}
               >
                 {getRegistrationLocationLabel()}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
                 {formatCurrency(invoiceData.plateFee || 0)}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "17%" }}
               >
                 Biên Lai
@@ -437,29 +437,29 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 4
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Phí kiểm định
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "15%" }}
               ></td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
                 {formatCurrency(invoiceData.inspectionFee || 0)}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "17%" }}
               >
                 Biên Lai
@@ -467,31 +467,31 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 5
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Phí bảo trì đường bộ
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "15%" }}
               >
                 {getCustomerTypeLabel()}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
                 {formatCurrency(invoiceData.roadFee || 0)}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "17%" }}
               >
                 Biên Lai
@@ -499,59 +499,59 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 6
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Phí dịch vụ
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "15%" }}
               ></td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
                 {formatCurrency(invoiceData.registrationFee || 0)}
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "17%" }}
               ></td>
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 7
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 BHVC bao gồm Pin
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "15%" }}
               >
                 {getBusinessTypeLabel()}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
                 {formatCurrency(invoiceData.bodyInsurance || 0)}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "17%" }}
               >
                 Hóa Đơn
@@ -560,32 +560,32 @@ export default function Invoice2Page() {
           </tbody>
         </table>
 
-        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-300 text-xs">
+        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-900 text-xs">
           Tổng chi phí lăn bánh
         </div>
         <table className="w-full border-collapse mb-0 text-sm bg-white">
           <tbody>
             <tr className="bg-blue-50">
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 <strong>STT</strong>
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 <strong>Hình thức</strong>
               </td>
               <td
-                className="border border-gray-300 p-1 text-center"
+                className="border border-gray-900 p-1 text-center"
                 style={{ width: "15%" }}
               >
                 <strong>%</strong>
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "37%" }}
               >
                 <strong>Số tiền</strong>
@@ -593,19 +593,19 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 1
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Ngân hàng
               </td>
               <td
-                className="border border-gray-300 p-1 text-center"
+                className="border border-gray-900 p-1 text-center"
                 style={{ width: "15%" }}
               >
                 {invoiceData.hasLoan && invoiceData.loanRatio
@@ -613,7 +613,7 @@ export default function Invoice2Page() {
                   : "0%"}
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "37%" }}
               >
                 {formatCurrency(invoiceData.loanAmount || 0)}
@@ -621,33 +621,33 @@ export default function Invoice2Page() {
             </tr>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "8%" }}
               >
                 2
               </td>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "40%" }}
               >
                 Đối Ứng
               </td>
               <td
-                className="border border-gray-300 p-1 text-center"
+                className="border border-gray-900 p-1 text-center"
                 style={{ width: "15%" }}
               ></td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "37%" }}
               >
                 {formatCurrency(invoiceData.downPayment || 0)}
               </td>
             </tr>
             <tr className="bg-blue-50">
-              <td className="border border-gray-300 p-1" colSpan="3">
+              <td className="border border-gray-900 p-1" colSpan="3">
                 <strong>Tổng</strong>
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 <strong>
                   {formatCurrency(invoiceData.totalOnRoadCost || 0)}
                 </strong>
@@ -656,65 +656,65 @@ export default function Invoice2Page() {
           </tbody>
         </table>
 
-        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-300 text-xs">
+        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-900 text-xs">
           Phương thức thanh toán
         </div>
         <table className="w-full border-collapse mb-0 text-sm bg-white">
           <tbody>
             <tr className="bg-blue-50">
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "25%" }}
               >
                 <strong>Hình thức</strong>
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "25%" }}
               >
                 <strong>Đặt cọc</strong>
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "25%" }}
               >
                 <strong>Lần 1: Xuất hóa đơn</strong>
               </td>
               <td
-                className="border border-gray-300 p-1 text-right"
+                className="border border-gray-900 p-1 text-right"
                 style={{ width: "25%" }}
               >
                 <strong>Lần 2: Đăng ký</strong>
               </td>
             </tr>
             <tr>
-              <td className="border border-gray-300 p-1">Ngân hàng</td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1">Ngân hàng</td>
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(deposit)}
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(payment1)}
               </td>
-              <td className="border border-gray-300 p-1 text-right">
+              <td className="border border-gray-900 p-1 text-right">
                 {formatCurrency(payment2)}
               </td>
             </tr>
           </tbody>
         </table>
 
-        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-300 text-xs">
+        <div className="bg-blue-50 text-blue-900 font-bold uppercase p-1 mt-3 mb-0 border border-gray-900 text-xs">
           Quà tặng
         </div>
         <table className="w-full border-collapse mb-0 text-sm bg-white">
           <tbody>
             <tr>
               <td
-                className="border border-gray-300 p-1"
+                className="border border-gray-900 p-1"
                 style={{ width: "33%" }}
               >
                 Áo trùm, bao tay lái, sáp thơm, bình chữa cháy
               </td>
-              <td className="border border-gray-300 p-1 text-right">Tặng</td>
+              <td className="border border-gray-900 p-1 text-right">Tặng</td>
             </tr>
           </tbody>
         </table>

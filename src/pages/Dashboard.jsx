@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ref, get } from "firebase/database";
 import { database } from "../firebase/config";
-import { Calendar, Users, Car, TrendingUp, UserPlus } from 'lucide-react';
+import { Calendar, Users, Car, TrendingUp, UserPlus, DollarSign, FileCheck, Ban, Flame, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 // Helper function to get current week or previous week dates
@@ -11,18 +11,27 @@ const getCurrentOrPreviousWeekDates = (option) => {
   const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   // Calculate days to Monday of current week
   const daysToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-  
+
   // Get Monday of current week
   const currentWeekMonday = new Date(today);
   currentWeekMonday.setDate(today.getDate() + daysToMonday);
   currentWeekMonday.setHours(0, 0, 0, 0);
-  
+
   if (option === "current") {
     // Current week: Monday to Sunday
     const endDate = new Date(currentWeekMonday);
     endDate.setDate(currentWeekMonday.getDate() + 6);
     endDate.setHours(23, 59, 59, 999);
     return { startDate: currentWeekMonday, endDate };
+
+    const formatCurrency = (value) => {
+      if (!value) return "0";
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      }).format(value);
+    };
   } else {
     // Previous week: Monday to Sunday (7 days before current week)
     const previousWeekMonday = new Date(currentWeekMonday);
@@ -59,7 +68,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployeeContracts, setSelectedEmployeeContracts] = useState([]);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState("");
-  
+
   // User permissions
   const [username, setUsername] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -69,10 +78,8 @@ export default function Dashboard() {
   const [employeesMap, setEmployeesMap] = useState({}); // Map TVBH -> department
   const [teamEmployeeNames, setTeamEmployeeNames] = useState([]); // List of employee names in team (for leader)
   const [employeesLoaded, setEmployeesLoaded] = useState(false); // Flag to know when employees data is loaded
-  
+
   const [reportData, setReportData] = useState({
-    byEmployee: [],
-    byModel: [],
     summary: {
       total: 0,
       signed: 0,
@@ -82,7 +89,17 @@ export default function Dashboard() {
       completed: 0,
       transferred: 0,
       newCustomers: 0,
+      revenue: 0,
+      conversionRate: 0,
+      hotCustomers: 0,
+      inProgress: 0,
+      totalCustomers: 0,
     },
+  });
+
+  const [summaryMatrix, setSummaryMatrix] = useState({
+    models: [],
+    rows: [],
   });
 
   // Load user info from localStorage first
@@ -91,7 +108,7 @@ export default function Dashboard() {
     const userEmailValue = localStorage.getItem("userEmail") || "";
     const userRoleValue = localStorage.getItem("userRole") || "user";
     const userDepartmentValue = localStorage.getItem("userDepartment") || "";
-    
+
     setUsername(usernameValue);
     setUserEmail(userEmailValue);
     setUserRole(userRoleValue);
@@ -102,7 +119,7 @@ export default function Dashboard() {
   useEffect(() => {
     const loadEmployeesData = async () => {
       setEmployeesLoaded(false);
-      
+
       if (!userEmail && !userRole) {
         setEmployeesLoaded(true);
         return;
@@ -140,7 +157,7 @@ export default function Dashboard() {
 
           if (employeeName) {
             employeesMapping[employeeName] = employeeDept;
-            
+
             // For leader: collect all employees in same department
             if (userRole === "leader" && userDepartment && employeeDept === userDepartment) {
               teamNames.push(employeeName);
@@ -149,7 +166,7 @@ export default function Dashboard() {
         });
 
         setEmployeesMap(employeesMapping);
-        
+
         if (userRole === "leader") {
           // Include current user in team if found
           if (foundEmployeeName && !teamNames.includes(foundEmployeeName)) {
@@ -160,7 +177,7 @@ export default function Dashboard() {
           // Admin can see all employees
           setTeamEmployeeNames(Object.keys(employeesMapping));
         }
-        
+
         setEmployeesLoaded(true);
       } catch (err) {
         toast.error("Lỗi khi tải dữ liệu nhân viên: " + err.message);
@@ -258,7 +275,7 @@ export default function Dashboard() {
     }
 
     let filteredContracts = allContracts;
-    
+
     if (userRole === "user") {
       // User: only see their own contracts (by TVBH matching actual employee name)
       // Use actualEmployeeName from employees collection (loaded via userEmail)
@@ -267,8 +284,8 @@ export default function Dashboard() {
           (contract) => {
             const contractTVBH = contract.TVBH || "";
             // Match exact name or try case-insensitive comparison
-            return contractTVBH === actualEmployeeName || 
-                   contractTVBH.toLowerCase() === actualEmployeeName.toLowerCase();
+            return contractTVBH === actualEmployeeName ||
+              contractTVBH.toLowerCase() === actualEmployeeName.toLowerCase();
           }
         );
       } else {
@@ -379,8 +396,8 @@ export default function Dashboard() {
       if (actualEmployeeName) {
         filteredCustomers = allCustomers.filter((customer) => {
           const customerTVBH = customer.TVBH || customer.tvbh || "";
-          return customerTVBH === actualEmployeeName || 
-                 customerTVBH.toLowerCase() === actualEmployeeName.toLowerCase();
+          return customerTVBH === actualEmployeeName ||
+            customerTVBH.toLowerCase() === actualEmployeeName.toLowerCase();
         });
       } else {
         // Employee name not found, show empty
@@ -411,10 +428,10 @@ export default function Dashboard() {
     contracts.forEach((contract) => {
       if (contract.TVBH && contract.TVBH !== "Không xác định") {
         // Additional permission check - only show employees user can see
-        if (userRole === "admin" || 
-            (userRole === "user" && contract.TVBH === username) ||
-            (userRole === "leader" && teamEmployeeNames.includes(contract.TVBH))) {
-        employees.add(contract.TVBH);
+        if (userRole === "admin" ||
+          (userRole === "user" && contract.TVBH === username) ||
+          (userRole === "leader" && teamEmployeeNames.includes(contract.TVBH))) {
+          employees.add(contract.TVBH);
         }
       }
     });
@@ -426,8 +443,6 @@ export default function Dashboard() {
     if (contracts.length === 0 && customers.length === 0) {
       // Reset report data if no data
       setReportData({
-        byEmployee: [],
-        byModel: [],
         summary: {
           total: 0,
           signed: 0,
@@ -437,8 +452,14 @@ export default function Dashboard() {
           completed: 0,
           transferred: 0,
           newCustomers: 0,
+          revenue: 0,
+          conversionRate: 0,
+          hotCustomers: 0,
+          inProgress: 0,
+          totalCustomers: 0,
         },
       });
+      setSummaryMatrix({ models: [], rows: [] });
       return;
     }
 
@@ -620,25 +641,25 @@ export default function Dashboard() {
     // We need to filter this by time range
     const baseNeedsAdviceCustomers = customers.filter((customer) => {
       const tinhTrang = customer.tinhTrang || "";
-      
+
       // Lấy tất cả khách hàng trừ "Không quan tâm" và "Không mua"
-      const needsAdvice = 
-        tinhTrang !== "Không quan tâm" && 
+      const needsAdvice =
+        tinhTrang !== "Không quan tâm" &&
         tinhTrang !== "Không mua";
-      
+
       return needsAdvice;
     });
 
     // Apply time filter
     const filteredNeedsAdvice = filterCustomersByTimeRange(baseNeedsAdviceCustomers);
-    
+
     // Sort by date (newest first)
     filteredNeedsAdvice.sort((a, b) => {
       const dateA = new Date(a.ngay || 0);
       const dateB = new Date(b.ngay || 0);
       return dateB - dateA;
     });
-    
+
     setNewCustomersNeedAdvice(filteredNeedsAdvice);
   }, [
     customers,
@@ -651,11 +672,9 @@ export default function Dashboard() {
     selectedQuarter,
     selectedYear,
   ]);
-
   const generateReports = (filteredContracts, filteredCustomers) => {
     // Group by employee
     const byEmployee = {};
-    const byModel = {};
 
     let total = 0;
     let exported = 0;
@@ -663,7 +682,19 @@ export default function Dashboard() {
     let cancelled = 0;
     let completed = 0;
     let transferred = 0;
-    let newCustomers = filteredCustomers.length;
+    let revenue = 0;
+
+    const totalCustomers = filteredCustomers.length;
+    const customersNeedingAdvice = filteredCustomers.filter((customer) => {
+      const tinhTrang = (customer.tinhTrang || "").toLowerCase();
+      return tinhTrang !== "không quan tâm" && tinhTrang !== "không mua";
+    });
+
+    const newCustomers = customersNeedingAdvice.length;
+    const hotCustomers = customersNeedingAdvice.filter((customer) => {
+      const mucDo = (customer.mucDo || "").toLowerCase();
+      return mucDo === "very hot" || mucDo === "hot";
+    }).length;
 
     filteredContracts.forEach((contract) => {
       total++;
@@ -726,7 +757,12 @@ export default function Dashboard() {
       byEmployee[employee].total++;
       // "Đã ký" = tổng số hợp đồng (total)
       byEmployee[employee].signed = byEmployee[employee].total;
-      
+
+      const contractValue = Number(contract.contractPrice || contract.giaHD || 0);
+      if (!Number.isNaN(contractValue)) {
+        revenue += contractValue;
+      }
+
       // Các cột khác dựa trên trạng thái
       switch (contract.status) {
         case "mới":
@@ -749,55 +785,87 @@ export default function Dashboard() {
           break;
       }
 
-      // Group by model (reuse the model variable declared above)
-      if (!byModel[model]) {
-        byModel[model] = {
-          model,
-          total: 0,
-          signed: 0,
-          exported: 0,
-          pending: 0,
-          cancelled: 0,
-          completed: 0,
-          transferred: 0,
-        };
-      }
-
-      byModel[model].total++;
-      // "Đã ký" = tổng số hợp đồng (total)
-      byModel[model].signed = byModel[model].total;
-      
-      // Các cột khác dựa trên trạng thái
-      switch (contract.status) {
-        case "mới":
-          byModel[model].pending++; // "Tồn" = hợp đồng có status "mới"
-          break;
-        case "xuất":
-          byModel[model].exported++;
-          break;
-        case "hoàn":
-          byModel[model].completed++;
-          break;
-        case "hủy":
-          byModel[model].cancelled++;
-          break;
-        case "chuyển tên":
-          byModel[model].transferred++;
-          break;
-        default:
-          // Không tăng pending cho các status khác
-          break;
-      }
     });
 
+    const employeesSorted = Object.values(byEmployee).sort(
+      (a, b) => b.total - a.total
+    );
+
+    const inProgress = pending;
+    const conversionRate = total > 0 ? (exported / total) * 100 : 0;
+
+    // Predefined all car models to ensure full columns even when no data
+    const allModels = [
+      "VF 3",
+      "VF 5",
+      "VF 6",
+      "VF 7",
+      "VF 8",
+      "VF 9",
+      "Minio",
+      "Herio",
+      "Nerio",
+      "Limo",
+      "EC",
+      "EC Nâng Cao"
+    ];
+
+    // Use all models as columns, but keep uniqueModels for backward compatibility in calculations
+    const displayModels = allModels;
+
+    const buildRow = (employeeData) => {
+      const kyByModel = {};
+      const xuatByModel = {};
+
+      filteredContracts
+        .filter((contract) => (contract.TVBH || "Không xác định") === employeeData.employee)
+        .forEach((contract) => {
+          const modelKey = contract.model || "Không xác định";
+          // Tổng ký: tất cả hợp đồng
+          kyByModel[modelKey] = (kyByModel[modelKey] || 0) + 1;
+
+          if (contract.status === "xuất") {
+            xuatByModel[modelKey] = (xuatByModel[modelKey] || 0) + 1;
+          }
+        });
+
+      return {
+        employee: employeeData.employee,
+        kyTotal: employeeData.total,
+        xuatTotal: employeeData.exported,
+        kyByModel,
+        xuatByModel,
+      };
+    };
+
+    const matrixRows = employeesSorted.map(buildRow);
+
+    if (matrixRows.length > 0) {
+      const totals = {
+        employee: "Tổng",
+        kyTotal: matrixRows.reduce((sum, row) => sum + row.kyTotal, 0),
+        xuatTotal: matrixRows.reduce((sum, row) => sum + row.xuatTotal, 0),
+        kyByModel: {},
+        xuatByModel: {},
+      };
+
+      displayModels.forEach((model) => {
+        totals.kyByModel[model] = matrixRows.reduce(
+          (sum, row) => sum + (row.kyByModel[model] || 0),
+          0
+        );
+        totals.xuatByModel[model] = matrixRows.reduce(
+          (sum, row) => sum + (row.xuatByModel[model] || 0),
+          0
+        );
+      });
+
+      matrixRows.push(totals);
+    }
+
+    setSummaryMatrix({ models: displayModels, rows: matrixRows });
+
     setReportData({
-      byEmployee: Object.values(byEmployee)
-        .map((emp) => ({
-          ...emp,
-          models: Array.from(emp.models).sort(), // Convert Set to sorted Array
-        }))
-        .sort((a, b) => b.total - a.total),
-      byModel: Object.values(byModel).sort((a, b) => b.total - a.total),
       summary: {
         total,
         signed: total, // "Đã ký" = tổng số hợp đồng (total)
@@ -807,6 +875,11 @@ export default function Dashboard() {
         completed,
         transferred,
         newCustomers,
+        revenue,
+        conversionRate,
+        hotCustomers,
+        inProgress,
+        totalCustomers,
       },
     });
   };
@@ -844,7 +917,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
           <p className="text-sm sm:text-base text-secondary-600">Đang tải dữ liệu...</p>
@@ -853,117 +926,250 @@ export default function Dashboard() {
     );
   }
 
+  const renderSummaryMatrix = () => {
+    if (summaryMatrix.rows.length === 0) {
+      return (
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="truncate">Báo cáo tổng hợp ({getTimeRangeText()})</span>
+          </h2>
+          <p className="text-sm text-gray-500">Không có dữ liệu trong khoảng thời gian đã chọn.</p>
+        </div>
+      );
+    }
+
+    const headerRowClass = "text-[11px] sm:text-xs font-semibold text-gray-700 uppercase tracking-wide border border-gray-300 text-center";
+    const cellClass = "border border-gray-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-center";
+    const totalRowClass = "bg-gray-100 font-semibold";
+
+    return (
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="truncate">Báo cáo tổng hợp ({getTimeRangeText()})</span>
+        </h2>
+
+        <div className="overflow-x-auto rounded-lg border border-gray-300">
+          <table className="w-full bg-white">
+            <thead>
+              <tr>
+                <th className={`${headerRowClass} px-4 py-2`}>TVBH</th>
+                <th className={`${headerRowClass} px-3 py-2 bg-blue-200 text-blue-900 font-bold`}>Ký</th>
+                {summaryMatrix.models.map((model) => (
+                  <th key={`ky-header-${model}`} className={`${headerRowClass} bg-blue-100 text-blue-800`}>
+                    {model}
+                  </th>
+                ))}
+                <th className={`${headerRowClass} px-3 py-2 bg-green-200 text-green-900 font-bold`}>Xuất</th>
+                {summaryMatrix.models.map((model) => (
+                  <th key={`xuat-header-${model}`} className={`${headerRowClass} bg-green-100 text-green-800`}>
+                    {model}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {summaryMatrix.rows.map((row) => {
+                const isTotalRow = row.employee === "Tổng";
+                return (
+                  <tr key={`matrix-row-${row.employee}`} className={isTotalRow ? totalRowClass : "even:bg-gray-50"}>
+                    <td className={`${cellClass} font-medium text-left px-3 sm:px-4`}>{row.employee}</td>
+                    <td className={`${cellClass} font-semibold text-blue-800 bg-blue-100`}>{row.kyTotal}</td>
+                    {summaryMatrix.models.map((model) => (
+                      <td key={`ky-${row.employee}-${model}`} className={`${cellClass} text-blue-700 bg-blue-50`}>
+                        {row.kyByModel[model] || 0}
+                      </td>
+                    ))}
+                    <td className={`${cellClass} font-semibold text-green-800 bg-green-100`}>{row.xuatTotal}</td>
+                    {summaryMatrix.models.map((model) => (
+                      <td key={`xuat-${row.employee}-${model}`} className={`${cellClass} text-green-700 bg-green-50`}>
+                        {row.xuatByModel[model] || 0}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-700">
-          Dashboard Báo Cáo
-        </h1>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-700">
+            Dashboard Báo Cáo
+          </h1>
+        </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
-        <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
-          <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-          Bộ lọc
-        </h2>
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+            Bộ lọc
+          </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-              Loại báo cáo
-            </label>
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
-            >
-              <option value="day">Theo ngày</option>
-              <option value="week">Theo tuần</option>
-              <option value="month">Theo tháng</option>
-              <option value="quarter">Theo quý</option>
-              <option value="year">Theo năm</option>
-              <option value="range">Tùy chọn khoảng thời gian</option>
-            </select>
-          </div>
-
-          {timeRange === "day" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Ngày
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
-              />
-            </div>
-          )}
-
-          {timeRange === "week" && (
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Chọn tuần
+                Loại báo cáo
               </label>
               <select
-                value={selectedWeekOption}
-                onChange={(e) => setSelectedWeekOption(e.target.value)}
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
                 className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
               >
-                <option value="current">Tuần này</option>
-                <option value="previous">Tuần trước</option>
+                <option value="day">Theo ngày</option>
+                <option value="week">Theo tuần</option>
+                <option value="month">Theo tháng</option>
+                <option value="quarter">Theo quý</option>
+                <option value="year">Theo năm</option>
+                <option value="range">Tùy chọn khoảng thời gian</option>
               </select>
             </div>
-          )}
 
-          {timeRange === "range" && (
-            <>
+            {timeRange === "day" && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Từ ngày
+                  Ngày
                 </label>
                 <input
                   type="date"
-                  value={selectedStartDate}
-                  onChange={(e) => setSelectedStartDate(e.target.value)}
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Đến ngày
-                </label>
-                <input
-                  type="date"
-                  value={selectedEndDate}
-                  onChange={(e) => setSelectedEndDate(e.target.value)}
-                  min={selectedStartDate}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
-                />
-              </div>
-            </>
-          )}
+            )}
 
-          {timeRange === "month" && (
-            <>
+            {timeRange === "week" && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Tháng
+                  Chọn tuần
                 </label>
                 <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  value={selectedWeekOption}
+                  onChange={(e) => setSelectedWeekOption(e.target.value)}
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
                 >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      Tháng {i + 1}
-                    </option>
-                  ))}
+                  <option value="current">Tuần này</option>
+                  <option value="previous">Tuần trước</option>
                 </select>
               </div>
+            )}
+
+            {timeRange === "range" && (
+              <>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Từ ngày
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedStartDate}
+                    onChange={(e) => setSelectedStartDate(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Đến ngày
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedEndDate}
+                    onChange={(e) => setSelectedEndDate(e.target.value)}
+                    min={selectedStartDate}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
+                  />
+                </div>
+              </>
+            )}
+
+            {timeRange === "month" && (
+              <>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Tháng
+                  </label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        Tháng {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Năm
+                  </label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {timeRange === "quarter" && (
+              <>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Quý
+                  </label>
+                  <select
+                    value={selectedQuarter}
+                    onChange={(e) => setSelectedQuarter(parseInt(e.target.value))}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
+                  >
+                    <option value={1}>Quý 1</option>
+                    <option value={2}>Quý 2</option>
+                    <option value={3}>Quý 3</option>
+                    <option value={4}>Quý 4</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Năm
+                  </label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {timeRange === "year" && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Năm
@@ -983,579 +1189,340 @@ export default function Dashboard() {
                   })}
                 </select>
               </div>
-            </>
-          )}
+            )}
 
-          {timeRange === "quarter" && (
-            <>
+            {/* Employee Filter - Only show if user is admin or leader */}
+            {(userRole === "admin" || userRole === "leader") && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Quý
+                  Nhân viên
                 </label>
                 <select
-                  value={selectedQuarter}
-                  onChange={(e) => setSelectedQuarter(parseInt(e.target.value))}
+                  value={selectedEmployee}
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
                 >
-                  <option value={1}>Quý 1</option>
-                  <option value={2}>Quý 2</option>
-                  <option value={3}>Quý 3</option>
-                  <option value={4}>Quý 4</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Năm
-                </label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
-                >
-                  {Array.from({ length: 5 }, (_, i) => {
-                    const year = new Date().getFullYear() - 2 + i;
-                    return (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </>
-          )}
-
-          {timeRange === "year" && (
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Năm
-              </label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
-              >
-                {Array.from({ length: 5 }, (_, i) => {
-                  const year = new Date().getFullYear() - 2 + i;
-                  return (
-                    <option key={year} value={year}>
-                      {year}
+                  <option value="all">Tất cả nhân viên</option>
+                  {getUniqueEmployees().map((employee) => (
+                    <option key={employee} value={employee}>
+                      {employee}
                     </option>
-                  );
-                })}
-              </select>
-            </div>
-          )}
-
-          {/* Employee Filter - Only show if user is admin or leader */}
-          {(userRole === "admin" || userRole === "leader") && (
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-              Nhân viên
-            </label>
-            <select
-              value={selectedEmployee}
-              onChange={(e) => setSelectedEmployee(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm"
-            >
-              <option value="all">Tất cả nhân viên</option>
-              {getUniqueEmployees().map((employee) => (
-                <option key={employee} value={employee}>
-                  {employee}
-                </option>
-              ))}
-            </select>
-          </div>
-          )}
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Tổng hợp đồng</p>
-              <p className="text-xl sm:text-2xl font-bold text-green-600">
-                {reportData.summary.signed}
-              </p>
-            </div>
-            <div className="p-2 sm:p-3 bg-green-100 rounded-full">
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-            </div>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Đã xuất</p>
-              <p className="text-xl sm:text-2xl font-bold text-blue-600">
-                {reportData.summary.exported}
-              </p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Tổng hợp đồng</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">
+                  {reportData.summary.signed}
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-green-100 rounded-full">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+              </div>
             </div>
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-full">
-              <Car className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Đã xuất</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">
+                  {reportData.summary.exported}
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-green-100 rounded-full">
+                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Đã ký</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                  {reportData.summary.signed}
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-blue-100 rounded-full">
+                <FileCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Tồn kho</p>
+                <p className="text-xl sm:text-2xl font-bold text-orange-600">
+                  {reportData.summary.pending}
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-orange-100 rounded-full">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">
+                  Khách hàng mới
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-purple-600">
+                  {reportData.summary.newCustomers}
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-purple-100 rounded-full">
+                <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Tồn kho</p>
-              <p className="text-xl sm:text-2xl font-bold text-orange-600">
-                {reportData.summary.pending}
-              </p>
-            </div>
-            <div className="p-2 sm:p-3 bg-orange-100 rounded-full">
-              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
+        {renderSummaryMatrix()}
 
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-gray-600">
-                Khách hàng mới
-              </p>
-              <p className="text-xl sm:text-2xl font-bold text-purple-600">
-                {reportData.summary.newCustomers}
-              </p>
-            </div>
-            <div className="p-2 sm:p-3 bg-purple-100 rounded-full">
-              <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Report by Employee */}
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        {/* New Customers Needing Advice Table */}
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mt-4 sm:mt-6">
           <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
-            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="truncate">Báo cáo theo Nhân viên ({getTimeRangeText()})</span>
+            <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+            Khách hàng mới cần tư vấn
           </h2>
 
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      STT
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nhân viên
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Dòng xe
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tổng
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Đã ký
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Đã xuất
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tồn
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hoàn thành
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hủy
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Chuyển tên
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hợp đồng tồn
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData.byEmployee.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50 text-center">
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                        {index + 1}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={item.employee}>
-                        {item.employee}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900">
-                        {item.models && item.models.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {item.models.map((model, idx) => (
-                              <span
-                                key={idx}
-                                className="inline-block bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded"
-                              >
-                                {model}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.total}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.signed}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.exported}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.pending}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.completed}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.cancelled}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.transferred}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900">
-                        {item.pendingContracts && item.pendingContracts.length > 0 ? (
-                          <button
-                            onClick={() => openPendingContractsModal(item.employee, item.pendingContracts)}
-                            className="bg-slate-300 hover:bg-slate-400 text-white font-semibold py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg transition-colors duration-200 text-xs sm:text-sm"
-                          >
-                            {item.pendingContracts.length}
-                          </button>
-                        ) : (
-                          <span className="text-gray-400">0</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {newCustomersNeedAdvice.length === 0 ? (
+            <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500">
+              Không có khách hàng mới cần tư vấn
             </div>
-          </div>
-        </div>
-
-        {/* Report by Model */}
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
-            <Car className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="truncate">Báo cáo theo Mẫu xe ({getTimeRangeText()})</span>
-          </h2>
-
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      STT
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mẫu xe
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tổng
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Đã ký
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Đã xuất
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tồn
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hoàn thành
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hủy
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Chuyển tên
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData.byModel.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50 text-center">
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                        {index + 1}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[120px] sm:max-w-none truncate" title={item.model}>
-                        {item.model}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.total}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.signed}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.exported}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.pending}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.completed}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.cancelled}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.transferred}
-                      </td>
+          ) : (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        STT
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngày
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tên khách hàng
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Số điện thoại
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tỉnh thành
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Dòng xe
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phiên bản
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngoại thất
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Mức độ
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tình trạng
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Nguồn
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Thao tác
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* New Customers Needing Advice Table */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mt-4 sm:mt-6">
-        <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
-          <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-          Khách hàng mới cần tư vấn
-        </h2>
-
-        {newCustomersNeedAdvice.length === 0 ? (
-          <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500">
-            Không có khách hàng mới cần tư vấn
-          </div>
-        ) : (
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      STT
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tên khách hàng
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Số điện thoại
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tỉnh thành
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Dòng xe
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phiên bản
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Màu sắc
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mức độ
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tình trạng
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nguồn
-                    </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {newCustomersNeedAdvice.map((customer, index) => {
-                    // Helper function for mucDo color classes
-                    const getMucDoClasses = (mucDo) => {
-                      const colorMap = {
-                        'Very hot': 'bg-red-100 text-red-800',
-                        'Hot': 'bg-orange-100 text-orange-800',
-                        'Cool': 'bg-blue-100 text-blue-800',
-                        'Warm': 'bg-yellow-100 text-yellow-800',
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {newCustomersNeedAdvice.map((customer, index) => {
+                      // Helper function for mucDo color classes
+                      const getMucDoClasses = (mucDo) => {
+                        const colorMap = {
+                          'Very hot': 'bg-red-100 text-red-800',
+                          'Hot': 'bg-orange-100 text-orange-800',
+                          'Cool': 'bg-blue-100 text-blue-800',
+                          'Warm': 'bg-yellow-100 text-yellow-800',
+                        };
+                        return colorMap[mucDo] || 'bg-gray-100 text-gray-800';
                       };
-                      return colorMap[mucDo] || 'bg-gray-100 text-gray-800';
-                    };
 
-                    return (
-                      <tr key={customer.firebaseKey} className="hover:bg-gray-50">
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                          {index + 1}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                          {customer.ngay ? new Date(customer.ngay).toLocaleDateString("vi-VN") : '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[120px] sm:max-w-none truncate" title={customer.tenKhachHang || ''}>
-                          {customer.tenKhachHang || '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                          {customer.soDienThoai || '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.tinhThanh || ''}>
-                          {customer.tinhThanh || '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.dongXe || ''}>
-                          {customer.dongXe || '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.phienBan || ''}>
-                          {customer.phienBan || '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.mauSac || ''}>
-                          {customer.mauSac || '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm">
-                          {customer.mucDo ? (
-                            <span className={`inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${getMucDoClasses(customer.mucDo)}`}>
-                              {customer.mucDo}
-                            </span>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm">
-                          {customer.tinhTrang ? (
-                            <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800">
-                              {customer.tinhTrang}
-                            </span>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.nguon || ''}>
-                          {customer.nguon || '-'}
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                          <button
-                            onClick={() => navigate("/quan-ly-khach-hang")}
-                            className="text-primary-600 hover:text-primary-800 font-medium text-xs sm:text-sm"
-                          >
-                            Xem chi tiết
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      return (
+                        <tr key={customer.firebaseKey} className="hover:bg-gray-50">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                            {index + 1}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                            {customer.ngay ? new Date(customer.ngay).toLocaleDateString("vi-VN") : '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[120px] sm:max-w-none truncate" title={customer.tenKhachHang || ''}>
+                            {customer.tenKhachHang || '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                            {customer.soDienThoai || '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.tinhThanh || ''}>
+                            {customer.tinhThanh || '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.dongXe || ''}>
+                            {customer.dongXe || '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.phienBan || ''}>
+                            {customer.phienBan || '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.mauSac || ''}>
+                            {customer.mauSac || '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm">
+                            {customer.mucDo ? (
+                              <span className={`inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${getMucDoClasses(customer.mucDo)}`}>
+                                {customer.mucDo}
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm">
+                            {customer.tinhTrang ? (
+                              <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800">
+                                {customer.tinhTrang}
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 max-w-[100px] sm:max-w-none truncate" title={customer.nguon || ''}>
+                            {customer.nguon || '-'}
+                          </td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                            <button
+                              onClick={() => navigate("/quan-ly-khach-hang")}
+                              className="text-primary-600 hover:text-primary-800 font-medium text-xs sm:text-sm"
+                            >
+                              Xem chi tiết
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal hiển thị hợp đồng tồn */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-800 truncate">
+                  Hợp đồng tồn - {selectedEmployeeName}
+                </h2>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                >
+                  <svg
+                    className="w-5 h-5 sm:w-6 sm:h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="px-4 sm:px-6 py-3 sm:py-4 overflow-y-auto flex-1">
+                {selectedEmployeeContracts.length > 0 ? (
+                  <div className="space-y-2 sm:space-y-3">
+                    {selectedEmployeeContracts.map((contract, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          closeModal();
+                          navigate("/hop-dong/chi-tiet", {
+                            state: { contract: contract, mode: 'details' },
+                          });
+                        }}
+                        className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-100"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-800 text-sm sm:text-base lg:text-lg mb-2">
+                              {contract.customerName || `Hợp đồng ${contract.id || idx + 1}`}
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                              {contract.model && (
+                                <div className="flex items-center gap-1">
+                                  <Car className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span className="font-medium">{contract.model}</span>
+                                </div>
+                              )}
+                              {contract.createdAt && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span>
+                                    {new Date(contract.createdAt).toLocaleDateString("vi-VN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                              {contract.customerName && (
+                                <div className="text-gray-500">
+                                  Tên khách hàng: {contract.customerName}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500">
+                    Không có hợp đồng tồn
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex justify-end sticky bottom-0 bg-white">
+                <button
+                  onClick={closeModal}
+                  className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 sm:py-2.5 px-5 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base"
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Modal hiển thị hợp đồng tồn */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-800 truncate">
-                Hợp đồng tồn - {selectedEmployeeName}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-              >
-                <svg
-                  className="w-5 h-5 sm:w-6 sm:h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 overflow-y-auto flex-1">
-              {selectedEmployeeContracts.length > 0 ? (
-                <div className="space-y-2 sm:space-y-3">
-                  {selectedEmployeeContracts.map((contract, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        closeModal();
-                        navigate("/hop-dong/chi-tiet", {
-                          state: { contract: contract, mode: 'details' },
-                        });
-                      }}
-                      className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-100"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-800 text-sm sm:text-base lg:text-lg mb-2">
-                            {contract.customerName || `Hợp đồng ${contract.id || idx + 1}`}
-                          </div>
-                          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                            {contract.model && (
-                              <div className="flex items-center gap-1">
-                                <Car className="w-3 h-3 sm:w-4 sm:h-4" />
-                                <span className="font-medium">{contract.model}</span>
-                              </div>
-                            )}
-                            {contract.createdAt && (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                                <span>
-                                  {new Date(contract.createdAt).toLocaleDateString("vi-VN", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </span>
-                              </div>
-                            )}
-                            {contract.customerName && (
-                              <div className="text-gray-500">
-                                Tên khách hàng: {contract.customerName}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500">
-                  Không có hợp đồng tồn
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex justify-end sticky bottom-0 bg-white">
-              <button
-                onClick={closeModal}
-                className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 sm:py-2.5 px-5 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

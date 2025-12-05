@@ -127,7 +127,7 @@ const enhancedInteriorColors = uniqueNoiThatColors.map(color => ({
 
 export default function CalculatorPage() {
   const navigate = useNavigate();
-  
+
   // Customer info
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -181,7 +181,7 @@ export default function CalculatorPage() {
   // Build derived versions from carPriceData
   const derivedVersions = useMemo(() => {
     if (!Array.isArray(carPriceData)) return [];
-    
+
     const groups = {};
     carPriceData.forEach((entry) => {
       const model = String(entry.model || '').trim();
@@ -208,8 +208,9 @@ export default function CalculatorPage() {
       const interior = entry.interior_color;
       if (interior) g.interior_colors.add(String(interior).trim());
     });
-    
-    return Object.keys(groups).map((k) => {
+
+    // Convert groups to array and sort
+    const versions = Object.keys(groups).map((k) => {
       const v = groups[k];
       return {
         model: v.model,
@@ -218,6 +219,35 @@ export default function CalculatorPage() {
         exterior_colors: Array.from(v.exterior_colors),
         interior_colors: Array.from(v.interior_colors),
       };
+    });
+
+    // Define sort orders for different models
+    const vf7SortOrder = {
+      'Eco': 1,
+      'Eco TC 2': 2,
+      'Eco HUD': 3,
+      'Eco HUD TC2': 4,
+      'Plus-1 Cầu': 5,
+      'Plus-1 Cầu-TK': 6,
+      'Plus-2 Cầu': 7,
+      'Plus-2 Cầu-TK': 8
+    };
+
+    return versions.sort((a, b) => {
+      // For VF 6, sort 'Plus TC 2' to the end
+      if (a.model === 'VF 6' && b.model === 'VF 6') {
+        if (a.trim === 'Plus TC 2') return 1;
+        if (b.trim === 'Plus TC 2') return -1;
+        return 0;
+      }
+
+      // For VF 7, use the defined sort order
+      if (a.model === 'VF 7' && b.model === 'VF 7') {
+        return (vf7SortOrder[a.trim] || 999) - (vf7SortOrder[b.trim] || 999);
+      }
+
+      // For other models, maintain original order
+      return 0;
     });
   }, []);
 
@@ -241,11 +271,11 @@ export default function CalculatorPage() {
   // Get selected dong_xe code
   const selectedDongXe = useMemo(() => {
     if (!carModel) return '';
-    const found = danh_sach_xe.find(x => 
+    const found = danh_sach_xe.find(x =>
       (x.ten_hien_thi || '').toString().trim().toLowerCase() === carModel.toLowerCase()
     );
     if (found && found.dong_xe) return found.dong_xe;
-    
+
     const norm = carModel.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
     const found2 = danh_sach_xe.find(x => x.dong_xe === norm || x.dong_xe === norm.replace(/__+/g, '_'));
     return found2?.dong_xe || '';
@@ -254,10 +284,37 @@ export default function CalculatorPage() {
   // Get available colors for selected version
   const availableExteriorColors = useMemo(() => {
     if (!carModel || !carVersion) return [];
-    const selectedCar = derivedVersions.find(xe => xe.model === carModel && xe.trim === carVersion);
-    if (!selectedCar) return [];
-    return enhancedExteriorColors.filter(color => selectedCar.exterior_colors.includes(color.code));
-  }, [carModel, carVersion, derivedVersions]);
+
+    // Get all entries for this model+version from carPriceData (in order)
+    let entries = carPriceData.filter(e =>
+      String(e.model || '').trim() === carModel &&
+      String(e.trim || '').trim() === carVersion
+    );
+
+    // If no interior color is selected, default to black (CI11)
+    const targetInteriorColor = interiorColor || 'CI11';
+    entries = entries.filter(e =>
+      String(e.interior_color || '').trim() === targetInteriorColor
+    );
+
+    // Extract unique exterior colors in the order they appear
+    const seenCodes = new Set();
+    const colorsInOrder = [];
+
+    entries.forEach(entry => {
+      const code = String(entry.exterior_color || '').trim();
+      if (code && !seenCodes.has(code)) {
+        seenCodes.add(code);
+        // Find color info from uniqueNgoaiThatColors
+        const colorInfo = enhancedExteriorColors.find(c => c.code === code);
+        if (colorInfo) {
+          colorsInOrder.push(colorInfo);
+        }
+      }
+    });
+
+    return colorsInOrder;
+  }, [carModel, carVersion, interiorColor]);
 
   const availableInteriorColors = useMemo(() => {
     if (!carModel || !carVersion) return [];
@@ -280,7 +337,7 @@ export default function CalculatorPage() {
   // Get car price
   const getCarPrice = () => {
     if (!Array.isArray(carPriceData)) return 0;
-    
+
     const exact = carPriceData.find(e => {
       const m = String(e.model || '').trim();
       const t = String(e.trim || '').trim();
@@ -349,6 +406,16 @@ export default function CalculatorPage() {
     }
   }, [availableInteriorColors, interiorColor]);
 
+  // Reset exterior color if current selection is not available for selected interior
+  useEffect(() => {
+    if (interiorColor && exteriorColor && availableExteriorColors.length > 0) {
+      const isCurrentColorAvailable = availableExteriorColors.some(c => c.code === exteriorColor);
+      if (!isCurrentColorAvailable) {
+        setExteriorColor(availableExteriorColors[0].code);
+      }
+    }
+  }, [interiorColor, availableExteriorColors]);
+
   // Handle exterior color change with fade animation
   const handleExteriorColorChange = (colorCode) => {
     setImageFade(true);
@@ -379,7 +446,7 @@ export default function CalculatorPage() {
     if (selectedDongXe) {
       const exteriorColorObj = enhancedExteriorColors.find(c => c.code === exteriorColor);
       const exteriorText = exteriorColorObj?.name || '';
-      
+
       if (selectedDongXe === 'vf_3') {
         if (/Vàng Nóc Trắng|Xanh Lá Nhạt|Hồng Nóc Trắng|Xanh Nóc Trắng/i.test(exteriorText)) {
           premiumColorPotential = 8000000;
@@ -554,7 +621,7 @@ export default function CalculatorPage() {
       exteriorColor: exteriorColor || '',
       interiorColor: interiorColor || '',
       carDongXe: selectedDongXe || '',
-      
+
       // Get color names
       exteriorColorName: enhancedExteriorColors.find(c => c.code === exteriorColor)?.name || exteriorColor,
       interiorColorName: enhancedInteriorColors.find(c => c.code === interiorColor)?.name || interiorColor,
@@ -590,7 +657,7 @@ export default function CalculatorPage() {
 
     // Save to localStorage
     localStorage.setItem('invoiceData', JSON.stringify(data));
-    
+
     // Navigate to invoice page
     navigate('/in-bao-gia-2');
   };
@@ -635,151 +702,159 @@ export default function CalculatorPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
           {/* Customer Info Card */}
           <div className="bg-white rounded-xl shadow-md p-5 flex flex-col h-full">
-              <h2 className="text-base font-bold text-gray-900 mb-5 pb-3 border-b-2 border-gray-200">
-                Thông tin khách hàng & Giao dịch
-              </h2>
+            <h2 className="text-base font-bold text-gray-900 mb-5 pb-3 border-b-2 border-gray-200">
+              Thông tin khách hàng & Giao dịch
+            </h2>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Họ tên khách hàng
-                  </label>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nhập họ tên"
-                  />
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Họ tên khách hàng
+                </label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nhập họ tên"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Số điện thoại
-                  </label>
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nhập số điện thoại"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Số điện thoại
+                </label>
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nhập số điện thoại"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nhập email"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nhập email"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Địa chỉ
-                  </label>
-                  <input
-                    type="text"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nhập địa chỉ"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Địa chỉ
+                </label>
+                <input
+                  type="text"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nhập địa chỉ"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Loại khách hàng
-                  </label>
-                  <select
-                    value={customerType}
-                    onChange={(e) => setCustomerType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
-                  >
-                    <option value="ca_nhan">Cá nhân</option>
-                    <option value="cong_ty">Công ty</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Loại khách hàng
+                </label>
+                <select
+                  value={customerType}
+                  onChange={(e) => setCustomerType(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
+                >
+                  <option value="ca_nhan">Cá nhân</option>
+                  <option value="cong_ty">Công ty</option>
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Loại sử dụng
-                  </label>
-                  <select
-                    value={businessType}
-                    onChange={(e) => setBusinessType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
-                  >
-                    <option value="khong_kinh_doanh">Không kinh doanh</option>
-                    <option value="kinh_doanh">Kinh doanh</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Loại sử dụng
+                </label>
+                <select
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
+                >
+                  <option value="khong_kinh_doanh">Không kinh doanh</option>
+                  <option value="kinh_doanh">Kinh doanh</option>
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">
-                    Số tiền cọc
-                  </label>
-                  <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-900 font-semibold">
-                    {formatCurrency(depositAmount)}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Số tiền cọc
+                </label>
+                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-900 font-semibold">
+                  {formatCurrency(depositAmount)}
                 </div>
               </div>
             </div>
+          </div>
 
           {/* Main Configuration Card */}
           <div className="bg-white rounded-xl shadow-md p-5 flex flex-col h-full">
-              {/* Car Image */}
-              <div className="w-full aspect-[1.8] rounded-lg overflow-hidden mb-5 bg-gray-800 relative">
-                <img
-                  src={carImageUrl}
-                  alt="Ngoại thất"
-                  className={`w-full h-full object-cover transition-opacity duration-300 ${
-                    imageFade ? 'opacity-0' : 'opacity-100'
+            {/* Car Image */}
+            <div className="w-full aspect-[1.8] rounded-lg overflow-hidden mb-5 bg-gray-800 relative">
+              <img
+                src={carImageUrl}
+                alt="Ngoại thất"
+                className={`w-full h-full object-cover transition-opacity duration-300 ${imageFade ? 'opacity-0' : 'opacity-100'
                   }`}
-                />
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs">
-                  Ngoại thất
-                </div>
+              />
+              <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs">
+                Ngoại thất
+              </div>
+            </div>
+
+            {/* Configuration Sections */}
+            <div className="space-y-6">
+              <div>
+                <div className="text-sm font-semibold text-gray-600 mb-3">1. Chọn mẫu xe</div>
+                <select
+                  value={carModel}
+                  onChange={(e) => {
+                    setCarModel(e.target.value);
+                    setCarVersion('');
+                    setExteriorColor('');
+                    setInteriorColor('');
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
+                >
+                  {Object.keys(carModels).map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Configuration Sections */}
-              <div className="space-y-6">
-                <div>
-                  <div className="text-sm font-semibold text-gray-600 mb-3">1. Chọn mẫu xe</div>
-                  <select
-                    value={carModel}
-                    onChange={(e) => {
-                      setCarModel(e.target.value);
-                      setCarVersion('');
-                      setExteriorColor('');
-                      setInteriorColor('');
-                    }}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
-                  >
-                    {Object.keys(carModels).map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <div className="text-sm font-semibold text-gray-600 mb-3">2. Chọn phiên bản</div>
+                <div className="space-y-2">
+                  {availableVersions.map((version) => {
+                    // Get actual price for this version based on selected colors
+                    let displayPrice = version.price_vnd;
+                    if (carVersion === version.trim && exteriorColor && interiorColor) {
+                      const actualPrice = getCarPrice();
+                      if (actualPrice > 0) {
+                        displayPrice = actualPrice;
+                      }
+                    }
 
-                <div>
-                  <div className="text-sm font-semibold text-gray-600 mb-3">2. Chọn phiên bản</div>
-                  <div className="space-y-2">
-                    {availableVersions.map((version) => (
+                    return (
                       <label
                         key={version.trim}
-                        className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                          carVersion === version.trim
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 hover:border-blue-300'
-                        }`}
+                        className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${carVersion === version.trim
+                          ? 'border-blue-600 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
+                          }`}
                       >
                         <input
                           type="radio"
@@ -790,372 +865,369 @@ export default function CalculatorPage() {
                           className="w-5 h-5 mr-3 text-blue-600"
                         />
                         <span className="flex-1 font-medium text-gray-700">{version.trim}</span>
-                        <span className="text-blue-600 font-semibold">{formatCurrency(version.price_vnd)}</span>
+                        <span className="text-blue-600 font-semibold">{formatCurrency(displayPrice)}</span>
                       </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-semibold text-gray-600 mb-3">3. Ngoại thất</div>
-                  <div className="flex gap-3 flex-wrap">
-                    {availableExteriorColors.map((color) => (
-                      <div
-                        key={color.code}
-                        onClick={() => handleExteriorColorChange(color.code)}
-                        className={`rounded-xl cursor-pointer transition-all ${
-                          exteriorColor === color.code
-                            ? 'border-blue-600 shadow-lg scale-105'
-                            : 'border-transparent hover:scale-110'
-                        }`}
-                        style={{ width: '60px', height: '60px', borderWidth: '3px', borderStyle: 'solid' }}
-                      >
-                        <img
-                          src={color.icon}
-                          alt={color.name}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-semibold text-gray-600 mb-3">4. Nội thất</div>
-                  <div className="flex gap-3 flex-wrap">
-                    {availableInteriorColors.map((color) => (
-                      <div
-                        key={color.code}
-                        onClick={() => setInteriorColor(color.code)}
-                        className={`rounded-xl cursor-pointer transition-all ${
-                          interiorColor === color.code
-                            ? 'border-blue-600 shadow-lg scale-105'
-                            : 'border-transparent hover:scale-110'
-                        }`}
-                        style={{ width: '60px', height: '60px', borderWidth: '3px', borderStyle: 'solid' }}
-                      >
-                        <img
-                          src={color.icon}
-                          alt={color.name}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-semibold text-gray-600 mb-3">5. Chọn nơi đăng ký biển số</div>
-                  <select
-                    value={registrationLocation}
-                    onChange={(e) => setRegistrationLocation(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
-                  >
-                    <option value="hcm">TP. Hồ Chí Minh</option>
-                    <option value="other">Tỉnh thành khác</option>
-                  </select>
+                    );
+                  })}
                 </div>
               </div>
+
+              <div>
+                <div className="text-sm font-semibold text-gray-600 mb-3">3. Ngoại thất</div>
+                <div className="flex gap-3 flex-wrap">
+                  {availableExteriorColors.map((color) => (
+                    <div
+                      key={color.code}
+                      onClick={() => handleExteriorColorChange(color.code)}
+                      className={`rounded-xl cursor-pointer transition-all ${exteriorColor === color.code
+                        ? 'border-blue-600 shadow-lg scale-105'
+                        : 'border-transparent hover:scale-110'
+                        }`}
+                      style={{ width: '60px', height: '60px', borderWidth: '3px', borderStyle: 'solid' }}
+                    >
+                      <img
+                        src={color.icon}
+                        alt={color.name}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm font-semibold text-gray-600 mb-3">4. Nội thất</div>
+                <div className="flex gap-3 flex-wrap">
+                  {availableInteriorColors.map((color) => (
+                    <div
+                      key={color.code}
+                      onClick={() => setInteriorColor(color.code)}
+                      className={`rounded-xl cursor-pointer transition-all ${interiorColor === color.code
+                        ? 'border-blue-600 shadow-lg scale-105'
+                        : 'border-transparent hover:scale-110'
+                        }`}
+                      style={{ width: '60px', height: '60px', borderWidth: '3px', borderStyle: 'solid' }}
+                    >
+                      <img
+                        src={color.icon}
+                        alt={color.name}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm font-semibold text-gray-600 mb-3">5. Chọn nơi đăng ký biển số</div>
+                <select
+                  value={registrationLocation}
+                  onChange={(e) => setRegistrationLocation(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
+                >
+                  <option value="hcm">TP. Hồ Chí Minh</option>
+                  <option value="other">Tỉnh thành khác</option>
+                </select>
+              </div>
             </div>
+          </div>
 
           {/* Cost Estimation Card */}
           <div className="bg-white rounded-xl shadow-md p-5 flex flex-col h-full">
-              <h2 className="text-base font-bold text-gray-900 mb-5 pb-3 border-b-2 border-gray-200">
-                Dự toán chi phí cho {carModel} {carVersion}
-              </h2>
+            <h2 className="text-base font-bold text-gray-900 mb-5 pb-3 border-b-2 border-gray-200">
+              Dự toán chi phí cho {carModel} {carVersion}
+            </h2>
 
-              <div className="space-y-3">
-                <div className="flex justify-between py-3 border-b border-gray-200">
-                  <span className="text-gray-600 font-medium">Giá xe (gồm VAT)</span>
-                  <span className="text-gray-900 font-semibold">{formatCurrency(calculations.basePrice)}</span>
-                </div>
-
-                <div className="my-4">
-                  <div className="text-sm font-medium text-gray-600 mb-3">Chọn ưu đãi áp dụng</div>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={discount3}
-                        onChange={(e) => setDiscount3(e.target.checked)}
-                        className="w-5 h-5 text-blue-600"
-                      />
-                      <span className="flex-1 text-sm text-gray-700">Ưu đãi Lái xe Xanh (VN3)</span>
-                      <span className="text-red-600 font-semibold">
-                        -{formatCurrency(calculations.discount3Potential)}
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={discount2}
-                        onChange={(e) => setDiscount2(e.target.checked)}
-                        className="w-5 h-5 text-blue-600"
-                      />
-                      <span className="flex-1 text-sm text-gray-700">Ưu đãi tháng 10</span>
-                      <span className="text-red-600 font-semibold">
-                        -{formatCurrency(calculations.discount2Potential)}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex justify-between py-3 border-b border-gray-200">
-                  <span className="text-gray-600 font-medium">Giá sau ưu đãi</span>
-                  <span className="text-gray-900 font-semibold">
-                    {formatCurrency(calculations.priceAfterBasicPromotions)}
-                  </span>
-                </div>
-
-                <div className="my-4 space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-2">Hạng thành viên</label>
-                    <div className="flex gap-4 justify-between items-center">
-                      <select
-                        value={vinClubVoucher}
-                        onChange={(e) => setVinClubVoucher(e.target.value)}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="none">Không áp dụng</option>
-                        <option value="gold">Gold (0.5%)</option>
-                        <option value="platinum">Platinum (1%)</option>
-                        <option value="diamond">Diamond (1.5%)</option>
-                      </select>
-                      <div className="text-red-600 font-semibold">{formatCurrency(calculations.vinClubDiscount)}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                    <label className="flex items-center gap-2 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={convertCheckbox}
-                        onChange={(e) => setConvertCheckbox(e.target.checked)}
-                        className="w-5 h-5 text-blue-600"
-                      />
-                      <span className="text-sm text-gray-700">Xăng → Điện (áp dụng chi phí đổi)</span>
-                    </label>
-                    <span className="text-gray-900 font-semibold">
-                      {formatCurrency(calculations.convertSupportDiscount)}
-                    </span>
-                  </div>
-
-                  {(carModel === 'VF 3' || carModel === 'VF 5') && (
-                    <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                      <label className="flex items-center gap-2 flex-1">
-                        <input
-                          type="checkbox"
-                          checked={discountBhvc2}
-                          onChange={(e) => setDiscountBhvc2(e.target.checked)}
-                          className="w-5 h-5 text-blue-600"
-                        />
-                        <span className="text-sm text-gray-700">Quy đổi 2 năm bảo hiểm (BHVC)</span>
-                      </label>
-                      <span className="text-red-600 font-semibold">
-                        -{formatCurrency(calculations.bhvc2Potential)}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                    <label className="flex items-center gap-2 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={discountPremiumColor}
-                        onChange={(e) => setDiscountPremiumColor(e.target.checked)}
-                        className="w-5 h-5 text-blue-600"
-                      />
-                      <span className="text-sm text-gray-700">Miễn Phí Màu Nâng Cao</span>
-                    </label>
-                    <span className="text-red-600 font-semibold">
-                      -{formatCurrency(calculations.premiumColorPotential)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between py-3 border-b border-gray-200">
-                  <span className="text-gray-600 font-medium">Giá thanh toán thực tế</span>
-                  <span className="text-gray-900 font-semibold">{formatCurrency(calculations.finalPayable)}</span>
-                </div>
-
-                <div className="mt-5">
-                  <div className="text-sm font-semibold text-gray-600 mb-3">Chi phí lăn bánh dự tính</div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-gray-600">Phí 01 năm BH Dân sự</span>
-                      <span className="text-gray-900 font-semibold">
-                        {formatCurrency(calculations.liabilityInsurance)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-gray-600">
-                        Phí biển số ({calculations.plateFeeData?.ten_khu_vuc || 'N/A'})
-                      </span>
-                      <span className="text-gray-900 font-semibold">{formatCurrency(calculations.plateFee)}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-gray-600">Phí kiểm định</span>
-                      <span className="text-gray-900 font-semibold">
-                        {formatCurrency(calculations.inspectionFee)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-gray-600">Phí bảo trì đường bộ</span>
-                      <span className="text-gray-900 font-semibold">{formatCurrency(calculations.roadFee)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="text-gray-600">Phí dịch vụ</span>
-                      <input
-                        type="text"
-                        value={formatCurrencyInput(registrationFee)}
-                        onChange={(e) => {
-                          const parsedValue = parseCurrencyInput(e.target.value);
-                          setRegistrationFee(Math.max(0, parsedValue));
-                        }}
-                        className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-semibold"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600">BHVC bao gồm Pin</span>
-                      <span className="text-gray-900 font-semibold">
-                        {formatCurrency(calculations.bodyInsurance)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between py-4 mt-4 border-t-2 border-gray-200">
-                  <span className="text-xl font-bold text-blue-600">TỔNG CHI PHÍ</span>
-                  <span className="text-xl font-bold text-blue-600">{formatCurrency(calculations.totalCost)}</span>
-                </div>
+            <div className="space-y-3">
+              <div className="flex justify-between py-3 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Giá xe (gồm VAT)</span>
+                <span className="text-gray-900 font-semibold">{formatCurrency(calculations.basePrice)}</span>
               </div>
-            </div>
 
-          {/* Loan Options Card */}
-          <div className="bg-white rounded-xl shadow-md p-5 flex flex-col h-full">
-              <h2 className="text-base font-bold text-gray-900 mb-5">Tùy chọn & Chi tiết trả góp</h2>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-4 border-b border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">Vay mua xe trả góp</span>
-                  <label className="relative inline-block w-12 h-6">
+              <div className="my-4">
+                <div className="text-sm font-medium text-gray-600 mb-3">Chọn ưu đãi áp dụng</div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={loanToggle}
-                      onChange={(e) => setLoanToggle(e.target.checked)}
-                      className="opacity-0 w-0 h-0"
+                      checked={discount3}
+                      onChange={(e) => setDiscount3(e.target.checked)}
+                      className="w-5 h-5 text-blue-600"
                     />
-                    <span
-                      className={`absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors ${
-                        loanToggle ? 'bg-blue-600' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`absolute h-4 w-4 rounded-full bg-white top-1 transition-transform ${
-                          loanToggle ? 'translate-x-6 left-1' : 'left-1'
-                        }`}
-                      />
+                    <span className="flex-1 text-sm text-gray-700">Ưu đãi Lái xe Xanh (VN3)</span>
+                    <span className="text-red-600 font-semibold">
+                      -{formatCurrency(calculations.discount3Potential)}
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={discount2}
+                      onChange={(e) => setDiscount2(e.target.checked)}
+                      className="w-5 h-5 text-blue-600"
+                    />
+                    <span className="flex-1 text-sm text-gray-700">Ưu đãi tháng 10</span>
+                    <span className="text-red-600 font-semibold">
+                      -{formatCurrency(calculations.discount2Potential)}
                     </span>
                   </label>
                 </div>
+              </div>
 
-                {loanToggle && (
-                  <>
-                    <div className="flex items-center gap-3 py-4 border-b border-gray-200">
-                      <span className="text-sm font-medium text-gray-700 flex-shrink-0">Tỷ lệ vay</span>
-                      <div className="flex-1">
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={loanRatio}
-                          onChange={(e) => setLoanRatio(Number(e.target.value))}
-                          className="w-full"
-                        />
-                      </div>
+              <div className="flex justify-between py-3 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Giá sau ưu đãi</span>
+                <span className="text-gray-900 font-semibold">
+                  {formatCurrency(calculations.priceAfterBasicPromotions)}
+                </span>
+              </div>
+
+              <div className="my-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Hạng thành viên</label>
+                  <div className="flex gap-4 justify-between items-center">
+                    <select
+                      value={vinClubVoucher}
+                      onChange={(e) => setVinClubVoucher(e.target.value)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="none">Không áp dụng</option>
+                      <option value="gold">Gold (0.5%)</option>
+                      <option value="platinum">Platinum (1%)</option>
+                      <option value="diamond">Diamond (1.5%)</option>
+                    </select>
+                    <div className="text-red-600 font-semibold">{formatCurrency(calculations.vinClubDiscount)}</div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <label className="flex items-center gap-2 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={convertCheckbox}
+                      onChange={(e) => setConvertCheckbox(e.target.checked)}
+                      className="w-5 h-5 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Xăng → Điện (áp dụng chi phí đổi)</span>
+                  </label>
+                  <span className="text-gray-900 font-semibold">
+                    {formatCurrency(calculations.convertSupportDiscount)}
+                  </span>
+                </div>
+
+                {(carModel === 'VF 3' || carModel === 'VF 5') && (
+                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                    <label className="flex items-center gap-2 flex-1">
                       <input
-                        type="number"
+                        type="checkbox"
+                        checked={discountBhvc2}
+                        onChange={(e) => setDiscountBhvc2(e.target.checked)}
+                        className="w-5 h-5 text-blue-600"
+                      />
+                      <span className="text-sm text-gray-700">Quy đổi 2 năm bảo hiểm (BHVC)</span>
+                    </label>
+                    <span className="text-red-600 font-semibold">
+                      -{formatCurrency(calculations.bhvc2Potential)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <label className="flex items-center gap-2 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={discountPremiumColor}
+                      onChange={(e) => setDiscountPremiumColor(e.target.checked)}
+                      className="w-5 h-5 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Miễn Phí Màu Nâng Cao</span>
+                  </label>
+                  <span className="text-red-600 font-semibold">
+                    -{formatCurrency(calculations.premiumColorPotential)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-between py-3 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Giá thanh toán thực tế</span>
+                <span className="text-gray-900 font-semibold">{formatCurrency(calculations.finalPayable)}</span>
+              </div>
+
+              <div className="mt-5">
+                <div className="text-sm font-semibold text-gray-600 mb-3">Chi phí lăn bánh dự tính</div>
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Phí 01 năm BH Dân sự</span>
+                    <span className="text-gray-900 font-semibold">
+                      {formatCurrency(calculations.liabilityInsurance)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">
+                      Phí biển số ({calculations.plateFeeData?.ten_khu_vuc || 'N/A'})
+                    </span>
+                    <span className="text-gray-900 font-semibold">{formatCurrency(calculations.plateFee)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Phí kiểm định</span>
+                    <span className="text-gray-900 font-semibold">
+                      {formatCurrency(calculations.inspectionFee)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Phí bảo trì đường bộ</span>
+                    <span className="text-gray-900 font-semibold">{formatCurrency(calculations.roadFee)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Phí dịch vụ</span>
+                    <input
+                      type="text"
+                      value={formatCurrencyInput(registrationFee)}
+                      onChange={(e) => {
+                        const parsedValue = parseCurrencyInput(e.target.value);
+                        setRegistrationFee(Math.max(0, parsedValue));
+                      }}
+                      className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-semibold"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-gray-600">BHVC bao gồm Pin</span>
+                    <span className="text-gray-900 font-semibold">
+                      {formatCurrency(calculations.bodyInsurance)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between py-4 mt-4 border-t-2 border-gray-200">
+                <span className="text-xl font-bold text-blue-600">TỔNG CHI PHÍ</span>
+                <span className="text-xl font-bold text-blue-600">{formatCurrency(calculations.totalCost)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Loan Options Card */}
+          <div className="bg-white rounded-xl shadow-md p-5 flex flex-col h-full">
+            <h2 className="text-base font-bold text-gray-900 mb-5">Tùy chọn & Chi tiết trả góp</h2>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-4 border-b border-gray-200">
+                <span className="text-sm font-medium text-gray-700">Vay mua xe trả góp</span>
+                <label className="relative inline-block w-12 h-6">
+                  <input
+                    type="checkbox"
+                    checked={loanToggle}
+                    onChange={(e) => setLoanToggle(e.target.checked)}
+                    className="opacity-0 w-0 h-0"
+                  />
+                  <span
+                    className={`absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors ${loanToggle ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
+                  >
+                    <span
+                      className={`absolute h-4 w-4 rounded-full bg-white top-1 transition-transform ${loanToggle ? 'translate-x-6 left-1' : 'left-1'
+                        }`}
+                    />
+                  </span>
+                </label>
+              </div>
+
+              {loanToggle && (
+                <>
+                  <div className="flex items-center gap-3 py-4 border-b border-gray-200">
+                    <span className="text-sm font-medium text-gray-700 flex-shrink-0">Tỷ lệ vay</span>
+                    <div className="flex-1">
+                      <input
+                        type="range"
                         min="0"
                         max="100"
                         value={loanRatio}
-                        onChange={(e) => setLoanRatio(Math.max(0, Math.min(100, Number(e.target.value))))}
-                        className="w-20 px-2 py-1 border border-gray-300 rounded-lg"
-                      />
-                      <span className="text-sm font-semibold text-blue-600 min-w-[120px] text-right">
-                        {loanRatio}% giá trị xe
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center py-4 border-b border-gray-200">
-                      <span className="text-sm font-medium text-gray-700">Thời hạn vay</span>
-                      <select
-                        value={loanTerm}
-                        onChange={(e) => setLoanTerm(Number(e.target.value))}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer max-w-[200px]"
-                      >
-                        <option value="12">12 tháng</option>
-                        <option value="24">24 tháng</option>
-                        <option value="36">36 tháng</option>
-                        <option value="48">48 tháng</option>
-                        <option value="60">60 tháng (5 năm)</option>
-                        <option value="72">72 tháng</option>
-                        <option value="84">84 tháng (7 năm)</option>
-                        <option value="96">96 tháng (8 năm)</option>
-                      </select>
-                    </div>
-
-                    <div className="flex justify-between items-center py-4 border-b border-gray-200">
-                      <span className="text-sm font-medium text-gray-700">Lãi suất ngân hàng</span>
-                      <input
-                        type="number"
-                        value={customInterestRate}
-                        onChange={(e) => setCustomInterestRate(e.target.value)}
-                        placeholder="Lãi suất (%)"
-                        min="0"
-                        step="0.01"
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(e) => setLoanRatio(Number(e.target.value))}
+                        className="w-full"
                       />
                     </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={loanRatio}
+                      onChange={(e) => setLoanRatio(Math.max(0, Math.min(100, Number(e.target.value))))}
+                      className="w-20 px-2 py-1 border border-gray-300 rounded-lg"
+                    />
+                    <span className="text-sm font-semibold text-blue-600 min-w-[120px] text-right">
+                      {loanRatio}% giá trị xe
+                    </span>
+                  </div>
 
-                    <div className="mt-5 pt-5 border-t-2 border-gray-200">
-                      <div className="text-sm font-semibold text-gray-600 mb-3">Chi tiết trả góp dự tính</div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-600">Số tiền trả trước</span>
-                          <span className="text-gray-900 font-semibold">
-                            {formatCurrency(calculations.loanData.downPayment)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-600">Số tiền vay</span>
-                          <span className="text-gray-900 font-semibold">
-                            {formatCurrency(calculations.loanData.loanAmount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-600">Tổng lãi phải trả</span>
-                          <span className="text-gray-900 font-semibold">
-                            {formatCurrency(calculations.loanData.totalInterest)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-4 mt-4 border-t-2 border-gray-200">
-                          <span className="text-xl font-bold text-blue-600">Gốc & lãi hàng tháng</span>
-                          <span className="text-xl font-bold text-blue-600">
-                            {formatCurrency(calculations.loanData.monthlyPayment)}
-                          </span>
-                        </div>
+                  <div className="flex justify-between items-center py-4 border-b border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Thời hạn vay</span>
+                    <select
+                      value={loanTerm}
+                      onChange={(e) => setLoanTerm(Number(e.target.value))}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer max-w-[200px]"
+                    >
+                      <option value="12">12 tháng</option>
+                      <option value="24">24 tháng</option>
+                      <option value="36">36 tháng</option>
+                      <option value="48">48 tháng</option>
+                      <option value="60">60 tháng (5 năm)</option>
+                      <option value="72">72 tháng</option>
+                      <option value="84">84 tháng (7 năm)</option>
+                      <option value="96">96 tháng (8 năm)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-between items-center py-4 border-b border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Lãi suất ngân hàng</span>
+                    <input
+                      type="number"
+                      value={customInterestRate}
+                      onChange={(e) => setCustomInterestRate(e.target.value)}
+                      placeholder="Lãi suất (%)"
+                      min="0"
+                      step="0.01"
+                      className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="mt-5 pt-5 border-t-2 border-gray-200">
+                    <div className="text-sm font-semibold text-gray-600 mb-3">Chi tiết trả góp dự tính</div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Số tiền trả trước</span>
+                        <span className="text-gray-900 font-semibold">
+                          {formatCurrency(calculations.loanData.downPayment)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Số tiền vay</span>
+                        <span className="text-gray-900 font-semibold">
+                          {formatCurrency(calculations.loanData.loanAmount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Tổng lãi phải trả</span>
+                        <span className="text-gray-900 font-semibold">
+                          {formatCurrency(calculations.loanData.totalInterest)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-4 mt-4 border-t-2 border-gray-200">
+                        <span className="text-xl font-bold text-blue-600">Gốc & lãi hàng tháng</span>
+                        <span className="text-xl font-bold text-blue-600">
+                          {formatCurrency(calculations.loanData.monthlyPayment)}
+                        </span>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
+          </div>
         </div>
 
         {/* Footer Action Buttons */}
         <div className="flex gap-3 mt-5">
-          <button 
+          <button
             onClick={collectInvoiceData}
             className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition"
           >

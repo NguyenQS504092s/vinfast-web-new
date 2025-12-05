@@ -240,6 +240,13 @@ export default function HopDongPage() {
       quaTangKhac: c.quaTangKhac || c["Quà tặng khác"] || c["quà tặng khác"] || "",
       giamGia: c.giamGia || c["Giảm giá"] || c["giảm giá"] || "",
       status: c.trangThai || c.status,
+      // Company fields
+      khachHangLa: c.khachHangLa || '',
+      msdn: c.msdn || '',
+      daiDien: c.daiDien || '',
+      chucVu: c.chucVu || '',
+      giayUyQuyen: c.giayUyQuyen || '',
+      giayUyQuyenNgay: c.giayUyQuyenNgay || '',
     });
     
     const loadFromFirebase = async () => {
@@ -1421,6 +1428,13 @@ export default function HopDongPage() {
                                 "Quà tặng": contract.quaTang || contract["Quà tặng"] || contract["quà tặng"] || "",
                                 "Quà tặng khác": contract.quaTangKhac || contract["Quà tặng khác"] || contract["quà tặng khác"] || "",
                                 "Giảm giá": contract.giamGia || contract["Giảm giá"] || contract["giảm giá"] || "",
+                                // Company fields
+                                khachHangLa: contract.khachHangLa || '',
+                                msdn: contract.msdn || '',
+                                daiDien: contract.daiDien || '',
+                                chucVu: contract.chucVu || '',
+                                giayUyQuyen: contract.giayUyQuyen || '',
+                                giayUyQuyenNgay: contract.giayUyQuyenNgay || '',
                               };
                               navigate("/hop-dong-mua-ban-xe", { state: printData });
                             }}

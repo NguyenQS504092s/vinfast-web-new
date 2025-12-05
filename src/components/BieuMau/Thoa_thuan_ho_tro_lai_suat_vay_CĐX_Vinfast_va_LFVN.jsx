@@ -529,7 +529,8 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
 
           {/* Khách Hàng */}
           <div>
-            <p className="font-bold mb-2">
+            <p className="mb-2">
+              <span className="font-normal">Ông/Bà: </span>
               <span className="print:hidden">
                 <input
                   type="text"
@@ -538,7 +539,7 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
                   className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
                 />
               </span>
-              <span className="hidden print:inline">{tenKH}</span>
+              <span className="hidden print:inline font-normal">{tenKH}</span>
             </p>
             <p className="mb-1">
               Địa chỉ:{" "}
