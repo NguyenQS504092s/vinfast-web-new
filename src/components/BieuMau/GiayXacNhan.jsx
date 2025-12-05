@@ -17,7 +17,7 @@ const GiayXacNhan = () => {
   useEffect(() => {
     const loadShowroom = async () => {
       let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
-      
+
       // Nếu có firebaseKey, thử lấy showroom từ contracts
       if (location.state?.firebaseKey) {
         try {
@@ -34,7 +34,7 @@ const GiayXacNhan = () => {
           console.error("Error loading showroom from contracts:", err);
         }
       }
-      
+
       // Lấy thông tin chi nhánh
       const branchInfo = getBranchByShowroomName(showroomName) || getDefaultBranch();
       setBranch(branchInfo);
@@ -84,7 +84,7 @@ const GiayXacNhan = () => {
       }
       setLoading(false);
     };
-    
+
     loadShowroom();
   }, [location.state]);
 
@@ -187,28 +187,37 @@ const GiayXacNhan = () => {
           <h1 className="text-xl font-bold text-center mb-4">GIẤY XÁC NHẬN</h1>
 
           {/* Recipient */}
-          <p className="text-sm mb-3">
-            <span className="font-bold">
-              Kính gửi: Ngân Hàng TMCP Việt Nam Thịnh Vượng –{" "}
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={recipientInfo}
-                  onChange={(e) => setRecipientInfo(e.target.value)}
-                  className="border-b border-gray-400 px-2 py-1 text-sm font-bold w-full max-w-md focus:outline-none focus:border-blue-500"
-                  placeholder="Trung tâm thế chấp vùng 9"
-                />
-              </span>
-              <span className="hidden print:inline">{recipientInfo}</span>
-            </span>
-          </p>
+          <div className="text-sm mb-3">
+            <table className="w-full">
+              <tbody>
+                <tr>
+                  <td className="py-0.5 font-bold w-32">Kính gửi:</td>
+                  <td className="py-0.5">
+                    <span className="font-bold">
+                      Ngân Hàng TMCP Việt Nam Thịnh Vượng –{" "}
+                      <span className="print:hidden">
+                        <input
+                          type="text"
+                          value={recipientInfo}
+                          onChange={(e) => setRecipientInfo(e.target.value)}
+                          className="border-b border-gray-400 px-2 py-1 text-sm font-bold w-64 focus:outline-none focus:border-blue-500"
+                          placeholder="Trung tâm thế chấp vùng 9"
+                        />
+                      </span>
+                      <span className="hidden print:inline">{recipientInfo}</span>
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           {/* Company Information - Bên Bán */}
           <div className="mb-3 text-sm text-red-600">
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="py-0.5 font-bold w-20 align-top underline">
+                  <td className="py-0.5 font-bold w-32 align-top">
                     BÊN BÁN
                   </td>
                   <td className="py-0.5 w-4 text-center align-top">:</td>
@@ -230,10 +239,14 @@ const GiayXacNhan = () => {
                   <td className="py-0.5">
                     <strong>
                       Ông {branch ? branch.representativeName : "Nguyễn Thành Trai"}
-                    </strong>{" "}
-                    <span className="font-bold ml-10">
-                      Chức vụ : {branch ? branch.position : "Tổng Giám đốc"}
-                    </span>
+                    </strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-0.5 align-top">Chức vụ</td>
+                  <td className="py-0.5 text-center align-top">:</td>
+                  <td className="py-0.5 font-bold">
+                    {branch ? branch.position : "Tổng Giám đốc"}
                   </td>
                 </tr>
                 <tr>
@@ -255,29 +268,32 @@ const GiayXacNhan = () => {
             <table className="w-full text-sm">
               <tbody>
                 <tr>
-                  <td className="py-0.5 font-semibold w-24">BÊN MUA</td>
-                  <td className="py-0.5 font-bold">: {data.customerName}</td>
+                  <td className="py-0.5 font-semibold w-32">BÊN MUA</td>
+                  <td className="py-0.5 w-4 text-center">:</td>
+                  <td className="py-0.5 font-bold">{data.customerName}</td>
                 </tr>
                 <tr>
                   <td className="py-0.5">Địa chỉ</td>
-                  <td className="py-0.5">: {data.address}</td>
+                  <td className="py-0.5 text-center">:</td>
+                  <td className="py-0.5">{data.address}</td>
                 </tr>
                 <tr>
                   <td className="py-0.5">CCCD</td>
+                  <td className="py-0.5 text-center">:</td>
                   <td className="py-0.5">
-                    : {data.cccd} cấp ngày {formatDate(data.issueDate)} bởi{" "}
+                    Số {data.cccd} cấp ngày {formatDate(data.issueDate)} bởi{" "}
                     {data.issuePlace}
                   </td>
                 </tr>
                 <tr>
                   <td className="py-0.5">Điện thoại</td>
-                  <td className="py-0.5">: {data.phone}</td>
+                  <td className="py-0.5 text-center">:</td>
+                  <td className="py-0.5">{data.phone}</td>
                 </tr>
                 <tr>
                   <td className="py-0.5">Email</td>
-                  <td className="py-0.5">
-                    : {data.Email}
-                  </td>
+                  <td className="py-0.5 text-center">:</td>
+                  <td className="py-0.5">{data.Email}</td>
                 </tr>
               </tbody>
             </table>
@@ -289,45 +305,29 @@ const GiayXacNhan = () => {
           </p>
 
           <div className="mb-4">
-            <table className="w-full text-sm border border-black">
+            <table className="w-full text-sm">
               <tbody>
                 <tr>
-                  <td className="border border-black px-2 py-1 w-32">
-                    Hiệu xe
-                  </td>
-                  <td className="border border-black px-2 py-1 w-8 text-center">
-                    :
-                  </td>
-                  <td className="border border-black px-2 py-1 uppercase">
-                    {data.model || ""}
-                  </td>
+                  <td className="py-0.5 w-32">Hiệu xe</td>
+                  <td className="py-0.5 w-8 text-center">:</td>
+                  <td className="py-0.5 uppercase">{data.model || ""}</td>
                 </tr>
                 <tr>
-                  <td className="border border-black px-2 py-1">Số khung</td>
-                  <td className="border border-black px-2 py-1 text-center">
-                    :
-                  </td>
-                  <td className="border border-black px-2 py-1 uppercase font-bold text-red-600">
+                  <td className="py-0.5">Số khung</td>
+                  <td className="py-0.5 text-center">:</td>
+                  <td className="py-0.5 uppercase font-bold text-red-600">
                     {data.soKhung || ""}
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-black px-2 py-1">Số máy</td>
-                  <td className="border border-black px-2 py-1 text-center">
-                    :
-                  </td>
-                  <td className="border border-black px-2 py-1">
-                    {data.soMay || ""}
-                  </td>
+                  <td className="py-0.5">Số máy</td>
+                  <td className="py-0.5 text-center">:</td>
+                  <td className="py-0.5">{data.soMay || ""}</td>
                 </tr>
                 <tr>
-                  <td className="border border-black px-2 py-1">
-                    Giá trị khai báo
-                  </td>
-                  <td className="border border-black px-2 py-1 text-center">
-                    :
-                  </td>
-                  <td className="border border-black px-2 py-1 font-semibold">
+                  <td className="py-0.5">Giá trị khai báo</td>
+                  <td className="py-0.5 text-center">:</td>
+                  <td className="py-0.5 font-semibold">
                     {formatCurrency(data.contractPrice)}
                   </td>
                 </tr>
@@ -339,7 +339,7 @@ const GiayXacNhan = () => {
           <div className="text-right mt-8">
             <p className="text-sm font-bold mb-8">ĐẠI DIỆN BÊN BÁN</p>
           </div>
-        </div>     
+        </div>
       </div>
 
       {/* Action Buttons */}
