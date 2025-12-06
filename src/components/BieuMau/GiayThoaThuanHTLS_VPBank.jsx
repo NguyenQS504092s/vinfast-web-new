@@ -68,7 +68,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
   const [thoiHanVay, setThoiHanVay] = useState("");
   const [laiSuatKH, setLaiSuatKH] = useState("6.9");
   const [laiSuatSau24T, setLaiSuatSau24T] = useState("3");
-  const [tyLeVay, setTyLeVay] = useState("90");
+  const [tyLeVay, setTyLeVay] = useState("");
 
   // Ngày bắt đầu và kết thúc chương trình (mặc định 30/07/2025 và 31/12/2025)
   const [ngayBatDauChuongTrinh, setNgayBatDauChuongTrinh] =
@@ -1146,7 +1146,16 @@ const GiayThoaThuanHTLS_VPBank = () => {
                         {soTienVayBangChu || "______"}
                       </span>
                     </em>
-                    ) tương ứng với tỷ lệ vay Ngân Hàng: 90% giá trị xe
+                    ) tương ứng với tỷ lệ vay Ngân Hàng:{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={tyLeVay}
+                        onChange={(e) => setTyLeVay(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-12 text-center focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline">{tyLeVay}</span>% giá trị xe
                   </p>
                   <p>
                     b) Ngân Hàng vay: Ngân hàng TMCP Việt Nam Thịnh Vượng ("

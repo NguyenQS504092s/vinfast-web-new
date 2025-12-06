@@ -20,6 +20,16 @@ const GiayDeNghiThanhToan = () => {
   const [vehicleInfo, setVehicleInfo] = useState("");
   const [branch, setBranch] = useState(null);
 
+  // Editable fields
+  const [companyName, setCompanyName] = useState(
+    "CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN"
+  );
+  const [branchName, setBranchName] = useState("");
+  const [bankName, setBankName] = useState(
+    "NGÂN HÀNG TMCP VIỆT NAM THỊNH VƯỢNG-VP BANK"
+  );
+  const [accountHolder, setAccountHolder] = useState("");
+
   // Helper function to get shortName from showroom (similar to GiayXacNhanThongTin.jsx)
   const getShowroomShortName = (showroomValue) => {
     if (!showroomValue) return "Trường Chinh";
@@ -131,6 +141,10 @@ const GiayDeNghiThanhToan = () => {
         if (incoming.recipientInfo) {
           setRecipientInfo(incoming.recipientInfo);
         }
+
+        // Set branch name for editable field
+        const shortName = getShowroomShortName(showroomName).toUpperCase();
+        setBranchName(`CHI NHÁNH ${shortName}`);
       }
       setLoading(false);
     };
@@ -200,12 +214,28 @@ const GiayDeNghiThanhToan = () => {
           <div className="mb-8">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <p className="font-bold w-[300px] text-sm mb-1">
-                  CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN
-                </p>
-                <p className="font-bold w-[300px] text-sm mb-1">
-                  CHI NHÁNH {getShowroomShortName(data?.showroom).toUpperCase()}
-                </p>
+                <div className="font-bold w-[300px] text-sm mb-1">
+                  <span className="print:hidden">
+                    <textarea
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="border border-gray-300 px-1 w-full focus:outline-none focus:border-blue-500 resize-none overflow-hidden bg-transparent"
+                      rows={2}
+                    />
+                  </span>
+                  <span className="hidden print:inline">{companyName}</span>
+                </div>
+                <div className="font-bold w-[300px] text-sm mb-1">
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={branchName}
+                      onChange={(e) => setBranchName(e.target.value)}
+                      className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500 font-bold text-sm"
+                    />
+                  </span>
+                  <span className="hidden print:inline">{branchName}</span>
+                </div>
               </div>
 
               <div className="flex-1 text-center">
@@ -228,7 +258,17 @@ const GiayDeNghiThanhToan = () => {
           {/* Recipient */}
           <div className="mb-6 text-center">
             <p className="font-bold mb-1">
-              Kính gửi: NGÂN HÀNG TMCP VIỆT NAM THỊNH VƯỢNG-VP BANK
+              Kính gửi:{" "}
+              <span className="print:hidden">
+                <input
+                  type="text"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  className="border-b border-gray-400 px-2 py-1 text-sm font-bold w-full max-w-md focus:outline-none focus:border-blue-500"
+                  placeholder="NGÂN HÀNG TMCP VIỆT NAM THỊNH VƯỢNG-VP BANK"
+                />
+              </span>
+              <span className="hidden print:inline">{bankName}</span>
             </p>
             <p className="font-bold">
               -
@@ -319,9 +359,17 @@ const GiayDeNghiThanhToan = () => {
 
             <div>
               - Chủ TK:{" "}
-              <strong>
-                Công ty Cổ Phần Đầu Tư Thương Mại Và Dịch Vụ ô tô Đông Sài Gòn.
-              </strong>
+              <span className="print:hidden">
+                <input
+                  type="text"
+                  value={accountHolder}
+                  onChange={(e) => setAccountHolder(e.target.value)}
+                  className="border-b border-gray-400 px-1 w-full max-w-lg font-bold focus:outline-none focus:border-blue-500"
+                />
+              </span>
+              <span className="hidden print:inline">
+                <strong>{accountHolder}</strong>
+              </span>
             </div>
           </div>
 

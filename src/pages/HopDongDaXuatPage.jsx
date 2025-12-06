@@ -1943,6 +1943,14 @@ export default function HopDongDaXuatPage() {
                           </button>
                           <button
                             onClick={() =>
+                              handlePrintNavigate("/giay-thoa-thuan-ho-tro-vay-lai")
+                            }
+                            className="w-full px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-sm"
+                          >
+                            TCB - Thỏa thuận hỗ trợ lãi vay 80%
+                          </button>
+                          <button
+                            onClick={() =>
                               handlePrintNavigate("/bieu-mau-tpbank")
                             }
                             className="w-full px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-sm"

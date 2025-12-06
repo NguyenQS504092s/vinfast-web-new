@@ -6,6 +6,7 @@ import {
   getBranchByShowroomName,
   getDefaultBranch,
 } from "../../data/branchData";
+import logo from "../../assets/images/logo.png";
 
 const GiayThoaThuanHoTroVayLai = () => {
   const location = useLocation();
@@ -49,6 +50,10 @@ const GiayThoaThuanHoTroVayLai = () => {
   const [model, setModel] = useState("");
   const [soKhung, setSoKhung] = useState("");
   const [soMay, setSoMay] = useState("");
+
+  // Editable fields - Chính sách
+  const [tuNgay, setTuNgay] = useState("");
+  const [tuThang, setTuThang] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -141,7 +146,7 @@ const GiayThoaThuanHoTroVayLai = () => {
           {/* Logo */}
           <div className="text-center mb-6">
             <div className="w-32 mx-auto mb-4">
-              <img src="/vinfast.svg" alt="VinFast Logo" className="w-full" />
+              <img src={logo} alt="VinFast Logo" className="w-full" />
             </div>
           </div>
 
@@ -302,8 +307,8 @@ const GiayThoaThuanHoTroVayLai = () => {
                 </span>
                 )
               </p>
-              <p className="mb-2 text-center font-bold">("Bên Bán")</p>
-              <p className="text-center font-bold mb-2">VÀ</p>
+              <p className="mb-2 font-bold">("Bên Bán")</p>
+              <p className="font-bold mb-2">VÀ</p>
             </div>
 
             {/* Khách Hàng */}
@@ -417,7 +422,7 @@ const GiayThoaThuanHoTroVayLai = () => {
                 </span>
                 <span className="hidden print:inline">{chucVuKH}</span>
               </p>
-              <p className="mb-2 text-center font-bold">("Khách Hàng")</p>
+              <p className="mb-2 font-bold">("Khách Hàng")</p>
             </div>
 
             <p className="text-justify">
@@ -427,7 +432,7 @@ const GiayThoaThuanHoTroVayLai = () => {
 
             {/* XÉT RẰNG */}
             <div>
-              <p className="font-bold text-center mb-4">XÉT RẰNG:</p>
+              <p className="font-bold mb-4">XÉT RẰNG:</p>
 
               <div className="space-y-3">
                 <p className="text-justify">
@@ -490,7 +495,25 @@ const GiayThoaThuanHoTroVayLai = () => {
                   là "<strong>Ngân Hàng</strong>") theo chính sách hỗ trợ lãi
                   vay của VinFast ("<strong>Chính sách Hỗ trợ lãi vay</strong>")
                   áp dụng cho các Khách hàng tham gia chương trình Chuyển đổi
-                  xanh đặt cọc mua xe/xuất hóa đơn từ ngày …../…../2025 đến hết
+                  xanh đặt cọc mua xe/xuất hóa đơn từ ngày{" "}
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={tuNgay}
+                      onChange={(e) => setTuNgay(e.target.value)}
+                      className="border-b border-gray-400 px-1 w-8 text-center focus:outline-none focus:border-blue-500"
+                    />
+                  </span>
+                  <span className="hidden print:inline">{tuNgay}</span>/
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={tuThang}
+                      onChange={(e) => setTuThang(e.target.value)}
+                      className="border-b border-gray-400 px-1 w-8 text-center focus:outline-none focus:border-blue-500"
+                    />
+                  </span>
+                  <span className="hidden print:inline">{tuThang}</span>/2025 đến hết
                   ngày 31/12/2025, giải ngân đến hết ngày 31/12/2025...
                 </p>
 
