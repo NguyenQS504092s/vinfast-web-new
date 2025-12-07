@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ref, update, push, get, set, remove } from 'firebase/database';
 import { database } from '../firebase/config';
-import { X, Check, ArrowLeft, ChevronDown } from 'lucide-react';
+import { X, Check, ArrowLeft, ChevronDown, Search, Gift } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { carPriceData, uniqueNgoaiThatColors, uniqueNoiThatColors } from '../data/calculatorData';
 import { getAllBranches, getBranchByShowroomName } from '../data/branchData';
@@ -105,28 +105,6 @@ export default function ContractFormPage() {
     loadEmployees();
   }, []);
 
-  // List of available promotions - loaded from Firebase
-  const [availablePromotions, setAvailablePromotions] = useState(defaultPromotions);
-
-  // Load promotions from Firebase on component mount
-  useEffect(() => {
-    const loadPromotions = async () => {
-      try {
-        const promotionsList = await loadPromotionsFromFirebase();
-        if (promotionsList && promotionsList.length > 0) {
-          // Use promotions from Firebase, extract names
-          const promotionNames = promotionsList.map(p => p.name || '').filter(Boolean);
-          setAvailablePromotions(promotionNames);
-        }
-        // If Firebase is empty, use defaultPromotions (already set in useState)
-      } catch (err) {
-        console.error('Error loading promotions:', err);
-        // Keep defaultPromotions if loading fails
-      }
-    };
-    loadPromotions();
-  }, []);
-
   const [contract, setContract] = useState({
     id: null,
     createdAt: new Date().toISOString().split("T")[0],
@@ -161,9 +139,74 @@ export default function ContractFormPage() {
     giayUyQuyenNgay: '',
   });
 
+  // List of all available promotions - loaded from Firebase but not shown directly in dropdown
+  const [allPromotions, setAllPromotions] = useState([]);
+  // Only promotions that have been selected and added will be shown in the dropdown
+  const [selectedPromotions, setSelectedPromotions] = useState([]);
+
+  // Load promotions from Firebase on component mount
+  useEffect(() => {
+    const loadPromotions = async () => {
+      try {
+        let promotionsList = await loadPromotionsFromFirebase();
+        if (!promotionsList || promotionsList.length === 0) {
+          promotionsList = defaultPromotions;
+        }
+        
+        setAllPromotions(promotionsList);
+        
+        // If there are promotions in the contract, add them to selected promotions
+        if (contract.uuDai && contract.uuDai.length > 0) {
+          const selected = [];
+          contract.uuDai.forEach(promoName => {
+            const found = promotionsList.find(p => p.name === promoName);
+            if (found) {
+              selected.push(found);
+            }
+          });
+          setSelectedPromotions(selected);
+        } else {
+          setSelectedPromotions([]);
+        }
+      } catch (err) {
+        console.error('Error loading promotions:', err);
+        setAllPromotions(defaultPromotions);
+        setSelectedPromotions([]);
+      }
+    };
+    
+    // Only load promotions if we don't have any loaded yet
+    if (allPromotions.length === 0) {
+      loadPromotions();
+    } else if (contract.uuDai && contract.uuDai.length > 0 && selectedPromotions.length === 0) {
+      // If we have promotions but no selected ones, try to sync with contract.uuDai
+      const selected = [];
+      contract.uuDai.forEach(promoName => {
+        const found = allPromotions.find(p => p.name === promoName);
+        if (found) {
+          selected.push(found);
+        }
+      });
+      setSelectedPromotions(selected);
+    }
+  }, [contract.uuDai, allPromotions]);
+
   // State for dropdown visibility
   const [isUuDaiDropdownOpen, setIsUuDaiDropdownOpen] = useState(false);
+  const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
+  const [promotionSearch, setPromotionSearch] = useState('');
   const [dropdownDirection, setDropdownDirection] = useState('down'); // 'down' or 'up'
+  const [selectedPromotionIds, setSelectedPromotionIds] = useState(new Set());
+  
+  // Update selected promotion IDs when selectedPromotions changes
+  useEffect(() => {
+    if (selectedPromotions && selectedPromotions.length > 0) {
+      const ids = new Set(selectedPromotions.map(p => p.id));
+      setSelectedPromotionIds(ids);
+    } else {
+      setSelectedPromotionIds(new Set());
+    }
+  }, [selectedPromotions]);
 
   useEffect(() => {
     if (contractData) {
@@ -392,17 +435,12 @@ export default function ContractFormPage() {
 
   // Format currency for display (add thousand separators)
   const formatCurrency = (value) => {
-    if (!value) return '';
-    // Remove all non-digit characters
-    const numericValue = String(value).replace(/\D/g, '');
-    if (!numericValue) return '';
-    // Format with thousand separators
-    return new Intl.NumberFormat('vi-VN').format(parseInt(numericValue));
+    if (value === undefined || value === null) return '0';
+    return new Intl.NumberFormat('vi-VN').format(Number(value));
   };
 
-  // Parse currency from formatted string (remove thousand separators)
+  // Parse currency input (remove thousand separators)
   const parseCurrency = (value) => {
-    if (!value) return '';
     // Remove all non-digit characters
     return String(value).replace(/\D/g, '');
   };
@@ -534,19 +572,14 @@ export default function ContractFormPage() {
     handleInputChange(field, rawValue);
   };
 
-  // Handle promotion checkbox toggle
-  const handlePromotionToggle = (promotion) => {
-    setContract((prev) => {
-      const currentPromotions = prev.uuDai || [];
-      const isSelected = currentPromotions.includes(promotion);
-      const updatedPromotions = isSelected
-        ? currentPromotions.filter((p) => p !== promotion)
-        : [...currentPromotions, promotion];
-      return {
-        ...prev,
-        uuDai: updatedPromotions,
-      };
-    });
+  // Handle adding selected promotions from modal
+  const handleAddPromotions = (promotions) => {
+    setSelectedPromotions(promotions);
+    // Update the contract form with the selected promotion names
+    setContract(prev => ({
+      ...prev,
+      uuDai: promotions.map(p => p.name)
+    }));
   };
 
   const handleSubmit = async () => {
@@ -1299,64 +1332,59 @@ export default function ContractFormPage() {
                 {/* Uu Dai - Dropdown with checkboxes */}
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Ưu đãi
+                    Ưu đãi áp dụng
                   </label>
-                  <div className="relative" ref={dropdownRef}>
+                  <div className="flex gap-2">
                     <button
-                      ref={dropdownButtonRef}
                       type="button"
-                      onClick={() => !isDetailsMode && setIsUuDaiDropdownOpen(!isUuDaiDropdownOpen)}
-                      disabled={isDetailsMode}
-                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-between"
+                      onClick={() => setIsPromotionModalOpen(true)}
+                      className="px-3 sm:px-4 py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                     >
-                      <span className="text-left flex-1 truncate">
-                        {contract.uuDai && contract.uuDai.length > 0
-                          ? `${contract.uuDai.length} ưu đãi đã chọn`
-                          : "Chọn ưu đãi"}
-                      </span>
-                      <ChevronDown
-                        className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isUuDaiDropdownOpen ? "transform rotate-180" : ""
-                          }`}
-                      />
+                      Chọn ưu đãi
                     </button>
-                    {isUuDaiDropdownOpen && !isDetailsMode && (
-                      <div
-                        className={`absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${dropdownDirection === 'up'
-                            ? 'bottom-full mb-1'
-                            : 'top-full mt-1'
-                          }`}
-                      >
-                        {availablePromotions.map((promotion) => {
-                          const isSelected = contract.uuDai && contract.uuDai.includes(promotion);
-                          return (
-                            <label
-                              key={promotion}
-                              className="flex items-start px-3 sm:px-4 py-2 sm:py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => handlePromotionToggle(promotion)}
-                                className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                              />
-                              <span className="ml-2 sm:ml-3 text-xs sm:text-sm text-gray-700 flex-1 break-words">
-                                {promotion}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
+                    {selectedPromotions.length > 0 && (
+                      <span className="text-xs sm:text-sm text-gray-600 self-center">
+                        Đã chọn {selectedPromotions.length} ưu đãi
+                      </span>
                     )}
                   </div>
+                  
                   {/* Display selected promotions */}
-                  {contract.uuDai && contract.uuDai.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {contract.uuDai.map((promotion) => (
+                  {selectedPromotions.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {selectedPromotions.map((promotion) => (
                         <div
-                          key={promotion}
-                          className="text-xs text-gray-600 bg-gray-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded border border-gray-200 break-words"
+                          key={promotion.id}
+                          className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                         >
-                          {promotion}
+                          <div>
+                            <div className="font-medium text-sm text-gray-900">{promotion.name}</div>
+                            {promotion.type === 'fixed' && (
+                              <div className="text-xs text-gray-600">
+                                Giảm trực tiếp: {formatCurrency(promotion.value)} VNĐ
+                              </div>
+                            )}
+                            {promotion.type === 'percentage' && (
+                              <div className="text-xs text-gray-600">
+                                Giảm: {promotion.value}% (tối đa {formatCurrency(promotion.maxDiscount)} VNĐ)
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPromotions(prev => 
+                                prev.filter(p => p.id !== promotion.id)
+                              );
+                              setContract(prev => ({
+                                ...prev,
+                                uuDai: prev.uuDai ? prev.uuDai.filter(p => p !== promotion.name) : []
+                              }));
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -1460,7 +1488,142 @@ export default function ContractFormPage() {
           </div>
         </div>
       </div>
+      
+      {/* Promotions Modal */}
+      {isPromotionModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[calc(100vh-2rem)] overflow-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-purple-400 px-4 sm:px-6 py-3 sm:py-4 rounded-t-lg sticky top-0 z-10">
+              <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                <Gift className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Quản lý chương trình ưu đãi</span>
+              </h3>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm ưu đãi..."
+                  value={promotionSearch}
+                  onChange={(e) => setPromotionSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+            </div>
+
+            {/* Promotions List */}
+            <div className="px-4 sm:px-6 py-3 sm:py-4 max-h-96 overflow-y-auto">
+              {allPromotions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Gift className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>Chưa có chương trình ưu đãi nào</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allPromotions
+                    .filter(promotion => 
+                      promotion.name.toLowerCase().includes(promotionSearch.toLowerCase())
+                    )
+                    .map((promotion) => (
+                      <div key={promotion.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                        <div className="flex items-start gap-3 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedPromotionIds.has(promotion.id)}
+                            onChange={() => {
+                              const newSelected = new Set(selectedPromotionIds);
+                              if (newSelected.has(promotion.id)) {
+                                newSelected.delete(promotion.id);
+                              } else {
+                                newSelected.add(promotion.id);
+                              }
+                              setSelectedPromotionIds(newSelected);
+                              
+                              // Also update selectedPromotions array
+                              if (newSelected.has(promotion.id)) {
+                                setSelectedPromotions(prev => [...prev, promotion]);
+                              } else {
+                                setSelectedPromotions(prev => prev.filter(p => p.id !== promotion.id));
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-sm text-gray-900">{promotion.name}</div>
+                            {promotion.type === 'fixed' && (
+                              <div className="text-xs text-gray-600">
+                                Giảm trực tiếp: {formatCurrency(promotion.value)} VNĐ
+                              </div>
+                            )}
+                            {promotion.type === 'percentage' && (
+                              <div className="text-xs text-gray-600">
+                                Giảm: {promotion.value}% (tối đa {formatCurrency(promotion.maxDiscount)} VNĐ)
+                              </div>
+                            )}
+                            {promotion.type === 'display' && (
+                              <div className="text-xs text-gray-600">
+                                Hiển thị: {promotion.description || 'Không có mô tả'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              // Only show this promotion
+                              setPromotionSearch(promotion.name);
+                            }}
+                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            Chỉ hiển thị
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 sticky bottom-0 border-t border-gray-200">
+              <div className="text-sm text-gray-600">
+                Đã chọn: {selectedPromotionIds.size} ưu đãi
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button
+                  onClick={() => {
+                    // Update contract with selected promotions
+                    const selectedPromos = allPromotions.filter(p => selectedPromotionIds.has(p.id));
+                    handleAddPromotions(selectedPromos);
+                    setIsPromotionModalOpen(false);
+                  }}
+                  disabled={selectedPromotionIds.size === 0}
+                  className={`w-full sm:w-auto px-4 py-2 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
+                    selectedPromotionIds.size > 0 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Thêm vào hợp đồng</span>
+                </button>
+                <button
+                  onClick={() => setIsPromotionModalOpen(false)}
+                  className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                  aria-label="Đóng"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Đóng</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

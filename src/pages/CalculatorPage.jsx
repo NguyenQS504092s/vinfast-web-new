@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Gift, X, Trash2, Edit, Save, XCircle, Plus, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { ref, push, set, update, remove, get } from 'firebase/database';
+import { database } from '../firebase/config';
+import { loadPromotionsFromFirebase } from '../data/promotionsData';
 import {
   phi_duong_bo,
   phi_cap_bien_so,
@@ -160,6 +164,455 @@ export default function CalculatorPage() {
   const [loanRatio, setLoanRatio] = useState(70);
   const [loanTerm, setLoanTerm] = useState(60);
   const [customInterestRate, setCustomInterestRate] = useState('');
+  const [isAddPromotionModalOpen, setIsAddPromotionModalOpen] = useState(false);
+  const [newPromotionName, setNewPromotionName] = useState('');
+  const [promotions, setPromotions] = useState([]);
+  const [editingPromotionId, setEditingPromotionId] = useState(null);
+  const [editingPromotion, setEditingPromotion] = useState({
+    name: '',
+    type: 'display', // 'percentage', 'fixed', 'display'
+    value: 0,
+    maxDiscount: 0,
+    minPurchase: 0
+  });
+  const [deletingPromotionId, setDeletingPromotionId] = useState(null);
+  const [loadingPromotions, setLoadingPromotions] = useState(false);
+  const [selectedPromotions, setSelectedPromotions] = useState([]);
+  const [selectedPromotionIds, setSelectedPromotionIds] = useState([]);
+  const [promotionType, setPromotionType] = useState('display'); // 'percentage', 'fixed', 'display'
+  const [filterType, setFilterType] = useState('all'); // 'all', 'display', 'percentage', 'fixed'
+
+  // Get current user info for tracking who added/edited promotions
+  const userEmail = localStorage.getItem('userEmail') || '';
+  const username = localStorage.getItem('username') || '';
+
+  // Load promotions when component mounts
+  useEffect(() => {
+    loadPromotions();
+  }, []);
+
+  // Default promotions including the hardcoded ones
+  const defaultPromotions = [
+    {
+      id: 'default1',
+      name: 'Chính sách MLTTVN 3: Giảm 4% Tiền mặt',
+      type: 'display',
+      value: 0,
+      maxDiscount: 0,
+      minPurchase: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: 'system',
+      isHardcoded: true
+    },
+    {
+      id: 'default2',
+      name: 'Miễn phí sạc tới 30/06/2027',
+      type: 'display',
+      value: 0,
+      maxDiscount: 0,
+      minPurchase: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: 'system',
+      isHardcoded: true
+    },
+    {
+      id: 'discount_vn3',
+      name: 'Ưu đãi Lái xe Xanh (VN3)',
+      type: 'fixed',
+      value: 1000000,
+      maxDiscount: 0,
+      minPurchase: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: 'system',
+      isHardcoded: true
+    },
+    {
+      id: 'discount_october',
+      name: 'Ưu đãi tháng 10',
+      type: 'fixed',
+      value: 5000000,
+      maxDiscount: 0,
+      minPurchase: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: 'system',
+      isHardcoded: true
+    }
+  ];
+
+  // Load promotions from Firebase and include hardcoded ones
+  const loadPromotions = async () => {
+    setLoadingPromotions(true);
+    try {
+      let promotionsList = [];
+
+      try {
+        const promotionsRef = ref(database, 'promotions');
+        const snapshot = await get(promotionsRef);
+
+        if (snapshot.exists()) {
+          promotionsList = Object.entries(snapshot.val()).map(([id, data]) => ({
+            id,
+            ...data,
+            isHardcoded: false
+          }));
+        }
+      } catch (error) {
+        console.warn("Error loading promotions from Firebase:", error);
+        // Fallback to default promotions if there's an error
+        setPromotions(defaultPromotions);
+        setLoadingPromotions(false);
+        return;
+      }
+
+      // Always include hardcoded promotions
+      const hardcodedPromotions = defaultPromotions.filter(p => p.isHardcoded);
+      const existingIds = new Set(promotionsList.map(p => p.id));
+
+      // Only add hardcoded promotions that don't already exist in the database
+      const newPromotions = hardcodedPromotions.filter(p => !existingIds.has(p.id));
+      const allPromotions = [...promotionsList, ...newPromotions];
+
+      // Ensure all promotions have the required fields with default values
+      const formattedPromotions = allPromotions.map(promotion => ({
+        id: promotion.id,
+        name: promotion.name || '',
+        type: promotion.type || 'display',
+        value: typeof promotion.value === 'number' ? promotion.value : 0,
+        maxDiscount: typeof promotion.maxDiscount === 'number' ? promotion.maxDiscount : 0,
+        minPurchase: typeof promotion.minPurchase === 'number' ? promotion.minPurchase : 0,
+        createdAt: promotion.createdAt || new Date().toISOString(),
+        createdBy: promotion.createdBy || 'system',
+        isHardcoded: !!promotion.isHardcoded
+      }));
+
+      setPromotions(formattedPromotions);
+    } catch (error) {
+      console.error("Error loading promotions:", error);
+      toast.error("Lỗi khi tải danh sách ưu đãi: " + error.message);
+      // Fallback to default promotions on error
+      setPromotions(defaultPromotions);
+    } finally {
+      setLoadingPromotions(false);
+    }
+  };
+
+  // Open add promotion modal
+  const openAddPromotionModal = () => {
+    setIsAddPromotionModalOpen(true);
+    setNewPromotionName('');
+    setEditingPromotionId(null);
+    setPromotionType('display');
+  };
+
+  // Close add promotion modal
+  const closeAddPromotionModal = () => {
+    setIsAddPromotionModalOpen(false);
+    setNewPromotionName('');
+    setEditingPromotionId(null);
+    setPromotionType('display');
+  };
+
+  // Handle add promotion
+  const handleAddPromotion = async () => {
+    if (!newPromotionName || !newPromotionName.trim()) {
+      toast.warning("Vui lòng nhập tên chương trình ưu đãi!");
+      return;
+    }
+
+    if (promotionType !== 'display' && !editingPromotion.value) {
+      toast.warning(`Vui lòng nhập ${promotionType === 'percentage' ? 'phần trăm giảm giá' : 'số tiền giảm'}!`);
+      return;
+    }
+
+    try {
+      const promotionsRef = ref(database, "promotions");
+      const newPromotionRef = push(promotionsRef);
+      const promotionData = {
+        name: newPromotionName.trim(),
+        type: promotionType,
+        value: editingPromotion.value || 0,
+        maxDiscount: editingPromotion.maxDiscount || 0,
+        minPurchase: editingPromotion.minPurchase || 0,
+        createdAt: new Date().toISOString(),
+        createdBy: userEmail || username || "admin",
+      };
+
+      await set(newPromotionRef, promotionData);
+
+      toast.success("Thêm chương trình ưu đãi thành công!");
+      setNewPromotionName('');
+      setPromotionType('display');
+      setEditingPromotion({
+        name: '',
+        type: 'display',
+        value: 0,
+        maxDiscount: 0,
+        minPurchase: 0
+      });
+      await loadPromotions(); // Reload list
+    } catch (err) {
+      console.error("Error adding promotion:", err);
+      toast.error("Lỗi khi thêm chương trình ưu đãi: " + err.message);
+    }
+  };
+
+  // Apply promotion to calculate discount amount
+  const applyPromotion = (promotion, amount) => {
+    if (promotion.type === 'display' || !promotion.value) {
+      return 0; // No discount for display-only promotions
+    }
+
+    // Check minimum purchase requirement
+    if (promotion.minPurchase && amount < promotion.minPurchase) {
+      return 0;
+    }
+
+    let discount = 0;
+
+    if (promotion.type === 'percentage') {
+      // Calculate percentage discount
+      discount = (amount * promotion.value) / 100;
+
+      // Apply maximum discount limit if set
+      if (promotion.maxDiscount && discount > promotion.maxDiscount) {
+        discount = promotion.maxDiscount;
+      }
+    } else if (promotion.type === 'fixed') {
+      // Fixed amount discount
+      discount = Math.min(promotion.value, amount);
+    }
+
+    return Math.round(discount);
+  };
+
+  // Start editing promotion
+  const startEditPromotion = (promotion) => {
+    setEditingPromotionId(promotion.id);
+    setEditingPromotion({
+      name: promotion.name || '',
+      type: promotion.type || 'display',
+      value: promotion.value || 0,
+      maxDiscount: promotion.maxDiscount || 0,
+      minPurchase: promotion.minPurchase || 0
+    });
+  };
+
+  // Cancel editing
+  const cancelEditPromotion = () => {
+    setEditingPromotionId(null);
+    setEditingPromotion({
+      name: '',
+      type: 'display',
+      value: 0,
+      maxDiscount: 0,
+      minPurchase: 0
+    });
+  };
+
+  // Handle promotion type change
+  const handlePromotionTypeChange = (type) => {
+    setPromotionType(type);
+    setEditingPromotion(prev => ({
+      ...prev,
+      type,
+      value: 0,
+      maxDiscount: type === 'percentage' ? 100 : 0,
+      minPurchase: 0
+    }));
+  };
+
+  // Save edited promotion
+  const handleSaveEditPromotion = async () => {
+    if (!editingPromotion.name || !editingPromotion.name.trim()) {
+      toast.warning("Vui lòng nhập tên chương trình ưu đãi!");
+      return;
+    }
+
+    if (editingPromotion.type !== 'display' && !editingPromotion.value) {
+      toast.warning(
+        `Vui lòng nhập ${editingPromotion.type === 'percentage' ? 'phần trăm giảm giá' : 'số tiền giảm'}!`
+      );
+      return;
+    }
+
+    try {
+      const promotionRef = ref(database, `promotions/${editingPromotionId}`);
+
+      await update(promotionRef, {
+        name: editingPromotion.name.trim(),
+        type: editingPromotion.type,
+        value: editingPromotion.value || 0,
+        maxDiscount: editingPromotion.maxDiscount || 0,
+        minPurchase: editingPromotion.minPurchase || 0,
+        updatedAt: new Date().toISOString(),
+        updatedBy: userEmail || username || "admin",
+      });
+
+      toast.success("Cập nhật chương trình ưu đãi thành công!");
+      cancelEditPromotion(); // Reset editing state
+      await loadPromotions(); // Reload list
+    } catch (err) {
+      console.error("Error updating promotion:", err);
+      toast.error("Lỗi khi cập nhật chương trình ưu đãi: " + err.message);
+    }
+  };
+
+  // Open delete confirmation
+  const openDeletePromotionConfirm = (promotionId) => {
+    setDeletingPromotionId(promotionId);
+  };
+
+  // Close delete confirmation
+  const closeDeletePromotionConfirm = () => {
+    setDeletingPromotionId(null);
+  };
+
+  // Handle delete promotion
+  const handleDeletePromotion = async () => {
+    if (!deletingPromotionId) return;
+
+    // Check if this is a hardcoded promotion
+    const promotionToDelete = promotions.find(p => p.id === deletingPromotionId);
+    if (promotionToDelete?.isHardcoded) {
+      toast.error("Không thể xóa chương trình ưu đãi mặc định!");
+      setDeletingPromotionId(null);
+      return;
+    }
+
+    try {
+      const promotionRef = ref(database, `promotions/${deletingPromotionId}`);
+      await remove(promotionRef);
+
+      // Remove from selected promotions if it was selected
+      setSelectedPromotions(prev => prev.filter(p => p.id !== deletingPromotionId));
+
+      toast.success("Xóa chương trình ưu đãi thành công!");
+      setDeletingPromotionId(null);
+      await loadPromotions(); // Reload list
+    } catch (err) {
+      console.error("Error deleting promotion:", err);
+      toast.error("Lỗi khi xóa chương trình ưu đãi: " + err.message);
+    }
+  };
+
+  // Toggle promotion selection in the modal
+  const togglePromotionSelection = (promotionId) => {
+    // Check if this promotion is already in the main selectedPromotions
+    const isAlreadySelected = selectedPromotions.some(p => p.id === promotionId);
+    
+    if (isAlreadySelected) {
+      // If already selected, remove it from selectedPromotions
+      setSelectedPromotions(prev => {
+        const updated = prev.filter(p => p.id !== promotionId);
+        saveSelectedPromotions(updated);
+        return updated;
+      });
+    } else {
+      // If not selected, add it to the selectedPromotionIds for the modal
+      setSelectedPromotionIds(prev => {
+        if (prev.includes(promotionId)) {
+          return prev.filter(id => id !== promotionId);
+        } else {
+          return [...prev, promotionId];
+        }
+      });
+    }
+  };
+
+  // Add selected promotions to the main selection
+  const addSelectedPromotions = () => {
+    if (selectedPromotionIds.length === 0) return;
+
+    // Get the selected promotion objects that aren't already selected
+    const selectedPromos = promotions.filter(p => 
+      selectedPromotionIds.includes(p.id) && 
+      !selectedPromotions.some(sp => sp.id === p.id)
+    );
+
+    if (selectedPromos.length > 0) {
+      // Only update if there are new promotions to add
+      const newPromotions = [
+        ...selectedPromotions,
+        ...selectedPromos.map(p => ({
+          ...p,
+          isActive: false // Default to not active when added
+        }))
+      ];
+
+      setSelectedPromotions(newPromotions);
+      saveSelectedPromotions(newPromotions);
+    }
+    
+    // Clear selection and close modal
+    setSelectedPromotionIds([]);
+    setIsAddPromotionModalOpen(false);
+  };
+
+  // Calculate total discount from selected and active promotions
+  const calculatePromotionDiscounts = (price, promotionsToCheck = null) => {
+    const promotions = promotionsToCheck || selectedPromotions;
+    
+    if (!promotions || !promotions.length) {
+      return 0;
+    }
+    
+    // Filter out promotions that are not active if we're not checking specific ones
+    const activePromotions = promotionsToCheck 
+      ? promotions 
+      : promotions.filter(p => p.isActive === true);
+    
+    if (activePromotions.length === 0) {
+      return 0;
+    }
+    
+    return activePromotions.reduce((total, promo) => {
+      try {
+        // Skip if promotion is not active (isActive is explicitly false) and we're not checking specific ones
+        if (!promo || (!promotionsToCheck && promo.isActive === false)) {
+          return total;
+        }
+        
+        if (promo.type === 'fixed') {
+          return total + (parseFloat(promo.value) || 0);
+        } else if (promo.type === 'percentage') {
+          const percentage = parseFloat(promo.value) || 0;
+          const maxDiscount = parseFloat(promo.maxDiscount) || 0;
+          const discount = (price * percentage) / 100;
+          return total + (maxDiscount > 0 ? Math.min(discount, maxDiscount) : discount);
+        }
+        return total;
+      } catch (error) {
+        console.error('Error calculating promotion discount:', error, promo);
+        return total;
+      }
+    }, 0);
+  };
+
+  // Toggle promotion active state
+  const togglePromotionActive = (promotionId) => {
+    setSelectedPromotions(prev => {
+      const updated = prev.map(p => 
+        p.id === promotionId 
+          ? { 
+              ...p, 
+              isActive: !p.isActive
+            } 
+          : p
+      );
+      saveSelectedPromotions(updated);
+      return updated;
+    });
+  };
+  
+
+  // Remove a selected promotion
+  const removeSelectedPromotion = (promotionId) => {
+    setSelectedPromotions(prev => {
+      const updated = prev.filter(p => p.id !== promotionId);
+      saveSelectedPromotions(updated);
+      return updated;
+    });
+  };
 
   const [imageFade, setImageFade] = useState(false);
 
@@ -360,14 +813,51 @@ export default function CalculatorPage() {
     return 0;
   };
 
+  // Load selected promotions from localStorage
+  const loadSelectedPromotions = () => {
+    try {
+      const savedPromotions = localStorage.getItem('selectedPromotions');
+      if (savedPromotions) {
+        const parsed = JSON.parse(savedPromotions);
+        // Set isActive to false by default when loading
+        const withDefaults = parsed.map(p => ({
+          ...p,
+          isActive: false // Default to false when loading
+        }));
+        setSelectedPromotions(withDefaults);
+      }
+    } catch (error) {
+      console.error('Error loading selected promotions:', error);
+    }
+  };
+
+  // Save selected promotions to localStorage
+  const saveSelectedPromotions = (promotions) => {
+    try {
+      localStorage.setItem('selectedPromotions', JSON.stringify(promotions));
+    } catch (error) {
+      console.error('Error saving selected promotions:', error);
+    }
+  };
+
   // Initialize default values
   useEffect(() => {
+    // Load saved promotions from localStorage
+    loadSelectedPromotions();
+    
     // Set default car model
     if (Object.keys(carModels).length > 0 && !carModel) {
       const firstModel = Object.keys(carModels)[0];
       setCarModel(firstModel);
     }
   }, [carModels, carModel]);
+  
+  // Save selected promotions to localStorage whenever they change
+  useEffect(() => {
+    if (selectedPromotions.length > 0) {
+      saveSelectedPromotions(selectedPromotions);
+    }
+  }, [selectedPromotions]);
 
   // Update deposit amount when car model changes
   useEffect(() => {
@@ -466,9 +956,18 @@ export default function CalculatorPage() {
       if (supportEntry && supportEntry.gia_tri) convertSupportDiscount = Number(supportEntry.gia_tri) || 0;
     }
 
-    // Promotions
-    const promotionDiscountTotal = discount2Potential + discount3Potential;
-    const priceAfterBasicPromotions = Math.max(0, basePrice - promotionDiscountTotal);
+    // Old hardcoded discounts (keeping for backward compatibility)
+    const legacyPromotionDiscount = discount2Potential + discount3Potential;
+    
+    // Calculate promotion discounts from selected promotions
+    const promotionDiscounts = calculatePromotionDiscounts(basePrice);
+    console.log('Promotion discounts:', promotionDiscounts, 'from promotions:', selectedPromotions);
+    
+    // Total promotion discounts (both from selected promotions and legacy)
+    const totalPromotionDiscounts = (promotionDiscounts || 0) + (legacyPromotionDiscount || 0);
+    console.log('Total promotion discounts:', totalPromotionDiscounts);
+    
+    const priceAfterBasicPromotions = Math.max(0, basePrice - totalPromotionDiscounts);
 
     // Amount before VinClub
     const amountBeforeVinClub = Math.max(0, priceAfterBasicPromotions - convertSupportDiscount - bhvc2 - premiumColor);
@@ -484,8 +983,7 @@ export default function CalculatorPage() {
 
     // Final payable
     const finalPayable = Math.max(0, amountBeforeVinClub - vinClubDiscount);
-    const totalDiscount = promotionDiscountTotal + vinClubDiscount + convertSupportDiscount + bhvc2 + premiumColor;
-    const priceAfterDiscount = Math.max(0, basePrice - totalDiscount);
+    const totalDiscount = totalPromotionDiscounts + (vinClubDiscount || 0) + (convertSupportDiscount || 0) + (bhvc2 || 0) + (premiumColor || 0);    const priceAfterDiscount = Math.max(0, basePrice - totalDiscount);
 
     // On-road costs
     const locationKey = locationMap[registrationLocation] || 'tinh_khac';
@@ -558,7 +1056,8 @@ export default function CalculatorPage() {
       basePrice,
       discount2Potential,
       discount3Potential,
-      promotionDiscountTotal,
+      promotionDiscounts: totalPromotionDiscounts,
+      promotionDiscountTotal: totalPromotionDiscounts,
       priceAfterBasicPromotions,
       convertSupportDiscount,
       bhvc2,
@@ -596,6 +1095,7 @@ export default function CalculatorPage() {
     businessType,
     registrationLocation,
     selectedDongXe,
+    selectedPromotions,
     loanToggle,
     loanRatio,
     loanTerm,
@@ -679,23 +1179,539 @@ export default function CalculatorPage() {
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <button
-            onClick={() => navigate("/menu")}
-            className="text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100"
-            aria-label="Quay lại"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="hidden sm:inline">Quay lại</span>
-          </button>
-          <div className="flex flex-col items-center">
-            <div className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden bg-white border-2 border-gray-200">
-              <img src={logoImage} alt="VinFast Logo" className="w-full h-full object-contain" />
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/menu")}
+              className="text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100"
+              aria-label="Quay lại"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Quay lại</span>
+            </button>
+            <div className="flex flex-col items-center">
+              <div className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden bg-white border-2 border-gray-200">
+                <img src={logoImage} alt="VinFast Logo" className="w-full h-full object-contain" />
+              </div>
             </div>
+            <h1 className="text-2xl font-bold text-gray-900 ml-2">
+              Công cụ tính giá xe VinFast
+            </h1>
           </div>
-          <h1 className="flex-1 text-2xl font-bold text-gray-900 ml-5">
-            Công cụ tính giá xe VinFast
-          </h1>
+          <div className="relative">
+            <button
+              onClick={openAddPromotionModal}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg border-2 border-transparent hover:bg-white hover:border-purple-600 hover:text-purple-600 transition-all duration-200 flex items-center justify-center gap-2 font-medium text-sm"
+            >
+              <Gift className="w-4 h-4" />
+              <span>Thêm chương trình ưu đãi</span>
+              {selectedPromotions.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {selectedPromotions.length}
+                </span>
+              )}
+            </button>
+            
+            {/* Promotion Modal */}
+            {isAddPromotionModalOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[calc(100vh-2rem)] overflow-auto">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-400 px-4 sm:px-6 py-3 sm:py-4 rounded-t-lg">
+                    <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                      <Gift className="w-4 h-4" />
+                      <span>Quản lý chương trình ưu đãi</span>
+                    </h3>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4 sm:p-6">
+                    {/* Add new promotion form */}
+                    <div className="mb-6 pb-6 border-b border-gray-200">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Loại ưu đãi <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                          <button
+                            type="button"
+                            onClick={() => handlePromotionTypeChange('display')}
+                            className={`px-3 py-2 text-sm rounded-lg border ${
+                              promotionType === 'display' 
+                                ? 'bg-purple-100 border-purple-500 text-purple-700' 
+                                : 'border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            Chỉ hiển thị
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePromotionTypeChange('percentage')}
+                            className={`px-3 py-2 text-sm rounded-lg border ${
+                              promotionType === 'percentage' 
+                                ? 'bg-purple-100 border-purple-500 text-purple-700' 
+                                : 'border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            Giảm %
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePromotionTypeChange('fixed')}
+                            className={`px-3 py-2 text-sm rounded-lg border ${
+                              promotionType === 'fixed' 
+                                ? 'bg-purple-100 border-purple-500 text-purple-700' 
+                                : 'border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            Giảm tiền
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label htmlFor="promotionName" className="block text-sm font-medium text-gray-700 mb-2">
+                          Tên chương trình ưu đãi <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="promotionName"
+                          type="text"
+                          value={newPromotionName}
+                          onChange={(e) => setNewPromotionName(e.target.value)}
+                          placeholder="Ví dụ: Chính sách MLTTVN 3: Giảm 4% Tiền mặt"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
+                        />
+                      </div>
+
+                      {promotionType !== 'display' && (
+                        <div className="space-y-4">
+                          <div>
+                            <label htmlFor="promotionValue" className="block text-sm font-medium text-gray-700 mb-2">
+                              {promotionType === 'percentage' ? 'Phần trăm giảm giá (%)' : 'Số tiền giảm (VNĐ)'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              id="promotionValue"
+                              type="number"
+                              min="0"
+                              max={promotionType === 'percentage' ? '100' : ''}
+                              value={editingPromotion.value}
+                              onChange={(e) => setEditingPromotion({...editingPromotion, value: parseFloat(e.target.value) || 0})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
+                              placeholder={promotionType === 'percentage' ? '0-100%' : '0'}
+                            />
+                          </div>
+
+                          <div>
+                            <label htmlFor="minPurchase" className="block text-sm font-medium text-gray-700 mb-2">
+                              Đơn hàng tối thiểu (VNĐ)
+                            </label>
+                            <input
+                              id="minPurchase"
+                              type="number"
+                              min="0"
+                              value={editingPromotion.minPurchase}
+                              onChange={(e) => setEditingPromotion({...editingPromotion, minPurchase: parseFloat(e.target.value) || 0})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
+                              placeholder="0"
+                            />
+                          </div>
+
+                          {promotionType === 'percentage' && (
+                            <div>
+                              <label htmlFor="maxDiscount" className="block text-sm font-medium text-gray-700 mb-2">
+                                Giảm tối đa (VNĐ)
+                              </label>
+                              <input
+                                id="maxDiscount"
+                                type="number"
+                                min="0"
+                                value={editingPromotion.maxDiscount}
+                                onChange={(e) => setEditingPromotion({...editingPromotion, maxDiscount: parseFloat(e.target.value) || 0})}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
+                                placeholder="0 (không giới hạn)"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-4">
+                        <button
+                          onClick={handleAddPromotion}
+                          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Thêm chương trình ưu đãi</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* List of existing promotions */}
+                    <div>
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-sm font-semibold text-gray-700">Danh sách chương trình ưu đãi</h4>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => setFilterType('all')}
+                            className={`px-2 py-1 text-xs rounded-lg border ${
+                              filterType === 'all'
+                                ? 'bg-purple-100 border-purple-500 text-purple-700 font-medium'
+                                : 'border-gray-300 hover:bg-gray-50 text-gray-600'
+                            }`}
+                            title="Tất cả"
+                          >
+                            Tất cả
+                          </button>
+                          <button
+                            onClick={() => setFilterType('display')}
+                            className={`px-2 py-1 text-xs rounded-lg border ${
+                              filterType === 'display'
+                                ? 'bg-purple-100 border-purple-500 text-purple-700 font-medium'
+                                : 'border-gray-300 hover:bg-gray-50 text-gray-600'
+                            }`}
+                            title="Chỉ hiển thị"
+                          >
+                            Hiển thị
+                          </button>
+                          <button
+                            onClick={() => setFilterType('percentage')}
+                            className={`px-2 py-1 text-xs rounded-lg border ${
+                              filterType === 'percentage'
+                                ? 'bg-purple-100 border-purple-500 text-purple-700 font-medium'
+                                : 'border-gray-300 hover:bg-gray-50 text-gray-600'
+                            }`}
+                            title="Giảm %"
+                          >
+                            Giảm %
+                          </button>
+                          <button
+                            onClick={() => setFilterType('fixed')}
+                            className={`px-2 py-1 text-xs rounded-lg border ${
+                              filterType === 'fixed'
+                                ? 'bg-purple-100 border-purple-500 text-purple-700 font-medium'
+                                : 'border-gray-300 hover:bg-gray-50 text-gray-600'
+                            }`}
+                            title="Giảm tiền"
+                          >
+                            Giảm tiền
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {loadingPromotions ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                          <p className="text-sm text-gray-500 mt-2">Đang tải...</p>
+                        </div>
+                      ) : promotions.length === 0 ? (
+                        <div className="text-center py-4 text-sm text-gray-500">
+                          Chưa có chương trình ưu đãi nào
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {promotions
+                            .filter(promotion => filterType === 'all' || promotion.type === filterType)
+                            .map((promotion) => (
+                            <div
+                              key={promotion.id}
+                              className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                            >
+                              {editingPromotionId === promotion.id ? (
+                                // Edit mode
+                                <div className="w-full space-y-4">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Loại ưu đãi <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2 mb-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePromotionTypeChange('display')}
+                                        className={`px-2 py-1.5 text-xs rounded-lg border ${
+                                          editingPromotion.type === 'display'
+                                            ? 'bg-purple-100 border-purple-500 text-purple-700'
+                                            : 'border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                      >
+                                        Chỉ hiển thị
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePromotionTypeChange('percentage')}
+                                        className={`px-2 py-1.5 text-xs rounded-lg border ${
+                                          editingPromotion.type === 'percentage'
+                                            ? 'bg-purple-100 border-purple-500 text-purple-700'
+                                            : 'border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                      >
+                                        Giảm %
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePromotionTypeChange('fixed')}
+                                        className={`px-2 py-1.5 text-xs rounded-lg border ${
+                                          editingPromotion.type === 'fixed'
+                                            ? 'bg-purple-100 border-purple-500 text-purple-700'
+                                            : 'border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                      >
+                                        Giảm tiền
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Tên chương trình <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={editingPromotion.name}
+                                      onChange={(e) =>
+                                        setEditingPromotion({
+                                          ...editingPromotion,
+                                          name: e.target.value,
+                                        })
+                                      }
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
+                                      placeholder="Nhập tên chương trình"
+                                      autoFocus
+                                    />
+                                  </div>
+
+                                  {editingPromotion.type !== 'display' && (
+                                    <div className="space-y-3">
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          {editingPromotion.type === 'percentage'
+                                            ? 'Phần trăm giảm giá (%)'
+                                            : 'Số tiền giảm (VNĐ)'}{' '}
+                                          <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          max={
+                                            editingPromotion.type === 'percentage'
+                                              ? '100'
+                                              : ''
+                                          }
+                                          value={editingPromotion.value}
+                                          onChange={(e) =>
+                                            setEditingPromotion({
+                                              ...editingPromotion,
+                                              value: parseFloat(e.target.value) || 0,
+                                            })
+                                          }
+                                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          Đơn hàng tối thiểu (VNĐ)
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={editingPromotion.minPurchase}
+                                          onChange={(e) =>
+                                            setEditingPromotion({
+                                              ...editingPromotion,
+                                              minPurchase: parseFloat(e.target.value) || 0,
+                                            })
+                                          }
+                                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
+                                          placeholder="0 (không bắt buộc)"
+                                        />
+                                      </div>
+
+                                      {editingPromotion.type === 'percentage' && (
+                                        <div>
+                                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Giảm tối đa (VNĐ)
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={editingPromotion.maxDiscount}
+                                            onChange={(e) =>
+                                              setEditingPromotion({
+                                                ...editingPromotion,
+                                                maxDiscount: parseFloat(e.target.value) || 0,
+                                              })
+                                            }
+                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
+                                            placeholder="0 (không giới hạn)"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <div className="flex justify-end gap-2 pt-2">
+                                    <button
+                                      onClick={cancelEditPromotion}
+                                      className="px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                      Hủy
+                                    </button>
+                                    <button
+                                      onClick={handleSaveEditPromotion}
+                                      className="px-3 py-1.5 text-sm text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                      Lưu thay đổi
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Display mode with checkbox
+                                <div className="flex items-start gap-3">
+                                  <div className="flex items-center">
+                                    <input
+                                      type="checkbox"
+                                      id={`promo-${promotion.id}`}
+                                      checked={selectedPromotions.some(p => p.id === promotion.id) || 
+                                               selectedPromotionIds.includes(promotion.id)}
+                                      onChange={() => togglePromotionSelection(promotion.id)}
+                                      className="w-5 h-5 text-purple-600 border-2 border-gray-300 rounded focus:ring-purple-500 focus:ring-offset-2 focus:ring-2 checked:bg-purple-600 checked:border-purple-600"
+                                    />
+                                    <label htmlFor={`promo-${promotion.id}`} className="sr-only">
+                                      Chọn ưu đãi {promotion.name}
+                                    </label>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-sm font-medium text-gray-700">{promotion.name}</div>
+                                      {promotion.type === 'fixed' && (
+                                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded whitespace-nowrap">
+                                          Giảm {formatCurrency(promotion.value)}
+                                        </span>
+                                      )}
+                                      {promotion.type === 'percentage' && (
+                                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded whitespace-nowrap">
+                                          Giảm {promotion.value}%{promotion.maxDiscount ? ` (tối đa ${formatCurrency(promotion.maxDiscount)})` : ''}
+                                        </span>
+                                      )}
+                                      {promotion.type === 'display' && (
+                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 text-xs font-medium rounded whitespace-nowrap">
+                                          Chỉ hiển thị
+                                        </span>
+                                      )}
+                                    </div>
+                                    {promotion.minPurchase > 0 && (
+                                      <p className="mt-1 text-xs text-gray-500">
+                                        Áp dụng cho đơn hàng từ: {formatCurrency(promotion.minPurchase)}
+                                      </p>
+                                    )}
+                                    {promotion.createdAt && (
+                                      <p className="text-xs text-gray-500">
+                                        Tạo lúc: {new Date(promotion.createdAt).toLocaleString('vi-VN')}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        startEditPromotion(promotion);
+                                      }}
+                                      className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                                      aria-label="Sửa"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    {!promotion.isHardcoded && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openDeletePromotionConfirm(promotion.id);
+                                        }}
+                                        className="p-1 text-red-600 hover:text-red-800 transition-colors"
+                                        aria-label="Xóa"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                    {promotion.isHardcoded && (
+                                      <div className="p-1 text-gray-400 cursor-not-allowed" title="Không thể xóa ưu đãi mặc định">
+                                        <Trash2 className="w-4 h-4" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Add selected promotions button */}
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={addSelectedPromotions}
+                          disabled={selectedPromotionIds.length === 0}
+                          className={`w-full py-2 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 ${
+                            selectedPromotionIds.length > 0
+                              ? 'bg-purple-600 text-white hover:bg-purple-700'
+                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Thêm {selectedPromotionIds.length} ưu đãi đã chọn</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row justify-between items-center gap-3 sticky bottom-0 border-t border-gray-200">
+                    <div className="text-sm text-gray-600">
+                      Đã chọn: <span className="font-medium">{selectedPromotions.length}</span> ưu đãi
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={closeAddPromotionModal}
+                        className="w-full sm:w-auto px-4 sm:px-5 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                      >
+                        <X className="w-4 h-4" />
+                        <span>Đóng</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingPromotionId && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                  <div className="p-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Xác nhận xóa</h3>
+                    <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn xóa chương trình ưu đãi này không?</p>
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                        onClick={closeDeletePromotionConfirm}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        onClick={handleDeletePromotion}
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content Grid - 2x2 Grid Layout */}
@@ -945,41 +1961,48 @@ export default function CalculatorPage() {
               </div>
 
               <div className="my-4">
-                <div className="text-sm font-medium text-gray-600 mb-3">Chọn ưu đãi áp dụng</div>
+                <div className="text-sm font-medium text-gray-600">Chọn ưu đãi áp dụng</div>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={discount3}
-                      onChange={(e) => setDiscount3(e.target.checked)}
-                      className="w-5 h-5 text-blue-600"
-                    />
-                    <span className="flex-1 text-sm text-gray-700">Ưu đãi Lái xe Xanh (VN3)</span>
-                    <span className="text-red-600 font-semibold">
-                      -{formatCurrency(calculations.discount3Potential)}
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={discount2}
-                      onChange={(e) => setDiscount2(e.target.checked)}
-                      className="w-5 h-5 text-blue-600"
-                    />
-                    <span className="flex-1 text-sm text-gray-700">Ưu đãi tháng 10</span>
-                    <span className="text-red-600 font-semibold">
-                      -{formatCurrency(calculations.discount2Potential)}
-                    </span>
-                  </label>
+                  {selectedPromotions.length === 0 ? (
+                    <div className="text-sm text-gray-500 py-2 text-center">Chưa có ưu đãi nào được chọn</div>
+                  ) : (
+                    selectedPromotions.map((promo) => (
+                      <div key={promo.id} className="flex justify-between items-center py-3 border-b border-gray-200">
+                        <label className="flex items-center gap-2 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={promo.isActive === true}
+                            onChange={() => togglePromotionActive(promo.id)}
+                            className="w-5 h-5 text-blue-600"
+                          />
+                          <span className="text-sm text-gray-700">{promo.name}</span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold text-red-600`}>
+                            {promo.isActive 
+                              ? `-${formatCurrency(calculatePromotionDiscounts(calculations.basePrice, [promo]))}`
+                              : '0 ₫'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
               <div className="flex justify-between py-3 border-b border-gray-200">
                 <span className="text-gray-600 font-medium">Giá sau ưu đãi</span>
                 <span className="text-gray-900 font-semibold">
-                  {formatCurrency(calculations.priceAfterBasicPromotions)}
+                  {formatCurrency(calculations.priceAfterBasicPromotions - (calculations.promotionDiscounts || 0))}
                 </span>
               </div>
+              {selectedPromotions.length > 0 && (
+                <div className="flex justify-between py-1 text-sm text-gray-600">
+                  <span>Bao gồm ưu đãi:</span>
+                  <span className="text-red-600">-{formatCurrency(calculations.promotionDiscounts || 0)}</span>
+                </div>
+              )}
 
               <div className="my-4 space-y-3">
                 <div>
