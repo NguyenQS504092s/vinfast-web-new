@@ -856,6 +856,7 @@ export default function HopDongPage() {
   // Open add promotion modal
   const openAddPromotionModal = () => {
     setIsAddPromotionModalOpen(true);
+    setFilterType('all'); // Reset to show all promotions
     setNewPromotionName('');
     setPromotionType('display');
     setEditingPromotion({

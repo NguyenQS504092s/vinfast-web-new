@@ -191,53 +191,8 @@ export default function CalculatorPage() {
     loadPromotions();
   }, []);
 
-  // Default promotions including the hardcoded ones
-  const defaultPromotions = [
-    {
-      id: 'default1',
-      name: 'Chính sách MLTTVN 3: Giảm 4% Tiền mặt',
-      type: 'display',
-      value: 0,
-      maxDiscount: 0,
-      minPurchase: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: 'system',
-      isHardcoded: true
-    },
-    {
-      id: 'default2',
-      name: 'Miễn phí sạc tới 30/06/2027',
-      type: 'display',
-      value: 0,
-      maxDiscount: 0,
-      minPurchase: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: 'system',
-      isHardcoded: true
-    },
-    {
-      id: 'discount_vn3',
-      name: 'Ưu đãi Lái xe Xanh (VN3)',
-      type: 'fixed',
-      value: 1000000,
-      maxDiscount: 0,
-      minPurchase: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: 'system',
-      isHardcoded: true
-    },
-    {
-      id: 'discount_october',
-      name: 'Ưu đãi tháng 10',
-      type: 'fixed',
-      value: 5000000,
-      maxDiscount: 0,
-      minPurchase: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: 'system',
-      isHardcoded: true
-    }
-  ];
+  // Default promotions (empty now, all promotions will be loaded from Firebase)
+  const defaultPromotions = [];
 
   // Load promotions from Firebase and include hardcoded ones
   const loadPromotions = async () => {
@@ -1160,6 +1115,33 @@ export default function CalculatorPage() {
 
     // Navigate to invoice page
     navigate('/in-bao-gia-2');
+  };
+
+  // Save quote to homepage
+  const saveToHomepage = () => {
+    const quoteData = {
+      id: Date.now().toString(), // Simple ID based on timestamp
+      carModel: carModel || '',
+      carVersion: carVersion || '',
+      exteriorColorName: enhancedExteriorColors.find(c => c.code === exteriorColor)?.name || exteriorColor,
+      interiorColorName: enhancedInteriorColors.find(c => c.code === interiorColor)?.name || interiorColor,
+      basePrice: calculations.basePrice || 0,
+      totalCost: calculations.finalPayable || 0,
+      carImageUrl: carImageUrl || '',
+      createdAt: new Date().toISOString(),
+    };
+
+    // Get existing quotes from localStorage
+    const existingQuotes = JSON.parse(localStorage.getItem('homepageQuotes') || '[]');
+    
+    // Add new quote to the beginning of the array
+    const updatedQuotes = [quoteData, ...existingQuotes];
+    
+    // Save back to localStorage
+    localStorage.setItem('homepageQuotes', JSON.stringify(updatedQuotes));
+    
+    // Show success message (you can replace with toast notification)
+    alert('Báo giá đã được lưu vào trang chủ!');
   };
 
   // Helper to get registration location label
@@ -2255,6 +2237,12 @@ export default function CalculatorPage() {
             className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition"
           >
             In Báo Giá 2
+          </button>
+          <button
+            onClick={saveToHomepage}
+            className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+          >
+            Báo giá trang chủ
           </button>
           <button className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
             Gửi Email Báo Giá

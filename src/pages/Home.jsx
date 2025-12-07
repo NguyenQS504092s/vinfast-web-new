@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Gift } from "lucide-react";
 import VinfastLogo from "../assets/vinfast.svg";
+import { loadPromotionsFromFirebase } from "../data/promotionsData";
 
 function Home() {
   const [currentDate, setCurrentDate] = useState("");
   const [quotes, setQuotes] = useState([]);
+  const [promotions, setPromotions] = useState([]);
+  const [loadingPromotions, setLoadingPromotions] = useState(true);
 
   useEffect(() => {
     const today = new Date();
@@ -17,11 +20,29 @@ function Home() {
 
     // Load quotes from localStorage
     loadQuotes();
+    
+    // Load promotions from Firebase
+    loadPromotions();
   }, []);
 
   const loadQuotes = () => {
     const savedQuotes = JSON.parse(localStorage.getItem('homepageQuotes') || '[]');
-    setQuotes(savedQuotes);
+    // Giới hạn tối đa 6 báo giá
+    setQuotes(savedQuotes.slice(0, 6));
+  };
+
+  const loadPromotions = async () => {
+    setLoadingPromotions(true);
+    try {
+      const promotionsList = await loadPromotionsFromFirebase();
+      // Giới hạn tối đa 6 ưu đãi
+      setPromotions(promotionsList.slice(0, 6));
+    } catch (error) {
+      console.error("Error loading promotions:", error);
+      setPromotions([]);
+    } finally {
+      setLoadingPromotions(false);
+    }
   };
 
   const deleteQuote = (id) => {
@@ -77,16 +98,25 @@ function Home() {
                     STT
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ảnh xe
+                    Ảnh
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tên xe
+                    Dòng xe
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Giá gốc (gồm VAT)
+                    Phiên bản
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Giá XHĐ
+                    Ngoại thất
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nội thất
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Giá bán
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Giá cuối
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Thao tác
@@ -103,7 +133,7 @@ function Home() {
                       <img
                         src={quote.carImageUrl}
                         alt={`${quote.carModel} ${quote.carVersion}`}
-                        className="h-16 w-24 object-contain rounded"
+                        className="h-12 w-20 object-contain rounded"
                         onError={(e) => {
                           e.target.style.display = 'none';
                         }}
@@ -111,8 +141,15 @@ function Home() {
                     </td>
                     <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
                       <div className="font-semibold">{quote.carModel}</div>
-                      <div className="text-gray-500">{quote.carVersion}</div>
-                      <div className="text-gray-400 text-xs">{quote.exteriorColorName}</div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                      <div>{quote.carVersion}</div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                      <div className="text-xs">{quote.exteriorColorName}</div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                      <div className="text-xs">{quote.interiorColorName || 'N/A'}</div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                       {formatCurrency(quote.basePrice)}
@@ -137,10 +174,77 @@ function Home() {
         )}
       </div>
 
-      {/* Features Section */}
+      {/* Promotions Section */}
       <div className="bg-neutral-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8">
         <h2 className="text-xl sm:text-2xl font-bold text-secondary-900 mb-3 sm:mb-4">Dịch vụ & Ưu đãi</h2>
-        // ở đây
+        
+        {loadingPromotions ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
+            <p className="text-gray-500">Đang tải ưu đãi...</p>
+          </div>
+        ) : promotions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Gift className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-sm sm:text-base">Chưa có ưu đãi nào được thêm.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {promotions.map((promotion, index) => (
+              <div key={promotion.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg hover:shadow-md transition-shadow">
+                <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex items-center space-x-2">
+                    <Gift className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                      #{index + 1}
+                    </span>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">
+                      {promotion.name}
+                    </h3>
+                    {promotion.createdAt && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(promotion.createdAt).toLocaleDateString('vi-VN')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  {promotion.type === 'fixed' && promotion.value > 0 && (
+                    <span className="text-green-600 font-bold text-sm">
+                      -{formatCurrency(promotion.value)}
+                    </span>
+                  )}
+                  
+                  {promotion.type === 'percentage' && promotion.value > 0 && (
+                    <div className="text-orange-600 font-bold text-sm text-right">
+                      <p>-{promotion.value}%</p>
+                      {promotion.maxDiscount > 0 && (
+                        <p className="text-xs text-gray-500">
+                          Tối đa {formatCurrency(promotion.maxDiscount)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {promotion.type && (
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      promotion.type === 'fixed' ? 'bg-green-100 text-green-700' :
+                      promotion.type === 'percentage' ? 'bg-orange-100 text-orange-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {promotion.type === 'fixed' ? 'Cố định' :
+                       promotion.type === 'percentage' ? 'Phần trăm' : 'Hiển thị'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

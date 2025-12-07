@@ -1572,15 +1572,11 @@ export default function ContractFormPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              // Only show this promotion
-                              setPromotionSearch(promotion.name);
-                            }}
-                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                          >
-                            Chỉ hiển thị
-                          </button>
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                            {promotion.type === 'fixed' && 'Giảm tiền'}
+                            {promotion.type === 'percentage' && 'Giảm %'}
+                            {promotion.type === 'display' && 'Hiển thị'}
+                          </span>
                         </div>
                       </div>
                     ))}

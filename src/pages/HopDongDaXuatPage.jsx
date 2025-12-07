@@ -1846,6 +1846,13 @@ export default function HopDongDaXuatPage() {
                         >
                           Phiếu rút cọc
                         </button>
+
+                        <button
+                          onClick={() => handlePrintNavigate("/phieu-xac-nhan-thong-tin-tang-qua")}
+                          className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                        >
+                          Phiếu xác nhận thông tin nhận quà VinFast
+                        </button>
                       </div>
 
                       {/* Group 2: BỘ GIẢI NGÂN CỦA NGÂN HÀNG */}
