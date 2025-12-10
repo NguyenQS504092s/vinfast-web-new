@@ -30,6 +30,7 @@ export default function HopDongDaXuatPage() {
     endDate: "",
     products: [], // will hold unique "Dòng xe" values
     markets: [], // repurposed to hold status values
+    trangThai: [], // status filter for hopdongdaxuat
     searchText: "",
   });
 
@@ -441,10 +442,17 @@ export default function HopDongDaXuatPage() {
       );
     }
 
-    // Apply status filter
+    // Apply status filter (markets - legacy)
     if (filters.markets && filters.markets.length > 0) {
       filtered = filtered.filter((contract) =>
         filters.markets.includes(contract.tinhTrang)
+      );
+    }
+
+    // Apply trangThai filter (new status filter)
+    if (filters.trangThai && filters.trangThai.length > 0) {
+      filtered = filtered.filter((contract) =>
+        filters.trangThai.includes(contract.tinhTrang)
       );
     }
 
@@ -496,6 +504,7 @@ export default function HopDongDaXuatPage() {
     filters.searchText,
     filters.products,
     filters.markets,
+    filters.trangThai,
     filters.startDate,
     filters.endDate,
   ]);
@@ -630,6 +639,7 @@ export default function HopDongDaXuatPage() {
       endDate: "",
       products: [],
       markets: [],
+      trangThai: [],
       searchText: "",
     });
     setQuickSelectValue("");
@@ -641,7 +651,8 @@ export default function HopDongDaXuatPage() {
       filters.startDate ||
       filters.endDate ||
       (filters.products && filters.products.length > 0) ||
-      (filters.markets && filters.markets.length > 0)
+      (filters.markets && filters.markets.length > 0) ||
+      (filters.trangThai && filters.trangThai.length > 0)
     );
   };
 

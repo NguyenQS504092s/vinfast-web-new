@@ -31,16 +31,28 @@ export default function FilterPanel({
   const paymentRef = useRef(null);
   const teamsRef = useRef(null); // used as anchorRef for departments checkbox
   const marketsRef = useRef(null);
+  const trangThaiRef = useRef(null); // ref for status filter
   const refs = useMemo(
     () => ({
       products: productsRef,
       payment: paymentRef,
       teams: teamsRef,
       markets: marketsRef,
+      trangThai: trangThaiRef,
     }),
     // refs themselves are stable refs, empty deps ok
     []
   );
+
+  // Predefined status options for "Hợp đồng đã xuất"
+  const trangThaiOptions = [
+    "Mới",
+    "Đang làm ngân hàng",
+    "Đã làm ngân hàng",
+    "Chờ COC",
+    "Đã giải ngân",
+    "Đã giao xe",
+  ];
 
   // local state for departments: if parent doesn't provide availableFilters.departments,
   // we will fetch unique departments from the `employees` node in RTDB
@@ -300,9 +312,9 @@ export default function FilterPanel({
             </div>
           )}
 
-          {/* Checkbox Filters - Wrap on mobile, horizontal scroll on desktop */}
-          <div className="flex flex-wrap lg:flex-nowrap gap-2 sm:gap-3 lg:gap-4 items-center lg:overflow-x-auto">
-            <div className="w-full sm:w-auto sm:min-w-[200px] lg:min-w-[220px]">
+          {/* Checkbox Filters - Always wrap */}
+          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+            <div className="w-full sm:w-auto sm:min-w-[160px]">
               <CheckboxFilter
                 id="products"
                 title="Dòng xe"
@@ -329,7 +341,7 @@ export default function FilterPanel({
               />
             </div>
 
-            <div className="w-full sm:w-auto sm:min-w-[200px] lg:min-w-[220px]">
+            <div className="w-full sm:w-auto sm:min-w-[160px]">
               <CheckboxFilter
                 id="markets"
                 title="Phương thức thanh toán"
@@ -337,7 +349,7 @@ export default function FilterPanel({
                 items={availableFilters.markets || []}
                 selected={filters.markets || []}
                 onToggle={(v) => handleToggle("markets", v)}
-                visible={showMarkets && activeTab !== "users"}
+                visible={showMarkets && activeTab !== "users" && activeTab !== "hopdongdaxuat"}
                 icon={
                   <svg
                     className="w-4 h-4"
@@ -356,7 +368,35 @@ export default function FilterPanel({
               />
             </div>
 
-            <div className="w-full sm:w-auto sm:min-w-[200px] lg:min-w-[220px]">
+            {/* Trạng thái filter - only for hopdongdaxuat */}
+            <div className="w-full sm:w-auto sm:min-w-[160px]">
+              <CheckboxFilter
+                id="trangThai"
+                title="Trạng thái"
+                anchorRef={refs.trangThai}
+                items={trangThaiOptions}
+                selected={filters.trangThai || []}
+                onToggle={(v) => handleToggle("trangThai", v)}
+                visible={activeTab === "hopdongdaxuat"}
+                icon={
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                }
+              />
+            </div>
+
+            <div className="w-full sm:w-auto sm:min-w-[160px]">
               <CheckboxFilter
                 id="paymentMethods"
                 title="Thanh toán"
@@ -385,7 +425,7 @@ export default function FilterPanel({
               />
             </div>
 
-            <div className="w-full sm:w-auto sm:min-w-[200px] lg:min-w-[220px]">
+            <div className="w-full sm:w-auto sm:min-w-[160px]">
               <CheckboxFilter
                 id="departments"
                 title="Phòng ban"

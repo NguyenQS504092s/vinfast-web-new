@@ -1240,6 +1240,8 @@ const DeXuatGiaban = () => {
             left: 0;
             top: 0;
             width: 100%;
+            height: auto !important;
+            min-height: unset !important;
             padding: 0 !important;
             font-family: 'Times New Roman', Times, serif !important;
           }
@@ -1251,6 +1253,9 @@ const DeXuatGiaban = () => {
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            height: auto !important;
+            min-height: unset !important;
+            overflow: visible !important;
             font-family: 'Times New Roman', Times, serif !important;
           }
         }
