@@ -243,6 +243,7 @@ export default function HopDongPage() {
       contractPrice: c.giaHD || c["Giá HD"],
       deposit: c.soTienCoc || c["Số tiền cọc"],
       payment: c.thanhToan || c["thanh toán"],
+      loanAmount: c.soTienVay || c.loanAmount || c.tienVay || "",
       bank: c.nganHang || c["ngân hàng"],
       uuDai: c.uuDai || c["Ưu đãi"] || c["ưu đãi"] || "",
       quaTang: c.quaTang || c["Quà tặng"] || c["quà tặng"] || "",
@@ -378,6 +379,7 @@ export default function HopDongPage() {
         contractPrice: c.giaHD || c["Giá HD"],
         deposit: c.soTienCoc || c["Số tiền cọc"],
         payment: c.thanhToan || c["thanh toán"],
+        loanAmount: c.soTienVay || c.loanAmount || c.tienVay || "",
         bank: c.nganHang || c["ngân hàng"],
         uuDai: c.uuDai || c["Ưu đãi"] || c["ưu đãi"] || "",
         quaTang: c.quaTang || c["Quà tặng"] || c["quà tặng"] || "",
@@ -1832,7 +1834,7 @@ export default function HopDongPage() {
                     </p>
                     <p className="text-sm">
                       <span className="font-semibold text-gray-700">
-                        Phương thức thanh toán:
+                        Thanh toán:
                       </span>{" "}
                       <span className="text-gray-900">
                         {deletingContract.payment ||
@@ -1840,6 +1842,16 @@ export default function HopDongPage() {
                           "-"}
                       </span>
                     </p>
+                    {(deletingContract.payment === "trả góp" || deletingContract.thanhToan === "trả góp") && (
+                      <p className="text-sm">
+                        <span className="font-semibold text-gray-700">
+                          Số tiền vay:
+                        </span>{" "}
+                        <span className="text-gray-900">
+                          {deletingContract.loanAmount ? formatCurrency(deletingContract.loanAmount) : "-"}
+                        </span>
+                      </p>
+                    )}
                   </div>
 
                   <p className="text-red-600 font-medium text-sm mt-4 flex items-center gap-2">

@@ -125,6 +125,7 @@ export default function ContractFormPage() {
     contractPrice: "",
     deposit: "",
     payment: "",
+    loanAmount: "",
     bank: "",
     uuDai: [],
     quaTang: "",
@@ -274,6 +275,9 @@ export default function ContractFormPage() {
       };
 
       // Map contract data for editing
+      console.log("Loading contract data for editing:", contractData);
+      console.log("Loan amount from contractData:", contractData.loanAmount, contractData.soTienVay, contractData.tienVay);
+      
       setContract({
         id: contractData.id || null,
         createdAt: contractData.createdAt || contractData.createdDate || new Date().toISOString().split("T")[0],
@@ -294,6 +298,7 @@ export default function ContractFormPage() {
         contractPrice: contractData.contractPrice || contractData.giaHD || "",
         deposit: contractData.deposit || contractData.soTienCoc || "",
         payment: contractData.payment || contractData.thanhToan || "",
+        loanAmount: contractData.loanAmount || contractData.soTienVay || contractData.tienVay || "",
         bank: contractData.bank || contractData.nganHang || "",
         uuDai: parseUuDai(contractData.uuDai || contractData["Ưu đãi"] || contractData["ưu đãi"] || ""),
         quaTang: contractData.quaTang || contractData["Quà tặng"] || contractData["quà tặng"] || "",
@@ -542,6 +547,10 @@ export default function ContractFormPage() {
       handleInputChange('payment', selected.thanhToan);
     }
 
+    if (selected.soTienVay || selected.tienVay || selected.loanAmount) {
+      handleInputChange('loanAmount', selected.soTienVay || selected.tienVay || selected.loanAmount || '');
+    }
+
     if (selected.tvbh) {
       handleInputChange('tvbh', selected.tvbh);
     }
@@ -589,6 +598,11 @@ export default function ContractFormPage() {
       return;
     }
 
+    // Debug: Log contract data before saving
+    console.log("Contract data before saving:", contract);
+    console.log("Loan amount:", contract.loanAmount);
+    console.log("Payment method:", contract.payment);
+
     try {
       const safeValue = (val) => val !== undefined && val !== null ? val : "";
 
@@ -601,7 +615,7 @@ export default function ContractFormPage() {
 
         // Update existing contract
         const contractRef = ref(database, `contracts/${contractData.firebaseKey}`);
-        await update(contractRef, {
+        const updateData = {
           id: contract.id || "",
           createdDate: contract.createdAt || contract.createdDate || "",
           tvbh: safeValue(contract.tvbh),
@@ -621,6 +635,7 @@ export default function ContractFormPage() {
           giaHD: safeValue(contract.contractPrice),
           soTienCoc: safeValue(contract.deposit),
           thanhToan: safeValue(contract.payment),
+          soTienVay: safeValue(contract.loanAmount),
           nganHang: safeValue(contract.bank),
           uuDai: Array.isArray(contract.uuDai) ? contract.uuDai : [],
           quaTang: safeValue(contract.quaTang),
@@ -634,7 +649,12 @@ export default function ContractFormPage() {
           chucVu: safeValue(contract.chucVu),
           giayUyQuyen: safeValue(contract.giayUyQuyen),
           giayUyQuyenNgay: safeValue(contract.giayUyQuyenNgay),
-        });
+        };
+
+        console.log("Update data being sent to Firebase:", updateData);
+        console.log("Loan amount in update data:", updateData.soTienVay);
+
+        await update(contractRef, updateData);
 
         // Sync with exportedContracts based on status change
         const exportKey = contractData.firebaseKey;
@@ -665,12 +685,16 @@ export default function ContractFormPage() {
             "Ngoại Thất": safeValue(contract.exterior),
             "Nội Thất": safeValue(contract.interior),
             "Giá Niêm Yết": safeValue(contract.contractPrice),
-            "Giá Giảm": safeValue(contract.deposit),
+            "Giá Giảm": safeValue(contract.giamGia || ""),
             "Giá Hợp Đồng": safeValue(contract.contractPrice),
+            "Tiền đặt cọc": safeValue(contract.deposit),
+            tienDatCoc: safeValue(contract.deposit),
             "Số Khung": safeValue(contractData.soKhung || contractData.chassisNumber || contractData["Số Khung"] || ""),
             "Số Máy": safeValue(contractData.soMay || contractData.engineNumber || contractData["Số Máy"] || ""),
             "Tình Trạng": safeValue(contractData.tinhTrangXe || contractData.vehicleStatus || contractData["Tình Trạng Xe"] || ""),
             "ngân hàng": safeValue(contract.bank || ""),
+            thanhToan: safeValue(contract.payment || ""),
+            soTienVay: safeValue(contract.loanAmount || ""),
             "ưu đãi": (() => {
               const uuDaiValue = contract.uuDai || "";
               if (Array.isArray(uuDaiValue)) {
@@ -698,7 +722,7 @@ export default function ContractFormPage() {
         // Create new contract
         const id = `local-${Date.now()}`;
         const contractsRef = ref(database, "contracts");
-        const newRef = await push(contractsRef, {
+        const newContractData = {
           id: id || "",
           createdDate: contract.createdAt || "",
           tvbh: safeValue(contract.tvbh),
@@ -718,6 +742,7 @@ export default function ContractFormPage() {
           giaHD: safeValue(contract.contractPrice),
           soTienCoc: safeValue(contract.deposit),
           thanhToan: safeValue(contract.payment),
+          soTienVay: safeValue(contract.loanAmount),
           nganHang: safeValue(contract.bank),
           uuDai: Array.isArray(contract.uuDai) ? contract.uuDai : [],
           quaTang: safeValue(contract.quaTang),
@@ -731,7 +756,12 @@ export default function ContractFormPage() {
           chucVu: safeValue(contract.chucVu),
           giayUyQuyen: safeValue(contract.giayUyQuyen),
           giayUyQuyenNgay: safeValue(contract.giayUyQuyenNgay),
-        });
+        };
+
+        console.log("New contract data being sent to Firebase:", newContractData);
+        console.log("Loan amount in new contract:", newContractData.soTienVay);
+
+        const newRef = await push(contractsRef, newContractData);
 
         // If new contract status is "xuất", also add to exportedContracts
         const newStatus = safeValue(contract.status) || "mới";
@@ -761,12 +791,16 @@ export default function ContractFormPage() {
               "Ngoại Thất": safeValue(contract.exterior),
               "Nội Thất": safeValue(contract.interior),
               "Giá Niêm Yết": safeValue(contract.contractPrice),
-              "Giá Giảm": safeValue(contract.deposit),
+              "Giá Giảm": safeValue(contract.giamGia || ""),
               "Giá Hợp Đồng": safeValue(contract.contractPrice),
+              "Tiền đặt cọc": safeValue(contract.deposit),
+              tienDatCoc: safeValue(contract.deposit),
               "Số Khung": "",
               "Số Máy": "",
               "Tình Trạng": "",
               "ngân hàng": safeValue(contract.bank || ""),
+              thanhToan: safeValue(contract.payment || ""),
+              soTienVay: safeValue(contract.loanAmount || ""),
               "ưu đãi": (() => {
                 const uuDaiValue = contract.uuDai || "";
                 if (Array.isArray(uuDaiValue)) {
@@ -1302,17 +1336,36 @@ export default function ContractFormPage() {
                 {/* Payment Method */}
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Phương thức thanh toán
+                    Thanh toán
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={contract.payment || ""}
                     onChange={(e) => handleInputChange("payment", e.target.value)}
                     disabled={isDetailsMode}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    placeholder="Phương thức thanh toán"
-                  />
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Chọn hình thức thanh toán</option>
+                    <option value="trả thẳng">Trả thẳng</option>
+                    <option value="trả góp">Trả góp</option>
+                  </select>
                 </div>
+
+                {/* Loan Amount - Only show when payment is "trả góp" */}
+                {contract.payment === "trả góp" && (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                      Số tiền vay
+                    </label>
+                    <input
+                      type="text"
+                      value={formatCurrency(contract.loanAmount)}
+                      onChange={(e) => handleCurrencyChange("loanAmount", e.target.value)}
+                      disabled={isDetailsMode}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="Nhập số tiền vay"
+                    />
+                  </div>
+                )}
 
                 {/* Bank */}
                 <div>

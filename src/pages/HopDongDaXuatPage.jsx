@@ -305,7 +305,10 @@ export default function HopDongDaXuatPage() {
         c.loanAmount ||
         c["Tiền vay"] ||
         c.tienVay ||
+        c.soTienVay ||
         "",
+      // Thanh toán
+      thanhToan: c.thanhToan || c.payment || "",
       depositImage: c.depositImage || c["Ảnh chụp hình đặt cọc"] || "",
       counterpartImage: c.counterpartImage || c["Ảnh chụp đối ứng"] || "",
       "Ảnh chụp hình đặt cọc":
@@ -669,12 +672,7 @@ export default function HopDongDaXuatPage() {
 
   // Calculate bank loan amount (tiền vay ngân hàng)
   const calculateBankLoan = (contract) => {
-    // If already has tienVayNganHang, use it
-    if (contract.tienVayNganHang) {
-      return contract.tienVayNganHang;
-    }
-
-    // Otherwise calculate: giaHopDong - tienDatCoc
+    // Priority: soTienVay > tienVayNganHang > calculated value
     const parseValue = (val) => {
       if (!val) return 0;
       if (typeof val === "string") {
@@ -683,11 +681,52 @@ export default function HopDongDaXuatPage() {
       return typeof val === "number" ? val : 0;
     };
 
-    const giaHopDong = parseValue(contract.giaHopDong);
-    const tienDatCoc = parseValue(contract.tienDatCoc || contract.giaGiam);
+    // First check if we have explicit loan amount
+    if (contract.soTienVay) {
+      return parseValue(contract.soTienVay);
+    }
+    
+    if (contract.tienVayNganHang) {
+      return parseValue(contract.tienVayNganHang);
+    }
 
-    const loanAmount = giaHopDong - tienDatCoc;
-    return loanAmount > 0 ? loanAmount : 0;
+    // If payment method is "trả thẳng", no loan
+    if (contract.thanhToan === "trả thẳng") {
+      return 0;
+    }
+
+    // For "trả góp" without explicit loan amount, calculate: giaHopDong - tienDatCoc
+    if (contract.thanhToan === "trả góp") {
+      const giaHopDong = parseValue(contract.giaHopDong);
+      const tienDatCoc = parseValue(contract.tienDatCoc);
+      const loanAmount = giaHopDong - tienDatCoc;
+      return loanAmount > 0 ? loanAmount : 0;
+    }
+
+    return 0;
+  };
+
+  // Calculate counterpart payment (tiền đối ứng)
+  const calculateCounterpartPayment = (contract) => {
+    const parseValue = (val) => {
+      if (!val) return 0;
+      if (typeof val === "string") {
+        return parseFloat(val.replace(/[^\d]/g, "")) || 0;
+      }
+      return typeof val === "number" ? val : 0;
+    };
+
+    // If already has explicit tienDoiUng, use it
+    if (contract.tienDoiUng) {
+      return parseValue(contract.tienDoiUng);
+    }
+
+    // Calculate: giaHopDong - soTienVay
+    const giaHopDong = parseValue(contract.giaHopDong);
+    const soTienVay = calculateBankLoan(contract);
+
+    const counterpartAmount = giaHopDong - soTienVay;
+    return counterpartAmount > 0 ? counterpartAmount : giaHopDong;
   };
 
   // Calculate days from export date to today
@@ -1094,6 +1133,15 @@ export default function HopDongDaXuatPage() {
                         Nội Thất
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
+                        Số Khung
+                      </th>
+                      <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
+                        Số Máy
+                      </th>
+                      <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
+                        Tình Trạng
+                      </th>
+                      <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
                         Giá Niêm Yết
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
@@ -1103,13 +1151,7 @@ export default function HopDongDaXuatPage() {
                         Giá Hợp Đồng
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
-                        Số Khung
-                      </th>
-                      <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
-                        Số Máy
-                      </th>
-                      <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
-                        Tình Trạng
+                        Thanh toán
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
                         Ngân hàng
@@ -1134,6 +1176,16 @@ export default function HopDongDaXuatPage() {
                   <tbody className="bg-neutral-white divide-y divide-secondary-100">
                     {currentContracts.map((contract, index) => {
                       const isMissingData = hasMissingData(contract);
+                      
+                      // Debug log for first contract
+                      if (index === 0) {
+                        console.log("Sample contract data:", contract);
+                        console.log("Tiền đặt cọc:", contract.tienDatCoc);
+                        console.log("Số tiền vay:", contract.soTienVay, contract.tienVayNganHang);
+                        console.log("Thanh toán:", contract.thanhToan);
+                        console.log("Giá hợp đồng:", contract.giaHopDong);
+                      }
+                      
                       return (
                         <tr
                           key={contract.firebaseKey || contract.id}
@@ -1248,6 +1300,15 @@ export default function HopDongDaXuatPage() {
                             </div>
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
+                            {contract.soKhung || "-"}
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
+                            {contract.soMay || "-"}
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
+                            {contract.tinhTrang || "-"}
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
                             {formatCurrency(contract.giaNiemYet)}
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
@@ -1257,13 +1318,7 @@ export default function HopDongDaXuatPage() {
                             {formatCurrency(contract.giaHopDong)}
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
-                            {contract.soKhung || "-"}
-                          </td>
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
-                            {contract.soMay || "-"}
-                          </td>
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
-                            {contract.tinhTrang || "-"}
+                            {contract.thanhToan || "-"}
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
                             <div
@@ -1274,12 +1329,10 @@ export default function HopDongDaXuatPage() {
                             </div>
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
-                            {formatCurrency(
-                              contract.tienDatCoc || contract.giaGiam
-                            )}
+                            {formatCurrency(contract.tienDatCoc)}
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
-                            {formatCurrency(contract.tienDoiUng)}
+                            {formatCurrency(calculateCounterpartPayment(contract))}
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
                             {formatCurrency(calculateBankLoan(contract))}

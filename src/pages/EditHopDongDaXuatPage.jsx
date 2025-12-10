@@ -79,6 +79,8 @@ export default function EditHopDongDaXuatPage() {
     giaGiam: "",
     giaHopDong: "",
     soTienCoc: "",
+    thanhToan: "",
+    soTienVay: "",
     soKhung: "",
     soMay: "",
     tinhTrang: "",
@@ -158,6 +160,8 @@ export default function EditHopDongDaXuatPage() {
           giaGiam: contractData.giaGiam || contractData["Giá Giảm"] || contractData.discountPrice || "",
           giaHopDong: contractData.giaHopDong || contractData["Giá Hợp Đồng"] || contractData.contractPrice || "",
           soTienCoc: contractData.soTienCoc || contractData["Số tiền cọc"] || contractData.deposit || "",
+          thanhToan: contractData.thanhToan || contractData.payment || "",
+          soTienVay: contractData.soTienVay || contractData.tienVay || contractData.loanAmount || contractData.tienVayNganHang || "",
           soKhung: contractData.soKhung || contractData["Số Khung"] || contractData.chassisNumber || "",
           soMay: contractData.soMay || contractData["Số Máy"] || contractData.engineNumber || "",
           tinhTrang: contractData.tinhTrang || contractData["Tình Trạng"] || contractData.status || "",
@@ -436,7 +440,12 @@ export default function EditHopDongDaXuatPage() {
         "Giá Giảm": safeValue(contract.giaGiam),
         "Giá Hợp Đồng": safeValue(contract.giaHopDong),
         "Số tiền cọc": safeValue(contract.soTienCoc),
+        "Tiền đặt cọc": safeValue(contract.soTienCoc),
         soTienCoc: safeValue(contract.soTienCoc),
+        tienDatCoc: safeValue(contract.soTienCoc),
+        thanhToan: safeValue(contract.thanhToan),
+        soTienVay: safeValue(contract.soTienVay),
+        tienVayNganHang: safeValue(contract.soTienVay),
         "Số Khung": safeValue(contract.soKhung),
         "Số Máy": safeValue(contract.soMay),
         "Tình Trạng": safeValue(contract.tinhTrang),
@@ -988,6 +997,38 @@ export default function EditHopDongDaXuatPage() {
                     placeholder="Tình trạng"
                   />
                 </div>
+
+                {/* Payment Method */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Thanh toán
+                  </label>
+                  <select
+                    value={contract.thanhToan || ""}
+                    onChange={(e) => handleChange("thanhToan", e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white"
+                  >
+                    <option value="">Chọn hình thức thanh toán</option>
+                    <option value="trả thẳng">Trả thẳng</option>
+                    <option value="trả góp">Trả góp</option>
+                  </select>
+                </div>
+
+                {/* Loan Amount - Only show when payment is "trả góp" */}
+                {contract.thanhToan === "trả góp" && (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                      Số tiền vay
+                    </label>
+                    <input
+                      type="text"
+                      value={formatCurrency(contract.soTienVay)}
+                      onChange={(e) => handleCurrencyChange("soTienVay", e.target.value)}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm"
+                      placeholder="Nhập số tiền vay"
+                    />
+                  </div>
+                )}
 
                 {/* Bank */}
                 <div>
