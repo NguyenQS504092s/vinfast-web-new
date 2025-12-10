@@ -601,10 +601,11 @@ const GiayXacNhanTangBaoHiem = () => {
             left: 0;
             top: 0;
             width: 100%;
+            height: auto !important;
+            min-height: unset !important;
             margin: 0;
             padding: 15mm;
             box-shadow: none;
-            page-break-after: avoid;
             page-break-inside: avoid;
             font-family: 'Times New Roman', Times, serif !important;
           }
@@ -617,7 +618,8 @@ const GiayXacNhanTangBaoHiem = () => {
             margin: 0 !important;
             padding: 0 !important;
             height: auto !important;
-            overflow: hidden !important;
+            min-height: unset !important;
+            overflow: visible !important;
             font-family: 'Times New Roman', Times, serif !important;
           }
         }

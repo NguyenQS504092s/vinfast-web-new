@@ -448,12 +448,11 @@ const GiayXacNhanKieuLoai = () => {
             left: 0;
             top: 0;
             width: 100%;
-            min-height: calc(100vh - 10mm);
+            height: auto !important;
+            min-height: unset !important;
             padding-top: 0 !important;
             padding-bottom: 0 !important;
             font-family: 'Times New Roman', Times, serif !important;
-            display: flex !important;
-            flex-direction: column !important;
           }
 
           .print\\:hidden {
@@ -464,7 +463,8 @@ const GiayXacNhanKieuLoai = () => {
             margin: 0 !important;
             padding: 0 !important;
             height: auto !important;
-            overflow: hidden !important;
+            min-height: unset !important;
+            overflow: visible !important;
             font-family: 'Times New Roman', Times, serif !important;
           }
         }

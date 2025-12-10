@@ -255,8 +255,16 @@ const PhieuDeNghiLapPhuKien = () => {
             left: 0;
             top: 0;
             width: 100%;
+            height: auto !important;
+            min-height: unset !important;
             padding: 0 !important;
             margin: 0 !important;
+          }
+
+          html, body {
+            height: auto !important;
+            min-height: unset !important;
+            overflow: visible !important;
           }
 
           input {
