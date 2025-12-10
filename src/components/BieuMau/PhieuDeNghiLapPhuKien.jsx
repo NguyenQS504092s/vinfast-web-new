@@ -46,6 +46,29 @@ const PhieuDeNghiLapPhuKien = () => {
                 if (stateData.soKhung) {
                     setBienSoSoKhung(stateData.soKhung);
                 }
+
+                // Auto-fill accessories from quaTang
+                const quaTang = stateData.quaTang || stateData["Quà tặng"] || "";
+                if (quaTang) {
+                    // Split by comma or semicolon and populate rows
+                    const items = quaTang.split(/[,;]/).map(item => item.trim()).filter(item => item);
+                    if (items.length > 0) {
+                        setRows(prev => {
+                            const newRows = [...prev];
+                            items.forEach((item, index) => {
+                                if (index < newRows.length) {
+                                    newRows[index] = {
+                                        stt: index + 1,
+                                        tenPhuKien: item,
+                                        giaBanTang: "Tặng",
+                                        ghiChu: ""
+                                    };
+                                }
+                            });
+                            return newRows;
+                        });
+                    }
+                }
             }
             setLoading(false);
         };
@@ -237,8 +260,17 @@ const PhieuDeNghiLapPhuKien = () => {
             <style>{`
         @media print {
           @page {
-            margin: 10mm 15mm;
             size: A4;
+            margin: 8mm;
+          }
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
 
           body * {
@@ -250,21 +282,31 @@ const PhieuDeNghiLapPhuKien = () => {
             visibility: visible;
           }
 
+          .min-h-screen {
+            min-height: 0 !important;
+            height: auto !important;
+          }
+
           #printable-content {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 194mm !important;
+            min-height: 0 !important;
             height: auto !important;
-            min-height: unset !important;
-            padding: 0 !important;
+            max-height: 281mm !important;
+            overflow: hidden !important;
+            padding: 5mm !important;
             margin: 0 !important;
+            background: white !important;
+            font-family: 'Times New Roman', Times, serif !important;
+            font-size: 11pt !important;
+            line-height: 1.3 !important;
+            box-sizing: border-box !important;
           }
 
-          html, body {
-            height: auto !important;
-            min-height: unset !important;
-            overflow: visible !important;
+          .print\\:hidden {
+            display: none !important;
           }
 
           input {

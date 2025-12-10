@@ -1,0 +1,299 @@
+const {onValueCreated, onValueUpdated} = require("firebase-functions/v2/database");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {onRequest} = require("firebase-functions/v2/https");
+const {initializeApp} = require("firebase-admin/app");
+const {getDatabase} = require("firebase-admin/database");
+const {defineString} = require("firebase-functions/params");
+const {google} = require("googleapis");
+
+initializeApp();
+
+// Define params
+const sheetsId = defineString("SHEETS_ID", {
+  description: "Google Sheets ID for syncing contracts",
+  default: "",
+});
+
+// Google Sheets configuration
+const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
+
+/**
+ * Get authenticated Google Sheets client
+ * @return {Object} Google Sheets API client
+ */
+async function getGoogleSheetsClient() {
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT || "{}";
+  const serviceAccount = JSON.parse(serviceAccountJson);
+
+  if (!serviceAccount.client_email) {
+    throw new Error("Google Service Account not configured");
+  }
+
+  const auth = new google.auth.JWT(
+    serviceAccount.client_email,
+    null,
+    serviceAccount.private_key,
+    SCOPES,
+  );
+
+  return google.sheets({version: "v4", auth});
+}
+
+/**
+ * Format contract data for Google Sheets row
+ * @param {Object} contract - The contract data object
+ * @param {string} contractId - The contract ID
+ * @return {Array} Array of values for Google Sheets row
+ */
+function formatContractRow(contract, contractId) {
+  return [
+    contract.stt || "",
+    contract.ngayXhd || "",
+    contract.tvbh || "",
+    contract.tenKh || contract.customerName || "",
+    contract.soDienThoai || contract.phone || "",
+    contract.email || "",
+    contract.diaChi || contract.address || "",
+    contract.cccd || "",
+    contract.dongXe || contract.model || "",
+    contract.phienBan || contract.variant || "",
+    contract.ngoaiThat || contract.exterior || "",
+    contract.noiThat || contract.interior || "",
+    contract.giaNiemYet || "",
+    contract.giaGiam || "",
+    contract.giaHopDong || contract.contractPrice || "",
+    contract.soTienCoc || contract.deposit || "",
+    contract.tinhTrang || contract.status || "",
+    contract.nganHang || contract.bank || "",
+    contract.soTienVay || "",
+    contract.soTienPhaiThu || "",
+    contract.quaTang || "",
+    contract.quaTangKhac || "",
+    contractId,
+    new Date().toISOString(),
+  ];
+}
+
+/**
+ * Sync new exported contract to Google Sheets
+ * Triggered when a new contract is added to /exportedContracts
+ */
+exports.onContractExported = onValueCreated(
+  {
+    ref: "/exportedContracts/{contractId}",
+    region: "asia-southeast1",
+  },
+  async (event) => {
+    const contractId = event.params.contractId;
+    const contract = event.data.val();
+
+    console.log(`New contract exported: ${contractId}`);
+
+    try {
+      const sheetId = sheetsId.value();
+
+      if (!sheetId) {
+        console.log("Google Sheets ID not configured, skipping sync");
+        return null;
+      }
+
+      const sheets = await getGoogleSheetsClient();
+      const row = formatContractRow(contract, contractId);
+
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: sheetId,
+        range: "HopDongDaXuat!A:X",
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [row],
+        },
+      });
+
+      console.log(`Contract ${contractId} synced to Google Sheets`);
+      return {success: true, contractId};
+    } catch (error) {
+      console.error("Error syncing to Google Sheets:", error);
+      return {success: false, error: error.message};
+    }
+  },
+);
+
+/**
+ * Update Google Sheets when contract is updated
+ */
+exports.onContractUpdated = onValueUpdated(
+  {
+    ref: "/exportedContracts/{contractId}",
+    region: "asia-southeast1",
+  },
+  async (event) => {
+    const contractId = event.params.contractId;
+    const contract = event.data.after.val();
+    const previousContract = event.data.before.val();
+
+    // Log status changes
+    if (contract.tinhTrang !== previousContract.tinhTrang) {
+      console.log(
+        `Contract ${contractId} status changed: ` +
+          `${previousContract.tinhTrang} -> ${contract.tinhTrang}`,
+      );
+    }
+
+    try {
+      const sheetId = sheetsId.value();
+
+      if (!sheetId) {
+        return null;
+      }
+
+      const sheets = await getGoogleSheetsClient();
+
+      // Find and update the row in Google Sheets
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: "HopDongDaXuat!W:W", // Column W contains contractId
+      });
+
+      const rows = response.data.values || [];
+      let rowIndex = -1;
+
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i][0] === contractId) {
+          rowIndex = i + 1; // Sheets is 1-indexed
+          break;
+        }
+      }
+
+      if (rowIndex > 0) {
+        const row = formatContractRow(contract, contractId);
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `HopDongDaXuat!A${rowIndex}:X${rowIndex}`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: {
+            values: [row],
+          },
+        });
+        console.log(`Contract ${contractId} updated in Google Sheets`);
+      }
+
+      return {success: true};
+    } catch (error) {
+      console.error("Error updating Google Sheets:", error);
+      return {success: false, error: error.message};
+    }
+  },
+);
+
+/**
+ * Scheduled daily backup summary
+ * Runs at 2 AM Vietnam time
+ */
+exports.dailySummary = onSchedule(
+  {
+    schedule: "0 2 * * *",
+    timeZone: "Asia/Ho_Chi_Minh",
+    region: "asia-southeast1",
+  },
+  async () => {
+    console.log("Running daily summary...");
+
+    try {
+      const db = getDatabase();
+
+      // Get today's exported contracts
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+
+      const snapshot = await db.ref("/exportedContracts").once("value");
+      const contracts = snapshot.val() || {};
+
+      let todayCount = 0;
+      let totalValue = 0;
+
+      Object.values(contracts).forEach((contract) => {
+        if (contract.ngayXhd && contract.ngayXhd.startsWith(todayStr)) {
+          todayCount++;
+          const price = parseInt(
+            String(contract.giaHopDong || "0").replace(/\D/g, ""),
+          );
+          totalValue += price;
+        }
+      });
+
+      console.log(
+        `Daily summary: ${todayCount} contracts, ` +
+          `total value: ${totalValue.toLocaleString()} VND`,
+      );
+
+      // Save summary to database
+      await db.ref(`/dailySummaries/${todayStr}`).set({
+        date: todayStr,
+        contractCount: todayCount,
+        totalValue: totalValue,
+        generatedAt: new Date().toISOString(),
+      });
+
+      return {success: true, todayCount, totalValue};
+    } catch (error) {
+      console.error("Error generating daily summary:", error);
+      return {success: false, error: error.message};
+    }
+  },
+);
+
+/**
+ * HTTP endpoint to manually trigger sync
+ * Usage: GET /syncToSheets?contractId=xxx
+ */
+exports.syncToSheets = onRequest(
+  {
+    region: "asia-southeast1",
+    cors: true,
+  },
+  async (req, res) => {
+    const contractId = req.query.contractId;
+
+    if (!contractId) {
+      res.status(400).json({error: "contractId is required"});
+      return;
+    }
+
+    try {
+      const db = getDatabase();
+      const snapshot = await db
+        .ref(`/exportedContracts/${contractId}`)
+        .once("value");
+
+      if (!snapshot.exists()) {
+        res.status(404).json({error: "Contract not found"});
+        return;
+      }
+
+      const contract = snapshot.val();
+      const sheetId = sheetsId.value();
+
+      if (!sheetId) {
+        res.status(500).json({error: "Google Sheets not configured"});
+        return;
+      }
+
+      const sheets = await getGoogleSheetsClient();
+      const row = formatContractRow(contract, contractId);
+
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: sheetId,
+        range: "HopDongDaXuat!A:X",
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [row],
+        },
+      });
+
+      res.json({success: true, message: "Contract synced to Google Sheets"});
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({error: error.message});
+    }
+  },
+);

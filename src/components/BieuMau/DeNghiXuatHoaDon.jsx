@@ -17,6 +17,7 @@ const DeNghiXuatHoaDon = () => {
   // Editable fields
   const [soPhieu, setSoPhieu] = useState("");
   const [ngayBanHanh, setNgayBanHanh] = useState("");
+  const [ngayKyHopDong, setNgayKyHopDong] = useState("");
   const [kinhGui, setKinhGui] = useState("Phòng Tài chính - Kế toán.");
   const [nguoiDeNghi, setNguoiDeNghi] = useState(() => {
     // Lấy userName từ localStorage khi khởi tạo
@@ -226,15 +227,20 @@ const DeNghiXuatHoaDon = () => {
         // Set editable fields from incoming data (lưu số thô)
         setSoTienThu(depositNum || "");
         setNganHangSoTien(bankAmount || "");
-        setNganHangTen(incoming.bank || incoming.nganHang || "");
+        // Lấy tên ngân hàng từ incoming hoặc từ branch data
+        setNganHangTen(incoming.bank || incoming.nganHang || branchInfo?.bankName || "VP Bank");
         setNganHangChiNhanh(incoming.recipientInfo || "TT Thế Chấp Vùng 9");
+        
+        // Set ngày ký hợp đồng
+        const contractDateStr = formatDateString(incoming.createdAt || incoming.contractDate) || todayStr;
+        setNgayKyHopDong(contractDateStr);
         
         // Set TVBH from incoming data if available
         if (incoming.tvbh) {
           setNguoiDeNghi(incoming.tvbh);
         }
       } else {
-        // Default data
+        // Default data - sử dụng branch info
         setData({
           contractNumber: "S00901-VSO-25-09-0039",
           contractDate: todayStr,
@@ -244,12 +250,13 @@ const DeNghiXuatHoaDon = () => {
           soKhung: "RLLVFPNT9SH858285",
           contractPrice: "719040000",
           deposit: "72040000",
-          bank: "VP Bank",
+          bank: branchInfo?.bankName || "VP Bank",
         });
         setSoTienThu("72040000");
         setNganHangSoTien("647000000");
-        setNganHangTen("VP bank");
+        setNganHangTen(branchInfo?.bankName || "VP Bank");
         setNganHangChiNhanh("TT Thế Chấp Vùng 9");
+        setNgayKyHopDong(todayStr);
       }
       setLoading(false);
     };
@@ -300,7 +307,7 @@ const DeNghiXuatHoaDon = () => {
       style={{ fontFamily: "Times New Roman" }}
     >
       <div className="max-w-4xl mx-auto print:max-w-4xl print:mx-auto">
-        <div className="flex-1 bg-white p-8 print:pt-0 flex flex-col min-h-screen print:min-h-[calc(100vh-40mm)]" id="printable-content">
+        <div className="flex-1 bg-white p-8 print:p-0 flex flex-col min-h-screen print:min-h-0 print:h-auto" id="printable-content">
           {/* Header */}
           <div className="mb-6">
             <table className="w-full border-2 border-black">
@@ -312,11 +319,21 @@ const DeNghiXuatHoaDon = () => {
                     style={{ width: "30%" }}
                   >
                     <div className="font-bold text-sm uppercase leading-tight">
-                      <p className="mb-0.5">CÔNG TY CP ĐT TM</p>
-                      <p className="mb-0.5">DỊCH VỤ Ô TÔ</p>
-                      <p className="mb-0.5">ĐÔNG SÀI</p>
-                      <p className="mb-0.5">GÒN-CN TRƯỜNG</p>
-                      <p>CHINH</p>
+                      {branch?.headerName ? (
+                        branch.headerName.split('\n').map((line, index, arr) => (
+                          <p key={index} className={index < arr.length - 1 ? "mb-0.5" : ""}>
+                            {line}
+                          </p>
+                        ))
+                      ) : (
+                        <>
+                          <p className="mb-0.5">CÔNG TY CP ĐT TM</p>
+                          <p className="mb-0.5">DỊCH VỤ Ô TÔ</p>
+                          <p className="mb-0.5">ĐÔNG SÀI</p>
+                          <p className="mb-0.5">GÒN-CN TRƯỜNG</p>
+                          <p>CHINH</p>
+                        </>
+                      )}
                     </div>
                   </td>
 
@@ -473,7 +490,17 @@ const DeNghiXuatHoaDon = () => {
 
               <p>
                 <span>Hợp đồng số:</span> {data.contractNumber}
-                <span className="ml-8">Ngày ký:</span> {data.contractDate}
+                <span className="ml-8">Ngày ký:</span>{" "}
+                <span className="print:hidden">
+                  <input
+                    type="text"
+                    value={ngayKyHopDong}
+                    onChange={(e) => setNgayKyHopDong(e.target.value)}
+                    className="border-b border-gray-400 px-2 py-1 text-sm font-normal w-28 focus:outline-none focus:border-blue-500"
+                    placeholder="dd/mm/yyyy"
+                  />
+                </span>
+                <span className="hidden print:inline">{ngayKyHopDong}</span>
               </p>
 
               <p>
@@ -496,26 +523,26 @@ const DeNghiXuatHoaDon = () => {
           </div>
 
           {/* Footer - Signatures */}
-          <div className="mt-8">
-            <p className="text-sm mb-4">
+          <div className="mt-4 print:mt-2">
+            <p className="text-sm mb-2">
               <strong>Ghi chú:</strong>
             </p>
-            <div className="flex justify-between mt-8">
+            <div className="flex justify-between mt-4 print:mt-2">
               <div className="flex-1 text-center">
-                <p className="font-bold text-sm mb-16">BỘ PHẬN KẾ TOÁN</p>
+                <p className="font-bold text-sm mb-16 print:mb-8">BỘ PHẬN KẾ TOÁN</p>
               </div>
               <div className="flex-1 text-center">
-                <p className="font-bold text-sm mb-16">BỘ PHẬN KINH DOANH</p>
+                <p className="font-bold text-sm mb-16 print:mb-8">BỘ PHẬN KINH DOANH</p>
               </div>
               <div className="flex-1 text-center">
-                <p className="font-bold text-sm mb-16">NGƯỜI ĐỀ NGHỊ</p>
+                <p className="font-bold text-sm mb-16 print:mb-8">NGƯỜI ĐỀ NGHỊ</p>
               </div>
             </div>
           </div>
 
           {/* Form Reference */}
-          <div className="mt-auto pt-4 w-full text-right mr-16 border-t border-black print:mt-auto print:pt-4">
-            <p className="text-sm italic">
+          <div className="mt-auto pt-2 w-full text-right mr-16 border-t border-black print:mt-2 print:pt-1">
+            <p className="text-xs italic">
               Biểu mẫu QTTCKT-BM06 ban hành lần 1 ngày 01/7/2014
             </p>
           </div>
@@ -541,7 +568,17 @@ const DeNghiXuatHoaDon = () => {
       <style>{`
         @media print {
           @page {
-            margin: 5mm 20mm 5mm 20mm;
+            size: A4;
+            margin: 8mm;
+          }
+          
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
           
           body * {
@@ -553,29 +590,31 @@ const DeNghiXuatHoaDon = () => {
             visibility: visible;
           }
           
+          .min-h-screen {
+            min-height: 0 !important;
+            height: auto !important;
+          }
+          
           #printable-content {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 194mm !important;
+            min-height: 0 !important;
             height: auto !important;
-            min-height: unset !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
+            max-height: 281mm !important;
+            overflow: hidden !important;
+            padding: 5mm !important;
+            margin: 0 !important;
+            background: white !important;
             font-family: 'Times New Roman', Times, serif !important;
+            font-size: 11pt !important;
+            line-height: 1.3 !important;
+            box-sizing: border-box !important;
           }
           
           .print\\:hidden {
             display: none !important;
-          }
-          
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-            min-height: unset !important;
-            overflow: visible !important;
-            font-family: 'Times New Roman', Times, serif !important;
           }
         }
       `}</style>

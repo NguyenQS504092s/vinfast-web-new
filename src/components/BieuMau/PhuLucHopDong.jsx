@@ -6,6 +6,7 @@ import {
 } from "../../data/branchData";
 import { ref, get } from "firebase/database";
 import { database } from "../../firebase/config";
+import { vndToWords } from "../../utils/vndToWords";
 import logoImage from "../../assets/images/logo.svg";
 
 const PhuLucHopDong = () => {
@@ -15,8 +16,22 @@ const PhuLucHopDong = () => {
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState(null);
   const [quaTang, setQuaTang] = useState("Áo trùm, bao tay lái, sáp thơm, bình chữa cháy.");
-  const [giamGia, setGiamGia] = useState("Bảo hiểm vật chất kinh doanh, cam HT, Film CN, Lót sàn");
+  const [giamGia, setGiamGia] = useState("");
   const [bangChu, setBangChu] = useState("");
+  const [ngayHopDong, setNgayHopDong] = useState("");
+
+  // Auto-generate bangChu when giamGia changes
+  const handleGiamGiaChange = (value) => {
+    const numericValue = value.replace(/\D/g, "");
+    if (numericValue) {
+      const formatted = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      setGiamGia(formatted);
+      setBangChu(vndToWords(numericValue));
+    } else {
+      setGiamGia("");
+      setBangChu("");
+    }
+  };
 
   useEffect(() => {
     const loadShowroom = async () => {
@@ -93,25 +108,27 @@ const PhuLucHopDong = () => {
         showroom: incoming.showroom || branchInfo.shortName,
       };
       setData(processedData);
+      setNgayHopDong(processedData.contractDate);
+      
       // Load values for agreement section
       setQuaTang(incoming.quaTang || incoming["Quà tặng"] || "Áo trùm, bao tay lái, sáp thơm, bình chữa cháy.");
-      // Format giamGia if it's a number (for currency display)
-      const giamGiaValue = incoming.giamGia || incoming["Giảm giá"] || "";
+      
+      // Format giamGia and auto-generate bangChu
+      const giamGiaValue = incoming.soTienPhaiThu || incoming.giamGia || incoming["Giảm giá"] || "";
       if (giamGiaValue) {
-        // Extract numeric value (remove all non-digits)
         const numericValue = String(giamGiaValue).replace(/\D/g, "");
         if (numericValue) {
-          // Format with thousand separators
           setGiamGia(numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+          // Auto-generate bangChu
+          setBangChu(incoming.bangChu || vndToWords(numericValue));
         } else {
-          // No numeric value found, use original text
           setGiamGia(giamGiaValue);
+          setBangChu(incoming.bangChu || "");
         }
       } else {
-        // Empty, use default placeholder
-        setGiamGia("Bảo hiểm vật chất kinh doanh, cam HT, Film CN, Lót sàn");
+        setGiamGia("");
+        setBangChu(incoming.bangChu || "");
       }
-      setBangChu(incoming.bangChu || incoming["Bằng chữ"] || "");
     } else {
       // Dữ liệu mẫu
       const defaultBranch = getDefaultBranch();
@@ -248,8 +265,16 @@ const PhuLucHopDong = () => {
           <div className="mb-3">
             <p className="text-sm italic mb-2">
               Hôm nay, ngày{" "}
-              {data.contractDate || new Date().toLocaleDateString("vi-VN")}, tại
-              Thành Phố Hồ Chí Minh, Chúng tôi gồm :
+              <span className="print:hidden">
+                <input
+                  type="text"
+                  value={ngayHopDong}
+                  onChange={(e) => setNgayHopDong(e.target.value)}
+                  className="border-b border-gray-400 px-1 w-28 focus:outline-none focus:border-blue-500"
+                />
+              </span>
+              <span className="hidden print:inline">{ngayHopDong}</span>
+              , tại Thành Phố Hồ Chí Minh, Chúng tôi gồm :
             </p>
             {/* Bên Bán */}
             <div className="mb-4">
@@ -261,10 +286,7 @@ const PhuLucHopDong = () => {
                   BÊN BÁN
                 </span>
                 <span className="font-bold text-sm">
-                  :{" "}
-                  {branch
-                    ? `CHI NHÁNH ${branch.shortName.toUpperCase()}-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN`
-                    : "CHI NHÁNH TRƯỜNG CHINH-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN"}
+                  : {branch?.name || "CHI NHÁNH TRƯỜNG CHINH - CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN"}
                 </span>
               </div>
               <div className="text-sm space-y-1">
@@ -275,14 +297,7 @@ const PhuLucHopDong = () => {
                   >
                     Địa chỉ
                   </span>
-                  <span>
-                    :{" "}
-                    {branch
-                      ? branch.address
-                          .replace(/Quận/g, "Phường")
-                          .replace(/Thành Phố/g, "Tp")
-                      : "682A Trường Chinh, Phường Tân Bình, Tp Hồ Chí Minh"}
-                  </span>
+                  <span>: {branch?.address || "682A Trường Chinh, Phường Tân Bình, Tp Hồ Chí Minh"}</span>
                 </div>
                 <div className="flex items-start">
                   <span
@@ -429,16 +444,7 @@ const PhuLucHopDong = () => {
                     <input
                       type="text"
                       value={giamGia}
-                      onChange={(e) => {
-                        // Format input as user types (only numbers with thousand separators)
-                        const inputValue = e.target.value;
-                        const numericValue = inputValue.replace(/\D/g, "");
-                        if (numericValue) {
-                          setGiamGia(numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, "."));
-                        } else {
-                          setGiamGia("");
-                        }
-                      }}
+                      onChange={(e) => handleGiamGiaChange(e.target.value)}
                       className="border-b border-gray-400 px-2 py-1 text-sm font-bold italic w-full max-w-md focus:outline-none focus:border-blue-500"
                       placeholder="Nhập số tiền giảm"
                     />
@@ -512,7 +518,17 @@ const PhuLucHopDong = () => {
       <style>{`
         @media print {
           @page {
-            margin: 5mm 20mm 5mm 20mm;
+            size: A4;
+            margin: 8mm;
+          }
+          
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
           
           body * {
@@ -524,25 +540,31 @@ const PhuLucHopDong = () => {
             visibility: visible;
           }
           
+          .min-h-screen {
+            min-height: 0 !important;
+            height: auto !important;
+          }
+          
           #printable-content {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
-            padding-top: 0 !important;
+            width: 194mm !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: 281mm !important;
+            overflow: hidden !important;
+            padding: 5mm !important;
+            margin: 0 !important;
+            background: white !important;
             font-family: 'Times New Roman', Times, serif !important;
+            font-size: 11pt !important;
+            line-height: 1.3 !important;
+            box-sizing: border-box !important;
           }
           
           .print\\:hidden {
             display: none !important;
-          }
-          
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-            overflow: hidden !important;
-            font-family: 'Times New Roman', Times, serif !important;
           }
         }
       `}</style>

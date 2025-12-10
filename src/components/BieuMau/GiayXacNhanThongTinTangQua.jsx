@@ -315,7 +315,17 @@ const GiayXacNhanThongTinTangQua = () => {
       <style>{`
         @media print {
           @page {
-            margin: 5mm 20mm 5mm 20mm;
+            size: A4;
+            margin: 8mm;
+          }
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
 
           body * {
@@ -327,29 +337,31 @@ const GiayXacNhanThongTinTangQua = () => {
             visibility: visible;
           }
 
+          .min-h-screen {
+            min-height: 0 !important;
+            height: auto !important;
+          }
+
           #printable-content {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 194mm !important;
+            min-height: 0 !important;
             height: auto !important;
-            min-height: unset !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
+            max-height: 281mm !important;
+            overflow: hidden !important;
+            padding: 5mm !important;
+            margin: 0 !important;
+            background: white !important;
             font-family: 'Times New Roman', Times, serif !important;
+            font-size: 11pt !important;
+            line-height: 1.3 !important;
+            box-sizing: border-box !important;
           }
 
           .print\\:hidden {
             display: none !important;
-          }
-
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-            min-height: unset !important;
-            overflow: visible !important;
-            font-family: 'Times New Roman', Times, serif !important;
           }
           
           .border-b {

@@ -49,7 +49,7 @@ import GiayXacNhanThongTinTangQua from './components/BieuMau/GiayXacNhanThongTin
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-b from-white to-slate-200 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-b from-white to-slate-200 flex flex-col print:min-h-0 print:bg-white">
         <Header />
 
         {/* Routes */}

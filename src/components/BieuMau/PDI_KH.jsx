@@ -207,9 +207,9 @@ const PDI_KH = () => {
             </div>
             <div className="flex-1 text-center text-xs">
               <p className="font-bold">
-                CÔNG TY CP ĐT THƯƠNG MẠI VÀ DỊCH VỤ ÔTÔ ĐÔNG SÀI GÒN
+                {branch?.name || "CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN"}
               </p>
-              <p>391 Xa Lộ Hà Nội, P. An Phú, TP Thủ Đức, TP Hồ Chí Minh</p>
+              <p>{branch?.address || "391 Võ Nguyên Giáp, Phường An Khánh, Thành Phố Thủ Đức, Thành Phố Hồ Chí Minh"}</p>
             </div>
             <div className="w-20"></div>
           </div>
@@ -776,15 +776,15 @@ const PDI_KH = () => {
               </div>
 
               {/* Signature */}
-              <div className="mt-6 flex justify-between text-xs">
-                <div className="text-center">
-                  <p className="font-bold mb-16">TƯ VẤN BÁN HÀNG</p>
+              <div className="mt-8 flex justify-between text-xs">
+                <div className="text-center flex-1">
+                  <p className="font-bold mb-20">TƯ VẤN BÁN HÀNG</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-bold mb-16">TP.KINHDOANH</p>
+                <div className="text-center flex-1">
+                  <p className="font-bold mb-20">TP.KINH DOANH</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-bold mb-16">TỔNG GĐ/GIÁM ĐỐC</p>
+                <div className="text-center flex-1">
+                  <p className="font-bold mb-20">TỔNG GĐ/GIÁM ĐỐC</p>
                 </div>
               </div>
             </div>
@@ -811,7 +811,17 @@ const PDI_KH = () => {
       <style>{`
         @media print {
           @page {
-            margin: 5mm 15mm 5mm 15mm;
+            size: A4;
+            margin: 8mm;
+          }
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
 
           body * {
@@ -823,29 +833,31 @@ const PDI_KH = () => {
             visibility: visible;
           }
 
+          .min-h-screen {
+            min-height: 0 !important;
+            height: auto !important;
+          }
+
           #printable-content {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
-            min-height: calc(100vh - 10mm);
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
+            width: 194mm !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: 281mm !important;
+            overflow: hidden !important;
+            padding: 3mm !important;
+            margin: 0 !important;
+            background: white !important;
             font-family: 'Times New Roman', Times, serif !important;
-            display: flex !important;
-            flex-direction: column !important;
+            font-size: 10pt !important;
+            line-height: 1.2 !important;
+            box-sizing: border-box !important;
           }
 
           .print\\:hidden {
             display: none !important;
-          }
-
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-            overflow: hidden !important;
-            font-family: 'Times New Roman', Times, serif !important;
           }
         }
       `}</style>

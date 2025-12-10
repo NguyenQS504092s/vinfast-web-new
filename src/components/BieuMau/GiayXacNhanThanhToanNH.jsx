@@ -130,11 +130,11 @@ const GiayXacNhanThanhToanNH = () => {
     >
       <div className="max-w-4xl mx-auto print:max-w-4xl print:mx-auto">
         <div
-          className="flex-1 bg-white p-8 print:pt-0 flex flex-col min-h-screen print:min-h-[calc(100vh-40mm)]"
+          className="flex-1 bg-white p-8 flex flex-col"
           id="printable-content"
         >
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-4">
             <table className="w-full">
               <tbody>
                 <tr>
@@ -193,7 +193,7 @@ const GiayXacNhanThanhToanNH = () => {
           </div>
 
           {/* Title */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-4">
             <h1 className="text-xl font-bold uppercase">
               GIẤY ĐỀ NGHỊ THANH TOÁN
             </h1>
@@ -455,7 +455,7 @@ const GiayXacNhanThanhToanNH = () => {
           </div>
 
           {/* Signature Table */}
-          <div className="mt-12">
+          <div className="mt-6">
             <table className="w-full border-2 border-black">
               <tbody>
                 <tr className="border-b-2 border-black">
@@ -513,7 +513,17 @@ const GiayXacNhanThanhToanNH = () => {
       <style>{`
         @media print {
           @page {
-            margin: 5mm 20mm 5mm 20mm;
+            size: A4;
+            margin: 8mm;
+          }
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
 
           body * {
@@ -525,29 +535,31 @@ const GiayXacNhanThanhToanNH = () => {
             visibility: visible;
           }
 
+          .min-h-screen {
+            min-height: 0 !important;
+            height: auto !important;
+          }
+
           #printable-content {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 194mm !important;
+            min-height: 0 !important;
             height: auto !important;
-            min-height: unset !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
+            max-height: 281mm !important;
+            overflow: hidden !important;
+            padding: 3mm !important;
+            margin: 0 !important;
+            background: white !important;
             font-family: 'Times New Roman', Times, serif !important;
+            font-size: 10pt !important;
+            line-height: 1.2 !important;
+            box-sizing: border-box !important;
           }
 
           .print\\:hidden {
             display: none !important;
-          }
-
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-            min-height: unset !important;
-            overflow: visible !important;
-            font-family: 'Times New Roman', Times, serif !important;
           }
         }
       `}</style>

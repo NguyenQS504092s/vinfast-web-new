@@ -23,9 +23,7 @@ const PhieuRutCoc = () => {
   const [thoiGianGiaoXe, setThoiGianGiaoXe] = useState("");
 
   // Header fields
-  const [headerLeft, setHeaderLeft] = useState(
-    "CN TRƯỜNG CHINH -\nCÔNG TY CỔ PHẦN\nĐẦU TƯ TMDV Ô TÔ\nĐÔNG SÀI GÒN"
-  );
+  const [headerLeft, setHeaderLeft] = useState("");
   const [headerSuffix, setHeaderSuffix] = useState("PHIẾU CLXX");
 
   // Table rows (có thể có nhiều xe)
@@ -35,6 +33,15 @@ const PhieuRutCoc = () => {
     { stt: "", soKhung: "", soHopDong: "", model: "" },
     { stt: "", soKhung: "", soHopDong: "", model: "" },
   ]);
+
+  // Generate header text from branch
+  const getHeaderText = (branchInfo) => {
+    if (!branchInfo) return "CN TRƯỜNG CHINH -\nCÔNG TY CỔ PHẦN\nĐẦU TƯ TMDV Ô TÔ\nĐÔNG SÀI GÒN";
+    if (branchInfo.id === 1) {
+      return "CÔNG TY CỔ PHẦN\nĐẦU TƯ TMDV Ô TÔ\nĐÔNG SÀI GÒN";
+    }
+    return `CN ${branchInfo.shortName.toUpperCase()} -\nCÔNG TY CỔ PHẦN\nĐẦU TƯ TMDV Ô TÔ\nĐÔNG SÀI GÒN`;
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -61,6 +68,9 @@ const PhieuRutCoc = () => {
       const branchInfo =
         getBranchByShowroomName(showroomName) || getDefaultBranch();
       setBranch(branchInfo);
+      
+      // Set header from branch
+      setHeaderLeft(getHeaderText(branchInfo));
 
       // Set default date
       const today = new Date();
@@ -77,7 +87,18 @@ const PhieuRutCoc = () => {
 
         if (stateData.tvbh) setNguoiDeNghi(stateData.tvbh);
 
-        // Removed auto-fill for table rows as requested
+        // Auto-fill first row with contract data
+        const soKhung = stateData.soKhung || stateData.chassisNumber || "";
+        const soHopDong = stateData.vso || stateData.contractNumber || "";
+        const model = stateData.hieuxe || stateData.dongXe || stateData.model || "";
+        
+        if (soKhung || soHopDong || model) {
+          setTableRows(prev => {
+            const newRows = [...prev];
+            newRows[0] = { stt: "1", soKhung, soHopDong, model };
+            return newRows;
+          });
+        }
       } else {
         setData({
           contractNumber: "",
@@ -131,19 +152,25 @@ const PhieuRutCoc = () => {
               <tbody>
                 <tr>
                   <td
-                    className="border-r-2 border-black p-2 align-middle text-center font-bold text-sm"
-                    style={{ width: "30%" }}
+                    className="border-r-2 border-black font-bold text-sm text-center align-middle"
+                    style={{ width: "30%", height: "90px", padding: "8px" }}
                   >
-                    <span className="print:hidden">
-                      <textarea
-                        value={headerLeft}
-                        onChange={(e) => setHeaderLeft(e.target.value)}
-                        className="w-full h-24 text-center font-bold text-sm resize-none focus:outline-none focus:border-blue-500"
-                      />
-                    </span>
-                    <span className="hidden print:inline whitespace-pre-line">
+                    <div 
+                      className="print:hidden w-full h-full flex items-center justify-center"
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => setHeaderLeft(e.target.innerText)}
+                      style={{ 
+                        outline: "none",
+                        whiteSpace: "pre-line",
+                        lineHeight: "1.3"
+                      }}
+                    >
                       {headerLeft}
-                    </span>
+                    </div>
+                    <div className="hidden print:flex items-center justify-center h-full whitespace-pre-line leading-tight">
+                      {headerLeft}
+                    </div>
                   </td>
                   <td
                     className="border-r-2 border-black p-2 align-middle text-center font-bold text-lg"
@@ -392,7 +419,17 @@ const PhieuRutCoc = () => {
       <style>{`
         @media print {
           @page {
-            margin: 5mm 20mm 5mm 20mm;
+            size: A4;
+            margin: 8mm;
+          }
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
 
           body * {
@@ -404,29 +441,31 @@ const PhieuRutCoc = () => {
             visibility: visible;
           }
 
+          .min-h-screen {
+            min-height: 0 !important;
+            height: auto !important;
+          }
+
           #printable-content {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 194mm !important;
+            min-height: 0 !important;
             height: auto !important;
-            min-height: unset !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
+            max-height: 281mm !important;
+            overflow: hidden !important;
+            padding: 5mm !important;
+            margin: 0 !important;
+            background: white !important;
             font-family: 'Times New Roman', Times, serif !important;
+            font-size: 11pt !important;
+            line-height: 1.3 !important;
+            box-sizing: border-box !important;
           }
 
           .print\\:hidden {
             display: none !important;
-          }
-
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-            min-height: unset !important;
-            overflow: visible !important;
-            font-family: 'Times New Roman', Times, serif !important;
           }
         }
       `}</style>
