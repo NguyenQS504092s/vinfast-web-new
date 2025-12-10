@@ -1,8 +1,6 @@
 {
   "projects": {
-    "default": "report-867c2",
-    "report": "report-fc377",
-    "vinfast": "vinfast-d5bd8"
+    "default": "vinfast-dealer-mgmt"
   },
   "targets": {},
   "etags": {}

@@ -1,8 +1,6 @@
 {
   "rules": {
-    "reports": {
-      ".read": true,
-      ".write": true
-    }
+    ".read": "auth != null",
+    ".write": "auth != null"
   }
 }
