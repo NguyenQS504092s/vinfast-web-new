@@ -4,6 +4,8 @@ import { ref, get } from "firebase/database";
 import { database } from "../firebase/config";
 import { Calendar, Users, Car, TrendingUp, UserPlus, DollarSign, FileCheck, Ban, Flame, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
+import EmployeeBarChart from '../components/EmployeeBarChart';
+import PendingContractsTable from '../components/PendingContractsTable';
 
 // Helper function to get current week or previous week dates
 const getCurrentOrPreviousWeekDates = (option) => {
@@ -48,6 +50,7 @@ export default function Dashboard() {
   const [contracts, setContracts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [newCustomersNeedAdvice, setNewCustomersNeedAdvice] = useState([]); // Customers that need consultation
+  const [filteredContractsForTable, setFilteredContractsForTable] = useState([]); // Contracts filtered by time and employee for PendingContractsTable
 
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("month"); // day, week, month, quarter, year, range
@@ -474,6 +477,7 @@ export default function Dashboard() {
       customers.length > 0 ? filterCustomersByTimeRange(customers) : [];
 
     generateReports(filteredContracts, filteredCustomers);
+    setFilteredContractsForTable(filteredContracts);
   }, [
     contracts,
     customers,
@@ -1316,7 +1320,22 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Employee Bar Chart */}
+        <EmployeeBarChart 
+          summaryMatrix={summaryMatrix} 
+          timeRangeText={getTimeRangeText()} 
+        />
+
         {renderSummaryMatrix()}
+
+        {/* Pending Contracts Table */}
+        <PendingContractsTable 
+          summaryMatrix={summaryMatrix} 
+          timeRangeText={getTimeRangeText()} 
+          contracts={filteredContractsForTable}
+          allEmployees={getUniqueEmployees()}
+          selectedEmployee={selectedEmployee}
+        />
 
         {/* New Customers Needing Advice Table */}
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mt-4 sm:mt-6">

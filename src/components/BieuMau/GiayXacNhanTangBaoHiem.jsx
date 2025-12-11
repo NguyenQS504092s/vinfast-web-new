@@ -28,16 +28,7 @@ const GiayXacNhanTangBaoHiem = () => {
   const [endHour, setEndHour] = useState("09");
   const [endMinute, setEndMinute] = useState("59");
 
-  // Helper function to get shortName from showroom (similar to GiayXacNhanThongTin.jsx)
-  const getShowroomShortName = (showroomValue) => {
-    if (!showroomValue) return "Trường Chinh";
-    // Try to find branch by showroom name
-    const foundBranch = getBranchByShowroomName(showroomValue);
-    if (foundBranch) {
-      return foundBranch.shortName;
-    }
-    return "Trường Chinh"; // Default fallback
-  };
+
 
   useEffect(() => {
     const loadData = async () => {
@@ -76,7 +67,7 @@ const GiayXacNhanTangBaoHiem = () => {
         };
 
         // Lấy thông tin chi nhánh
-        let showroomName = incoming.showroom || "TRƯỜNG CHINH";
+        let showroomName = incoming.showroom || "";
         let contractDataFromDB = null;
 
         // Nếu có firebaseKey, thử lấy dữ liệu từ exportedContracts hoặc contracts
@@ -104,8 +95,8 @@ const GiayXacNhanTangBaoHiem = () => {
           }
         }
 
-        const branchInfo =
-          getBranchByShowroomName(showroomName) || getDefaultBranch();
+        // Chỉ set branch khi có showroom được chọn
+        const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
         setBranch(branchInfo);
 
         // Map dữ liệu từ incoming và contractDataFromDB
@@ -165,9 +156,7 @@ const GiayXacNhanTangBaoHiem = () => {
             getValue("address", "diaChi") ||
             getValue("diaChi", "") ||
             "",
-          showroom: 
-            showroomName || 
-            branchInfo.shortName.toUpperCase(),
+          showroom: showroomName || "",
         };
         setData(processedData);
         // Initialize editable fields from data
@@ -182,9 +171,8 @@ const GiayXacNhanTangBaoHiem = () => {
           setNganHangName(incoming.nganHangName);
         }
       } else {
-        // Sử dụng chi nhánh mặc định
-        const defaultBranch = getDefaultBranch();
-        setBranch(defaultBranch);
+        // Không có dữ liệu, không set branch mặc định
+        setBranch(null);
         const defaultData = {
           customerName: "",
           contractNumber: "",
@@ -198,7 +186,7 @@ const GiayXacNhanTangBaoHiem = () => {
           insuranceStart: "",
           insuranceEnd: "",
           customerAddress: "",
-          showroom: defaultBranch.shortName.toUpperCase(),
+          showroom: "",
         };
         setData(defaultData);
         // Initialize editable fields from default data
@@ -324,14 +312,21 @@ const GiayXacNhanTangBaoHiem = () => {
           <div className="mb-8">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <p className="font-bold text-sm mb-1">
-                  CN {getShowroomShortName(data?.showroom).toUpperCase()} - CÔNG
-                  TY
-                </p>
-                <p className="font-bold text-sm mb-1">
-                  CP ĐẦU TƯ TM VÀ DV Ô TÔ
-                </p>
-                <p className="font-bold text-sm">ĐÔNG SÀI GÒN</p>
+                {branch ? (
+                  <>
+                    <p className="font-bold text-sm mb-1">
+                      CN {branch.shortName?.toUpperCase()} - CÔNG TY
+                    </p>
+                    <p className="font-bold text-sm mb-1">
+                      CP ĐẦU TƯ TM VÀ DV Ô TÔ
+                    </p>
+                    <p className="font-bold text-sm">ĐÔNG SÀI GÒN</p>
+                  </>
+                ) : (
+                  <p className="font-bold text-sm text-gray-400">
+                    [Chưa chọn showroom]
+                  </p>
+                )}
               </div>
 
               <div className="flex-1 text-center">
@@ -383,20 +378,29 @@ const GiayXacNhanTangBaoHiem = () => {
 
           {/* Content */}
           <div className="mb-6 text-sm space-y-4">
-            <p>
-              Bằng bản này :{" "}
-              <strong className="uppercase">
-                CN {getShowroomShortName(data?.showroom).toUpperCase()} - CÔNG
-                TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN
-              </strong>
-            </p>
+            {branch ? (
+              <>
+                <p>
+                  Bằng bản này :{" "}
+                  <strong className="uppercase">
+                    {branch.name}
+                  </strong>
+                </p>
 
-            <p>
-              Địa chỉ:{" "}
-              {branch
-                ? branch.address
-                : "Số 682A Trường Chinh, Phường 15, Tp.HCM"}
-            </p>
+                <p>
+                  Địa chỉ: {branch.address}
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  Bằng bản này : <span className="text-gray-400">[Chưa chọn showroom]</span>
+                </p>
+                <p>
+                  Địa chỉ: <span className="text-gray-400">[Chưa có địa chỉ]</span>
+                </p>
+              </>
+            )}
 
             <p>
               Xác nhận tặng bảo hiểm vật chất xe cho khách{" "}

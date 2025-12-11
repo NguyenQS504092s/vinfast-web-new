@@ -8,6 +8,7 @@ import React, {
 import CheckboxFilter from "./FilterPanel/CheckboxFilter";
 import { ref, get } from "firebase/database";
 import { database } from "../firebase/config";
+import { getAllBranches } from "../data/branchData";
 
 export default function FilterPanel({
   activeTab,
@@ -32,6 +33,7 @@ export default function FilterPanel({
   const teamsRef = useRef(null); // used as anchorRef for departments checkbox
   const marketsRef = useRef(null);
   const trangThaiRef = useRef(null); // ref for status filter
+  const showroomRef = useRef(null); // ref for showroom filter
   const refs = useMemo(
     () => ({
       products: productsRef,
@@ -39,6 +41,7 @@ export default function FilterPanel({
       teams: teamsRef,
       markets: marketsRef,
       trangThai: trangThaiRef,
+      showroom: showroomRef,
     }),
     // refs themselves are stable refs, empty deps ok
     []
@@ -53,6 +56,12 @@ export default function FilterPanel({
     "Đã giải ngân",
     "Đã giao xe",
   ];
+
+  // Get showroom options from branchData
+  const showroomOptions = useMemo(() => {
+    const branches = getAllBranches();
+    return branches.map(branch => branch.name);
+  }, []);
 
   // local state for departments: if parent doesn't provide availableFilters.departments,
   // we will fetch unique departments from the `employees` node in RTDB
@@ -390,6 +399,34 @@ export default function FilterPanel({
                       strokeLinejoin="round"
                       strokeWidth={2}
                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                }
+              />
+            </div>
+
+            {/* Showroom filter - only for hopdongdaxuat */}
+            <div className="w-full sm:w-auto sm:min-w-[160px]">
+              <CheckboxFilter
+                id="showroom"
+                title="Showroom"
+                anchorRef={refs.showroom}
+                items={showroomOptions}
+                selected={filters.showroom || []}
+                onToggle={(v) => handleToggle("showroom", v)}
+                visible={activeTab === "hopdongdaxuat"}
+                icon={
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                     />
                   </svg>
                 }

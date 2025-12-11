@@ -104,7 +104,7 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
     const loadData = async () => {
       try {
         // Load branch data from showroom
-        let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+        let showroomName = location.state?.showroom || "";
 
         // Nếu có firebaseKey, thử lấy showroom từ contracts
         if (location.state?.firebaseKey || location.state?.contractId) {
@@ -144,15 +144,15 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
           getBranchByShowroomName(showroomName) || getDefaultBranch();
         setBranch(branchInfo);
 
-        // Initialize company fields from branch
-        if (branchInfo) {
-          if (!congTy) setCongTy(branchInfo.name || "");
-          if (!diaChiTruSo) setDiaChiTruSo(branchInfo.address || "");
-          if (!maSoDN) setMaSoDN(branchInfo.taxCode || "");
-          if (!taiKhoan) setTaiKhoan(branchInfo.bankAccount || "");
-          if (!nganHangTK) setNganHangTK(branchInfo.bankName || "");
-          if (!daiDien) setDaiDien(branchInfo.representativeName || "");
-          if (!chucVu) setChucVu(branchInfo.position || "");
+        // Initialize company fields from branch only if showroom is selected
+        if (branchInfo && showroomName) {
+          setCongTy(branchInfo.name || "");
+          setDiaChiTruSo(branchInfo.address || "");
+          setMaSoDN(branchInfo.taxCode || "");
+          setTaiKhoan(branchInfo.bankAccount || "");
+          setNganHangTK(branchInfo.bankName || "VP Bank");
+          setDaiDien(branchInfo.representativeName || "Nguyễn Thành Trai");
+          setChucVu(branchInfo.position || "Tổng Giám Đốc");
         }
 
         // Priority 1: Data from location.state (from HopDongDaXuatPage)
@@ -409,69 +409,77 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
         <div className="text-sm space-y-4">
           {/* Bên Bán */}
           <div>
-            <p className="font-bold mb-2">
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={congTy}
-                  onChange={(e) => setCongTy(e.target.value)}
-                  className="border-b border-gray-400 px-1 w-[90%] focus:outline-none focus:border-blue-500"
-                />
-              </span>
-              <span className="hidden print:inline underline">{congTy}</span>
-            </p>
-            <p className="mb-1">
-              Địa chỉ:{" "}
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={diaChiTruSo}
-                  onChange={(e) => setDiaChiTruSo(e.target.value)}
-                  className="border-b border-gray-400 px-1 w-[90%] focus:outline-none focus:border-blue-500"
-                />
-              </span>
-              <span className="hidden print:inline">{diaChiTruSo}</span>
-            </p>
-            <p className="mb-1">
-              Mã số doanh nghiệp:{" "}
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={maSoDN}
-                  onChange={(e) => setMaSoDN(e.target.value)}
-                  className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
-                />
-              </span>
-              <span className="hidden print:inline underline">{maSoDN}</span>
-            </p>
-            <p className="mb-1">
-              Tài khoản:{" "}
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={taiKhoan}
-                  onChange={(e) => setTaiKhoan(e.target.value)}
-                  className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
-                />
-              </span>
-              <span className="hidden print:inline font-bold">{taiKhoan}</span>{" "}
-              tại Ngân hàng{" "}
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={nganHangTK}
-                  onChange={(e) => setNganHangTK(e.target.value)}
-                  className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
-                />
-              </span>
-              <span className="hidden print:inline">{nganHangTK}</span>
-            </p>
-            <p className="mb-1">
-              Đại diện:{" "}
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={daiDien}
+            {branch ? (
+              <p className="font-bold mb-2">
+                <span className="print:hidden">
+                  <input
+                    type="text"
+                    value={congTy}
+                    onChange={(e) => setCongTy(e.target.value)}
+                    className="border-b border-gray-400 px-1 w-[90%] focus:outline-none focus:border-blue-500"
+                  />
+                </span>
+                <span className="hidden print:inline underline">{congTy}</span>
+              </p>
+            ) : (
+              <p className="font-bold mb-2 text-gray-500">
+                [Chưa chọn showroom]
+              </p>
+            )}
+            {branch && (
+              <>
+                <p className="mb-1">
+                  Địa chỉ:{" "}
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={diaChiTruSo}
+                      onChange={(e) => setDiaChiTruSo(e.target.value)}
+                      className="border-b border-gray-400 px-1 w-[90%] focus:outline-none focus:border-blue-500"
+                    />
+                  </span>
+                  <span className="hidden print:inline">{diaChiTruSo}</span>
+                </p>
+                <p className="mb-1">
+                  Mã số doanh nghiệp:{" "}
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={maSoDN}
+                      onChange={(e) => setMaSoDN(e.target.value)}
+                      className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
+                    />
+                  </span>
+                  <span className="hidden print:inline underline">{maSoDN}</span>
+                </p>
+                <p className="mb-1">
+                  Tài khoản:{" "}
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={taiKhoan}
+                      onChange={(e) => setTaiKhoan(e.target.value)}
+                      className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
+                    />
+                  </span>
+                  <span className="hidden print:inline font-bold">{taiKhoan}</span>{" "}
+                  tại Ngân hàng{" "}
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={nganHangTK}
+                      onChange={(e) => setNganHangTK(e.target.value)}
+                      className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
+                    />
+                  </span>
+                  <span className="hidden print:inline">{nganHangTK}</span>
+                </p>
+                <p className="mb-1">
+                  Đại diện:{" "}
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={daiDien}
                   onChange={(e) => setDaiDien(e.target.value)}
                   className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
                 />
@@ -518,9 +526,11 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
               </span>
               )
             </p>
-            <p className="mb-2 font-bold">
-              ("<strong>Bên Bán</strong>")
-            </p>
+                <p className="mb-2 font-bold">
+                  ("<strong>Bên Bán</strong>")
+                </p>
+              </>
+            )}
           </div>
 
           <p className="font-bold mb-4">

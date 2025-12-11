@@ -30,11 +30,9 @@ const GiayXacNhanThanhToanNH = () => {
   const [giaBan, setGiaBan] = useState("719.040.000");
   const [soTienDaTra, setSoTienDaTra] = useState("72.040.000");
   const [soTienConThieu, setSoTienConThieu] = useState("647.000.000");
-  const [taiKhoanSo, setTaiKhoanSo] = useState("288999");
-  const [nganHang, setNganHang] = useState("Ngân Hàng VP Bank_CN Gò Vấp");
-  const [chuTK, setChuTK] = useState(
-    "CHI NHÁNH TRƯỜNG CHINH-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN"
-  );
+  const [taiKhoanSo, setTaiKhoanSo] = useState("");
+  const [nganHang, setNganHang] = useState("");
+  const [chuTK, setChuTK] = useState("");
 
   const formatCurrency = (amount) => {
     if (!amount) return "";
@@ -46,16 +44,22 @@ const GiayXacNhanThanhToanNH = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
 
-      // Nếu có firebaseKey, thử lấy showroom từ contracts
+      // Nếu có firebaseKey, thử lấy showroom từ exportedContracts hoặc contracts
       if (location.state?.firebaseKey) {
         try {
-          const contractRef = ref(
-            database,
-            `contracts/${location.state.firebaseKey}`
-          );
-          const snapshot = await get(contractRef);
+          const contractId = location.state.firebaseKey;
+          // Thử exportedContracts trước (vì đây là từ trang hợp đồng đã xuất)
+          let contractRef = ref(database, `exportedContracts/${contractId}`);
+          let snapshot = await get(contractRef);
+          
+          // Nếu không có trong exportedContracts, thử contracts
+          if (!snapshot.exists()) {
+            contractRef = ref(database, `contracts/${contractId}`);
+            snapshot = await get(contractRef);
+          }
+          
           if (snapshot.exists()) {
             const contractData = snapshot.val();
             if (contractData.showroom) {
@@ -67,9 +71,20 @@ const GiayXacNhanThanhToanNH = () => {
         }
       }
 
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
+      // Chỉ set branch khi có showroom được chọn
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
       setBranch(branchInfo);
+
+      // Cập nhật thông tin tài khoản dựa trên branch
+      if (branchInfo) {
+        setTaiKhoanSo(branchInfo.bankAccount || "");
+        setNganHang(`${branchInfo.bankName || "VP Bank"}_CN Gò Vấp`);
+        setChuTK(branchInfo.name || "");
+      } else {
+        setTaiKhoanSo("");
+        setNganHang("");
+        setChuTK("");
+      }
 
       // Set default date to today
       const today = new Date();
@@ -141,10 +156,16 @@ const GiayXacNhanThanhToanNH = () => {
                   {/* Left Column - Company info */}
                   <td className="align-top" style={{ width: "50%" }}>
                     <div className="text-sm font-bold leading-relaxed">
-                      <p className="mb-1">CÔNG TY CỔ PHẦN ĐẦU TƯ</p>
-                      <p className="mb-1">THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ</p>
-                      <p className="mb-1">ĐÔNG SÀI GÒN</p>
-                      <p className="mb-3">CHI NHÁNH TRƯỜNG CHINH</p>
+                      {branch ? (
+                        <>
+                          <p className="mb-1">CÔNG TY CỔ PHẦN ĐẦU TƯ</p>
+                          <p className="mb-1">THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ</p>
+                          <p className="mb-1">ĐÔNG SÀI GÒN - CHI NHÁNH {branch.shortName?.toUpperCase()}</p>
+                          <p className="mb-3">{branch.address}</p>
+                        </>
+                      ) : (
+                        <p className="mb-3 text-gray-400">[Chưa chọn showroom]</p>
+                      )}
                     </div>
                   </td>
 
@@ -249,8 +270,7 @@ const GiayXacNhanThanhToanNH = () => {
               </strong>{" "}
               và{" "}
               <strong>
-                CHI NHÁNH TRƯỜNG CHINH-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô
-                TÔ ĐÔNG SÀI GÒN
+                {branch ? branch.name : "[Chưa chọn showroom]"}
               </strong>
             </p>
 
@@ -263,8 +283,7 @@ const GiayXacNhanThanhToanNH = () => {
             <p className="text-justify leading-relaxed">
               Nay{" "}
               <strong>
-                CHI NHÁNH TRƯỜNG CHINH-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô
-                TÔ ĐÔNG SÀI GÒN
+                {branch ? branch.name : "[Chưa chọn showroom]"}
               </strong>{" "}
               đề nghị{" "}
               <strong>
@@ -451,6 +470,13 @@ const GiayXacNhanThanhToanNH = () => {
                   <span className="hidden print:inline">{chuTK}</span>
                 </strong>
               </p>
+
+              <p>
+                • Mã số thuế:{" "}
+                <strong>
+                  {branch ? branch.taxCode : "[Chưa có mã số thuế]"}
+                </strong>
+              </p>
             </div>
           </div>
 
@@ -460,8 +486,7 @@ const GiayXacNhanThanhToanNH = () => {
               <tbody>
                 <tr className="border-b-2 border-black">
                   <td colSpan={2} className="p-2 text-center font-bold">
-                    CHI NHÁNH TRƯỜNG CHINH-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH
-                    VỤ Ô TÔ ĐÔNG SÀI GÒN
+                    {branch ? branch.name : "[Chưa chọn showroom]"}
                   </td>
                 </tr>
                 <tr className="border-b border-black">

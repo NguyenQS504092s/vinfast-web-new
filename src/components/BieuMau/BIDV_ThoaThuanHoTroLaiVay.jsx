@@ -13,6 +13,7 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [branch, setBranch] = useState(null);
 
   // Editable fields - Ngày tháng
   const [ngayKy, setNgayKy] = useState("");
@@ -20,12 +21,8 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
   const [namKy, setNamKy] = useState("");
 
   // Bên Bán
-  const [congTyBenBan, setCongTyBenBan] = useState(
-    "CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN - CHI NHÁNH TRƯỜNG CHINH"
-  );
-  const [diaChiTruSo, setDiaChiTruSo] = useState(
-    "682A Trường Chinh, Phường 15, Tân Bình, TP. Hồ Chí Minh"
-  );
+  const [congTyBenBan, setCongTyBenBan] = useState("");
+  const [diaChiTruSo, setDiaChiTruSo] = useState("");
   const [maSoDN, setMaSoDN] = useState("");
   const [taiKhoan, setTaiKhoan] = useState("");
   const [nganHangBenBan, setNganHangBenBan] = useState("");
@@ -56,27 +53,16 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
   const [tuNgay, setTuNgay] = useState("");
   const [tuThang, setTuThang] = useState("");
 
+  // Editable percentage fields
+  const [soTienVayToiDa, setSoTienVayToiDa] = useState("");
+  const [laiSuatUuDai, setLaiSuatUuDai] = useState("");
+  const [laiSuatThapHon, setLaiSuatThapHon] = useState("");
+
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
-
-      if (location.state?.firebaseKey) {
-        try {
-          const contractRef = ref(
-            database,
-            `contracts/${location.state.firebaseKey}`
-          );
-          const snapshot = await get(contractRef);
-          if (snapshot.exists()) {
-            const contractData = snapshot.val();
-            if (contractData.showroom) {
-              showroomName = contractData.showroom;
-            }
-          }
-        } catch (error) {
-          console.error("Error loading contract data:", error);
-        }
-      }
+      let showroomName = location.state?.showroom || "";
+      let contractData = null;
+      let showroomLoadedFromContracts = false;
 
       // Set default date
       const today = new Date();
@@ -85,19 +71,168 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
       setThangKy(pad(today.getMonth() + 1));
       setNamKy(today.getFullYear().toString());
 
-      if (location.state) {
-        const stateData = location.state;
-        setData(stateData);
+      // Nếu có firebaseKey, thử lấy showroom từ exportedContracts trước, sau đó mới từ contracts
+      if (location.state?.firebaseKey) {
+        try {
+          const contractId = location.state.firebaseKey;
+          
+          // Thử load từ exportedContracts trước (dữ liệu mới nhất)
+          const exportedContractsRef = ref(database, `exportedContracts/${contractId}`);
+          const exportedSnapshot = await get(exportedContractsRef);
+          
+          if (exportedSnapshot.exists()) {
+            contractData = exportedSnapshot.val();
+            console.log("Loaded from exportedContracts:", contractData);
+            if (contractData.showroom) {
+              showroomName = contractData.showroom;
+              showroomLoadedFromContracts = true;
+              console.log("Showroom loaded from exportedContracts:", showroomName);
+            }
+          } else {
+            // Nếu không có trong exportedContracts, thử load từ contracts
+            const contractsRef = ref(database, `contracts/${contractId}`);
+            const snapshot = await get(contractsRef);
+            if (snapshot.exists()) {
+              contractData = snapshot.val();
+              console.log("Loaded from contracts:", contractData);
+              if (contractData.showroom) {
+                showroomName = contractData.showroom;
+                showroomLoadedFromContracts = true;
+                console.log("Showroom loaded from contracts:", showroomName);
+              }
+            } else {
+              console.log("Contract not found in both exportedContracts and contracts paths");
+            }
+          }
+        } catch (error) {
+          console.error("Error loading contract data:", error);
+        }
+      }
 
-        // Auto-fill từ location.state
-        if (stateData.customerName) setTenKhachHang(stateData.customerName);
-        if (stateData.customerAddress) setDiaChiKH(stateData.customerAddress);
-        if (stateData.customerPhone) setDienThoaiKH(stateData.customerPhone);
-        if (stateData.customerCCCD) setCmtnd(stateData.customerCCCD);
-        if (stateData.contractNumber) setSoHopDong(stateData.contractNumber);
-        if (stateData.hieuxe) setModel(stateData.hieuxe);
-        if (stateData.soKhung) setSoKhung(stateData.soKhung);
-        if (stateData.soMay) setSoMay(stateData.soMay);
+      // Lấy thông tin chi nhánh chỉ khi có showroom
+      let branchInfo = null;
+      if (showroomName) {
+        branchInfo = getBranchByShowroomName(showroomName);
+        setBranch(branchInfo);
+      } else {
+        setBranch(null);
+      }
+
+      // Auto-fill thông tin công ty từ branch (chỉ khi có branch)
+      if (branchInfo) {
+        setCongTyBenBan(branchInfo.name.toUpperCase());
+        setDiaChiTruSo(branchInfo.address);
+        setMaSoDN(branchInfo.taxCode || "");
+        setDaiDienBenBan(branchInfo.representativeName || "");
+        setChucVuBenBan(branchInfo.position || "");
+
+        // Auto-fill thông tin ngân hàng từ branch
+        setTaiKhoan(branchInfo.bankAccount || "");
+        setNganHangBenBan(`${branchInfo.bankName || ""} - ${branchInfo.bankBranch || ""}`);
+      } else {
+        // Reset thông tin công ty khi không có branch
+        setCongTyBenBan("");
+        setDiaChiTruSo("");
+        setMaSoDN("");
+        setDaiDienBenBan("");
+        setChucVuBenBan("");
+        setTaiKhoan("");
+        setNganHangBenBan("");
+      }
+
+      // Sử dụng dữ liệu từ database hoặc location.state
+      const dataSource = contractData || location.state || {};
+
+      // Auto-fill từ dữ liệu hợp đồng
+      if (dataSource && Object.keys(dataSource).length > 0) {
+        setData(dataSource);
+
+        // Thông tin khách hàng
+        const customerName =
+          dataSource.customerName ||
+          dataSource["Tên KH"] ||
+          dataSource["Tên Kh"] ||
+          "";
+        if (customerName) setTenKhachHang(customerName);
+
+        const customerAddress =
+          dataSource.customerAddress ||
+          dataSource.address ||
+          dataSource["Địa Chỉ"] ||
+          dataSource["Địa chỉ"] ||
+          "";
+        if (customerAddress) setDiaChiKH(customerAddress);
+
+        const customerPhone =
+          dataSource.customerPhone ||
+          dataSource.phone ||
+          dataSource["Số Điện Thoại"] ||
+          dataSource["Số điện thoại"] ||
+          "";
+        if (customerPhone) setDienThoaiKH(customerPhone);
+
+        // CCCD - format với ngày cấp và nơi cấp
+        const cccdNumber =
+          dataSource.cccd ||
+          dataSource.CCCD ||
+          dataSource.customerCCCD ||
+          "";
+        const ngayCap =
+          dataSource.ngayCap ||
+          dataSource.issueDate ||
+          dataSource["Ngày Cấp"] ||
+          dataSource["Ngày cấp"] ||
+          "";
+        const noiCap =
+          dataSource.noiCap ||
+          dataSource.issuePlace ||
+          dataSource["Nơi Cấp"] ||
+          dataSource["Nơi cấp"] ||
+          "";
+
+        if (cccdNumber) {
+          setCmtnd(cccdNumber);
+          if (ngayCap) setNgayCapCMT(ngayCap);
+          if (noiCap) setNoiCapCMT(noiCap);
+        }
+
+        // Số hợp đồng (mã hợp đồng)
+        const contractNumber =
+          dataSource.vso ||
+          dataSource["VSO"] ||
+          dataSource.soHopDong ||
+          dataSource.contractNumber ||
+          "";
+        if (contractNumber) setSoHopDong(contractNumber);
+
+        // Model xe
+        const model =
+          dataSource.model || 
+          dataSource.dongXe || 
+          dataSource["Dòng xe"] || 
+          dataSource.hieuxe ||
+          "";
+        if (model) setModel(model);
+
+        // Số khung
+        if (dataSource.soKhung || dataSource["Số Khung"] || dataSource.chassisNumber) {
+          setSoKhung(
+            dataSource.soKhung ||
+            dataSource["Số Khung"] ||
+            dataSource.chassisNumber ||
+            ""
+          );
+        }
+
+        // Số máy
+        if (dataSource.soMay || dataSource["Số Máy"] || dataSource.engineNumber) {
+          setSoMay(
+            dataSource.soMay ||
+            dataSource["Số Máy"] ||
+            dataSource.engineNumber ||
+            ""
+          );
+        }
       } else {
         setData({
           customerName: "",
@@ -193,123 +328,131 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
           <div className="text-sm space-y-4">
             {/* Bên Bán */}
             <div>
-              <p className="font-bold mb-2">
-                CÔNG TY{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={congTyBenBan}
-                    onChange={(e) => setCongTyBenBan(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline underline">
-                  {congTyBenBan}
-                </span>
-              </p>
-              <p className="mb-1">
-                Địa chỉ trụ sở chính:{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={diaChiTruSo}
-                    onChange={(e) => setDiaChiTruSo(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline font-bold">
-                  {diaChiTruSo}
-                </span>
-              </p>
-              <p className="mb-1">
-                Mã số doanh nghiệp:{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={maSoDN}
-                    onChange={(e) => setMaSoDN(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-64 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline font-bold">{maSoDN}</span>
-              </p>
-              <p className="mb-1">
-                Tài khoản:{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={taiKhoan}
-                    onChange={(e) => setTaiKhoan(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline font-bold">
-                  {taiKhoan}
-                </span>{" "}
-                tại Ngân hàng{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={nganHangBenBan}
-                    onChange={(e) => setNganHangBenBan(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline font-bold">
-                  {nganHangBenBan}
-                </span>
-              </p>
-              <p className="mb-1">
-                Đại diện:{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={daiDienBenBan}
-                    onChange={(e) => setDaiDienBenBan(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline">{daiDienBenBan}</span>
-                {"    "}Chức vụ:{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={chucVuBenBan}
-                    onChange={(e) => setChucVuBenBan(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline">{chucVuBenBan}</span>
-              </p>
-              <p className="mb-2">
-                (Theo Giấy uỷ quyền số{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={giayUyQuyen}
-                    onChange={(e) => setGiayUyQuyen(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline font-bold">
-                  {giayUyQuyen}
-                </span>{" "}
-                ngày{" "}
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={ngayUyQuyen}
-                    onChange={(e) => setNgayUyQuyen(e.target.value)}
-                    className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline font-bold">
-                  {ngayUyQuyen}
-                </span>
-                )
-              </p>
-              <p className="mb-2 font-bold">("Bên Bán")</p>
-              <p className="font-bold mb-2">VÀ</p>
+              {branch ? (
+                <>
+                  <p className="font-bold mb-2">
+                    CÔNG TY{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={congTyBenBan}
+                        onChange={(e) => setCongTyBenBan(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline underline">
+                      {congTyBenBan}
+                    </span>
+                  </p>
+                  <p className="mb-1">
+                    Địa chỉ trụ sở chính:{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={diaChiTruSo}
+                        onChange={(e) => setDiaChiTruSo(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-full focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline font-bold">
+                      {diaChiTruSo}
+                    </span>
+                  </p>
+                  <p className="mb-1">
+                    Mã số doanh nghiệp:{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={maSoDN}
+                        onChange={(e) => setMaSoDN(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-64 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline font-bold">{maSoDN}</span>
+                  </p>
+                  <p className="mb-1">
+                    Tài khoản:{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={taiKhoan}
+                        onChange={(e) => setTaiKhoan(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline font-bold">
+                      {taiKhoan}
+                    </span>{" "}
+                    tại Ngân hàng{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={nganHangBenBan}
+                        onChange={(e) => setNganHangBenBan(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline font-bold">
+                      {nganHangBenBan}
+                    </span>
+                  </p>
+                  <p className="mb-1">
+                    Đại diện:{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={daiDienBenBan}
+                        onChange={(e) => setDaiDienBenBan(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline">{daiDienBenBan}</span>
+                  </p>
+                  <p className="mb-1">
+                    Chức vụ:{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={chucVuBenBan}
+                        onChange={(e) => setChucVuBenBan(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-48 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline">{chucVuBenBan}</span>
+                  </p>
+                  <p className="mb-2">
+                    (Theo Giấy uỷ quyền số{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={giayUyQuyen}
+                        onChange={(e) => setGiayUyQuyen(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline font-bold">
+                      {giayUyQuyen}
+                    </span>{" "}
+                    ngày{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={ngayUyQuyen}
+                        onChange={(e) => setNgayUyQuyen(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline font-bold">
+                      {ngayUyQuyen}
+                    </span>
+                    )
+                  </p>
+                  <p className="mb-2 font-bold">("Bên Bán")</p>
+                  <p className="font-bold mb-2">VÀ</p>
+                </>
+              ) : (
+                <p className="text-gray-500 italic mb-4">[Chưa chọn showroom - Thông tin công ty sẽ hiển thị khi chọn showroom]</p>
+              )}
             </div>
 
             {/* Khách Hàng */}
@@ -534,7 +677,17 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
 
                 <div className="ml-6 space-y-2">
                   <p>
-                    - Số tiền vay tối đa bằng 70% giá trị hợp đồng mua bán xe <em>(sau khi đã trừ các ưu đãi chiết khấu giảm giá bán xe)</em>.
+                    - Số tiền vay tối đa bằng{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={soTienVayToiDa}
+                        onChange={(e) => setSoTienVayToiDa(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-12 text-center focus:outline-none focus:border-blue-500"
+                        placeholder="70"
+                      />
+                    </span>
+                    <span className="hidden print:inline">{soTienVayToiDa || "___"}</span>% giá trị hợp đồng mua bán xe <em>(sau khi đã trừ các ưu đãi chiết khấu giảm giá bán xe)</em>.
                   </p>
                   <p>- Thời hạn vay tối đa bằng 96 tháng;</p>
                   <p>
@@ -548,7 +701,27 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
                   </p>
                   <div className="ml-6">
                     <p className="text-justify">
-                      - Lãi suất trong 36 tháng đầu tiên cố định (lãi suất trong thời gian ưu đãi): 6,3%/Năm. Trong trường hợp lãi suất thực tế tại ngân hàng thấp hơn 6,3%/năm, Khách Hàng thanh toán theo lãi suất thực tế.
+                      - Lãi suất trong 36 tháng đầu tiên cố định (lãi suất trong thời gian ưu đãi):{" "}
+                      <span className="print:hidden">
+                        <input
+                          type="text"
+                          value={laiSuatUuDai}
+                          onChange={(e) => setLaiSuatUuDai(e.target.value)}
+                          className="border-b border-gray-400 px-1 w-12 text-center focus:outline-none focus:border-blue-500"
+                          placeholder="6,3"
+                        />
+                      </span>
+                      <span className="hidden print:inline">{laiSuatUuDai || "___"}</span>%/Năm. Trong trường hợp lãi suất thực tế tại ngân hàng thấp hơn{" "}
+                      <span className="print:hidden">
+                        <input
+                          type="text"
+                          value={laiSuatThapHon}
+                          onChange={(e) => setLaiSuatThapHon(e.target.value)}
+                          className="border-b border-gray-400 px-1 w-12 text-center focus:outline-none focus:border-blue-500"
+                          placeholder="6,3"
+                        />
+                      </span>
+                      <span className="hidden print:inline">{laiSuatThapHon || "___"}</span>%/năm, Khách Hàng thanh toán theo lãi suất thực tế.
                     </p>
                     <p className="text-justify">
                       - Lãi suất từ tháng 36 trở đi đến hết thời gian vay vốn: Bằng lãi suất tiết kiệm kỳ hạn 24 tháng trả lãi sau đối với khách hàng cá nhân + Biên độ <strong>4.0%/năm</strong> và không thấp hơn lãi suất sàn theo quy định của Ngân hàng từng thời kỳ.

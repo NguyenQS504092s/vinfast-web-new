@@ -64,14 +64,22 @@ const GiayThoaThuanTraCham = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
 
-      // Nếu có firebaseKey, thử lấy showroom từ contracts
+      // Nếu có firebaseKey, thử lấy showroom từ exportedContracts hoặc contracts
       if (location.state?.firebaseKey) {
         try {
           const contractId = location.state.firebaseKey;
-          const contractsRef = ref(database, `contracts/${contractId}`);
-          const snapshot = await get(contractsRef);
+          // Thử exportedContracts trước (vì đây là từ trang hợp đồng đã xuất)
+          let contractsRef = ref(database, `exportedContracts/${contractId}`);
+          let snapshot = await get(contractsRef);
+          
+          // Nếu không có trong exportedContracts, thử contracts
+          if (!snapshot.exists()) {
+            contractsRef = ref(database, `contracts/${contractId}`);
+            snapshot = await get(contractsRef);
+          }
+          
           if (snapshot.exists()) {
             const contractData = snapshot.val();
             if (contractData.showroom) {
@@ -79,35 +87,12 @@ const GiayThoaThuanTraCham = () => {
             }
           }
         } catch (err) {
-          console.error("Error loading showroom from contracts:", err);
-        }
-
-        // Thử load từ exportedContracts nếu chưa có showroom
-        if (!showroomName || showroomName === "Chi Nhánh Trường Chinh") {
-          try {
-            const contractRef = ref(
-              database,
-              `exportedContracts/${location.state.firebaseKey}`
-            );
-            const snapshot = await get(contractRef);
-            if (snapshot.exists()) {
-              const contractData = snapshot.val();
-              if (contractData.showroom) {
-                showroomName = contractData.showroom;
-              }
-            }
-          } catch (err) {
-            console.error(
-              "Error loading showroom from exportedContracts:",
-              err
-            );
-          }
+          console.error("Error loading showroom from database:", err);
         }
       }
 
-      // Lấy thông tin chi nhánh
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
+      // Chỉ set branch khi có showroom được chọn
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
       setBranch(branchInfo);
 
       if (location.state) {
@@ -119,25 +104,19 @@ const GiayThoaThuanTraCham = () => {
         setThangKy(String(today.getMonth() + 1).padStart(2, "0"));
         setNamKy(String(today.getFullYear()));
 
-        // Company info - tự động điền từ showroom nếu chưa có
+        // Company info - chỉ điền từ showroom khi có branchInfo
         const congTyFromIncoming = incoming.congTy || incoming["Công Ty"] || "";
-        if (!congTyFromIncoming && branchInfo) {
-          setCongTy(`${branchInfo.name.toUpperCase()}`);
+        if (branchInfo) {
+          setCongTy(congTyFromIncoming || branchInfo.name.toUpperCase());
+          setMaSoDN(incoming.maSoDN || incoming["Mã Số DN"] || branchInfo.taxCode || "");
+          setDaiDien(incoming.daiDien || incoming["Đại Diện"] || branchInfo.representativeName || "");
+          setChucVu(incoming.chucVu || incoming["Chức Vụ"] || branchInfo.position || "");
         } else {
           setCongTy(congTyFromIncoming);
+          setMaSoDN(incoming.maSoDN || incoming["Mã Số DN"] || "");
+          setDaiDien(incoming.daiDien || incoming["Đại Diện"] || "");
+          setChucVu(incoming.chucVu || incoming["Chức Vụ"] || "");
         }
-        setMaSoDN(
-          incoming.maSoDN || incoming["Mã Số DN"] || branchInfo?.taxCode || ""
-        );
-        setDaiDien(
-          incoming.daiDien ||
-            incoming["Đại Diện"] ||
-            branchInfo?.representativeName ||
-            ""
-        );
-        setChucVu(
-          incoming.chucVu || incoming["Chức Vụ"] || branchInfo?.position || ""
-        );
 
         // Customer info
         setTenKH(
@@ -257,17 +236,18 @@ const GiayThoaThuanTraCham = () => {
         setThangKy(String(today.getMonth() + 1).padStart(2, "0"));
         setNamKy(String(today.getFullYear()));
 
-        // Tự động điền từ branchInfo
+        // Chỉ điền từ branchInfo khi có showroom
         if (branchInfo) {
-          setCongTy(
-            `CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN - CHI NHÁNH ${branchInfo.shortName.toUpperCase()}`
-          );
+          setCongTy(branchInfo.name.toUpperCase());
+          setMaSoDN(branchInfo.taxCode || "");
+          setDaiDien(branchInfo.representativeName || "");
+          setChucVu(branchInfo.position || "");
         } else {
           setCongTy("");
+          setMaSoDN("");
+          setDaiDien("");
+          setChucVu("");
         }
-        setMaSoDN(branchInfo?.taxCode || "0316801817-002");
-        setDaiDien(branchInfo?.representativeName || "Nguyễn Thành Trai");
-        setChucVu(branchInfo?.position || "Tổng Giám Đốc");
 
         setTenKH("Nguyễn Văn A");
         setDiaChiKH("123 Đường ABC, Phường XYZ, Quận 1, TP. Hồ Chí Minh");
@@ -460,116 +440,123 @@ const GiayThoaThuanTraCham = () => {
 
           {/* Company Section */}
           <div className="mb-3">
-            <h2 className="text-base font-bold uppercase mb-2">
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={congTy}
-                  onChange={(e) => setCongTy(e.target.value)}
-                  className="border-b border-gray-400 px-2 py-1 w-[90%] focus:outline-none focus:border-blue-500"
-                  placeholder="Nhập tên công ty"
-                />
-              </span>
-              <span className="hidden print:inline">{congTy || ""}</span>
-            </h2>
-            <div className="text-sm space-y-2">
-              <div>
-                <span className="">Địa chỉ trụ sở chính:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={branch?.address || ""}
-                    readOnly
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-full max-w-md focus:outline-none"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {branch?.address ||
-                    "682A Trường Chinh, Phường 15, Tân Bình, TP. Hồ Chí Minh"}
-                </span>
+            {branch ? (
+              <>
+                <h2 className="text-base font-bold uppercase mb-2">
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={congTy}
+                      onChange={(e) => setCongTy(e.target.value)}
+                      className="border-b border-gray-400 px-2 py-1 w-[90%] focus:outline-none focus:border-blue-500"
+                      placeholder="Nhập tên công ty"
+                    />
+                  </span>
+                  <span className="hidden print:inline">{congTy || ""}</span>
+                </h2>
+                <div className="text-sm space-y-2">
+                  <div>
+                    <span className="">Địa chỉ trụ sở chính:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={branch.address || ""}
+                        readOnly
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-full max-w-md focus:outline-none"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {branch.address}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="">Mã số doanh nghiệp:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={maSoDN}
+                        onChange={(e) => setMaSoDN(e.target.value)}
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
+                        placeholder="Nhập mã số doanh nghiệp"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {maSoDN || "______"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="">Đại diện:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={daiDien}
+                        onChange={(e) => setDaiDien(e.target.value)}
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
+                        placeholder="Nhập tên đại diện"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {daiDien || "______"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="">Chức vụ:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={chucVu}
+                        onChange={(e) => setChucVu(e.target.value)}
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
+                        placeholder="Nhập chức vụ"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {chucVu || "______"}
+                    </span>
+                  </div>
+                  <div className="">
+                    (Theo Giấy uỷ quyền số
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={soGiayUyQuyen}
+                        onChange={(e) => setSoGiayUyQuyen(e.target.value)}
+                        className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
+                        placeholder=""
+                      />
+                    </span>
+                    <span className="hidden print:inline mx-1">
+                      {soGiayUyQuyen || "____"}
+                    </span>
+                    ngày
+                    <span className="print:hidden">
+                      <input
+                        type="date"
+                        value={ngayUyQuyenRaw}
+                        onChange={(e) => {
+                          setNgayUyQuyenRaw(e.target.value);
+                          if (e.target.value) {
+                            setNgayUyQuyen(formatDateForDisplay(e.target.value));
+                          } else {
+                            setNgayUyQuyen("");
+                          }
+                        }}
+                        className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
+                      />
+                    </span>
+                    <span className="hidden print:inline mx-1">
+                      {ngayUyQuyen || "____"}
+                    </span>
+                    )
+                  </div>
+                  <p className="font-bold">("Bên Bán")</p>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-400 text-sm">
+                [Chưa chọn showroom - Thông tin công ty sẽ hiển thị khi chọn showroom]
               </div>
-              <div>
-                <span className="">Mã số doanh nghiệp:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={maSoDN}
-                    onChange={(e) => setMaSoDN(e.target.value)}
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
-                    placeholder="Nhập mã số doanh nghiệp"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {maSoDN || "______"}
-                </span>
-              </div>
-              <div>
-                <span className="">Đại diện:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={daiDien}
-                    onChange={(e) => setDaiDien(e.target.value)}
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
-                    placeholder="Nhập tên đại diện"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {daiDien || "______"}
-                </span>
-              </div>
-              <div>
-                <span className="">Chức vụ:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={chucVu}
-                    onChange={(e) => setChucVu(e.target.value)}
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
-                    placeholder="Nhập chức vụ"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {chucVu || "______"}
-                </span>
-              </div>
-              <div className="">
-                (Theo Giấy uỷ quyền số
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={soGiayUyQuyen}
-                    onChange={(e) => setSoGiayUyQuyen(e.target.value)}
-                    className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
-                    placeholder=""
-                  />
-                </span>
-                <span className="hidden print:inline mx-1">
-                  {soGiayUyQuyen || "____"}
-                </span>
-                ngày
-                <span className="print:hidden">
-                  <input
-                    type="date"
-                    value={ngayUyQuyenRaw}
-                    onChange={(e) => {
-                      setNgayUyQuyenRaw(e.target.value);
-                      if (e.target.value) {
-                        setNgayUyQuyen(formatDateForDisplay(e.target.value));
-                      } else {
-                        setNgayUyQuyen("");
-                      }
-                    }}
-                    className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
-                  />
-                </span>
-                <span className="hidden print:inline mx-1">
-                  {ngayUyQuyen || "____"}
-                </span>
-                )
-              </div>
-              <p className="font-bold">("Bên Bán")</p>
-            </div>
+            )}
           </div>
 
           {/* Separator */}

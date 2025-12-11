@@ -6,6 +6,7 @@ import { X, Edit, ArrowLeft, Image } from "lucide-react";
 import { toast } from "react-toastify";
 import { carPriceData, uniqueNgoaiThatColors, uniqueNoiThatColors } from '../data/calculatorData';
 import { uploadImageToCloudinary } from '../config/cloudinary';
+import { getAllBranches } from '../data/branchData';
 
 export default function EditHopDongDaXuatPage() {
   const { id } = useParams();
@@ -96,6 +97,7 @@ export default function EditHopDongDaXuatPage() {
     chucVu: "",
     giayUyQuyen: "",
     giayUyQuyenNgay: "",
+    showroom: "",
   });
 
   // Load contract data
@@ -178,6 +180,7 @@ export default function EditHopDongDaXuatPage() {
           chucVu: contractData.chucVu || "",
           giayUyQuyen: contractData.giayUyQuyen || "",
           giayUyQuyenNgay: contractData.giayUyQuyenNgay || "",
+          showroom: contractData.showroom || "",
         };
 
         setContract(mapped);
@@ -469,6 +472,7 @@ export default function EditHopDongDaXuatPage() {
         chucVu: safeValue(contract.chucVu),
         giayUyQuyen: safeValue(contract.giayUyQuyen),
         giayUyQuyenNgay: safeValue(contract.giayUyQuyenNgay),
+        showroom: safeValue(contract.showroom),
         "Ảnh chụp hình đặt cọc": safeValue(depositImage),
         "Ảnh chụp đối ứng": safeValue(counterpartImage),
         depositImage: safeValue(depositImage),
@@ -576,6 +580,31 @@ export default function EditHopDongDaXuatPage() {
                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm"
                     placeholder="VSO"
                   />
+                </div>
+
+                {/* Showroom */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    Showroom
+                  </label>
+                  <select
+                    value={contract.showroom || ""}
+                    onChange={(e) => handleChange("showroom", e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white"
+                  >
+                    <option value="">Chọn Showroom</option>
+                    {getAllBranches().map((branch) => (
+                      <option key={branch.id} value={branch.name}>
+                        {branch.name}
+                      </option>
+                    ))}
+                    {/* Show current value if it doesn't match any option (for editing existing contracts) */}
+                    {contract.showroom && !getAllBranches().find(b => b.name === contract.showroom) && (
+                      <option value={contract.showroom}>
+                        {contract.showroom} (giá trị hiện tại)
+                      </option>
+                    )}
+                  </select>
                 </div>
               </div>
             </div>

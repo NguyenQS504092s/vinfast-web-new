@@ -31,6 +31,7 @@ export default function HopDongDaXuatPage() {
     products: [], // will hold unique "Dòng xe" values
     markets: [], // repurposed to hold status values
     trangThai: [], // status filter for hopdongdaxuat
+    showroom: [], // showroom filter for hopdongdaxuat
     searchText: "",
   });
 
@@ -264,6 +265,7 @@ export default function HopDongDaXuatPage() {
       stt: c.stt || "",
       ngayXhd: c["ngày xhd"] || "",
       tvbh: c.tvbh || "",
+      showroom: c.showroom || "",
       vso: c.VSO || "",
       tenKh: c["Tên Kh"] || "",
       soDienThoai: c["Số Điện Thoại"] || "",
@@ -459,6 +461,17 @@ export default function HopDongDaXuatPage() {
       );
     }
 
+    // Apply showroom filter
+    if (filters.showroom && filters.showroom.length > 0) {
+      filtered = filtered.filter((contract) => {
+        const contractShowroom = contract.showroom || "";
+        return filters.showroom.some(selectedShowroom => 
+          contractShowroom.includes(selectedShowroom) || 
+          selectedShowroom.includes(contractShowroom)
+        );
+      });
+    }
+
     // Apply search filter: search across all fields
     if (filters.searchText) {
       const searchLower = filters.searchText.toLowerCase();
@@ -508,6 +521,7 @@ export default function HopDongDaXuatPage() {
     filters.products,
     filters.markets,
     filters.trangThai,
+    filters.showroom,
     filters.startDate,
     filters.endDate,
   ]);
@@ -643,6 +657,7 @@ export default function HopDongDaXuatPage() {
       products: [],
       markets: [],
       trangThai: [],
+      showroom: [],
       searchText: "",
     });
     setQuickSelectValue("");
@@ -655,7 +670,8 @@ export default function HopDongDaXuatPage() {
       filters.endDate ||
       (filters.products && filters.products.length > 0) ||
       (filters.markets && filters.markets.length > 0) ||
-      (filters.trangThai && filters.trangThai.length > 0)
+      (filters.trangThai && filters.trangThai.length > 0) ||
+      (filters.showroom && filters.showroom.length > 0)
     );
   };
 
@@ -1113,6 +1129,9 @@ export default function HopDongDaXuatPage() {
                         TVBH
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
+                        Showroom
+                      </th>
+                      <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
                         VSO
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
@@ -1222,6 +1241,14 @@ export default function HopDongDaXuatPage() {
                               title={contract.tvbh || "-"}
                             >
                               {contract.tvbh || "-"}
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
+                            <div
+                              className="max-w-[120px] sm:max-w-none truncate"
+                              title={contract.showroom || "-"}
+                            >
+                              {contract.showroom || "-"}
                             </div>
                           </td>
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
@@ -2074,16 +2101,7 @@ export default function HopDongDaXuatPage() {
                           >
                             Thỏa thuận hỗ trợ lãi suất vay CĐX TPB
                           </button>
-                          <button
-                            onClick={() =>
-                              handlePrintNavigate(
-                                "/giay-thoa-thuan-htls-vpbank"
-                              )
-                            }
-                            className="w-full px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm"
-                          >
-                            Thoả thuận hỗ trợ lãi suất vay CĐX Vinfast và LFVN
-                          </button>
+
                           <button
                             onClick={() =>
                               handlePrintNavigate(

@@ -4,7 +4,7 @@ import { ArrowLeft, Gift, X, Trash2, Edit, Save, XCircle, Plus, Check, ChevronDo
 import { toast } from 'react-toastify';
 import { ref, push, set, update, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
-import { loadPromotionsFromFirebase } from '../data/promotionsData';
+import { loadPromotionsFromFirebase, filterPromotionsByDongXe } from '../data/promotionsData';
 import {
   phi_duong_bo,
   phi_cap_bien_so,
@@ -150,6 +150,8 @@ export default function CalculatorPage() {
   const [interiorColor, setInteriorColor] = useState('');
   const [registrationLocation, setRegistrationLocation] = useState('hcm');
   const [registrationFee, setRegistrationFee] = useState(chi_phi_dich_vu_dang_ky);
+  const [bodyInsuranceFee, setBodyInsuranceFee] = useState(0); // BHVC bao gồm Pin có thể chỉnh sửa
+  const [isBodyInsuranceManual, setIsBodyInsuranceManual] = useState(false); // Theo dõi xem có chỉnh sửa thủ công không
 
   // Discounts and promotions
   const [discount2, setDiscount2] = useState(false);
@@ -181,6 +183,7 @@ export default function CalculatorPage() {
   const [selectedPromotionIds, setSelectedPromotionIds] = useState([]);
   const [promotionType, setPromotionType] = useState('display'); // 'percentage', 'fixed', 'display'
   const [filterType, setFilterType] = useState('all'); // 'all', 'display', 'percentage', 'fixed'
+  const [selectedDongXeList, setSelectedDongXeList] = useState([]); // Danh sách dòng xe được chọn cho promotion
 
   // Get current user info for tracking who added/edited promotions
   const userEmail = localStorage.getItem('userEmail') || '';
@@ -257,6 +260,7 @@ export default function CalculatorPage() {
     setNewPromotionName('');
     setEditingPromotionId(null);
     setPromotionType('display');
+    setSelectedDongXeList([]);
   };
 
   // Close add promotion modal
@@ -265,6 +269,7 @@ export default function CalculatorPage() {
     setNewPromotionName('');
     setEditingPromotionId(null);
     setPromotionType('display');
+    setSelectedDongXeList([]);
   };
 
   // Handle add promotion
@@ -288,6 +293,10 @@ export default function CalculatorPage() {
         value: editingPromotion.value || 0,
         maxDiscount: editingPromotion.maxDiscount || 0,
         minPurchase: editingPromotion.minPurchase || 0,
+        dongXe: selectedDongXeList.length > 0 ? selectedDongXeList : [
+          'vf_3', 'vf_5', 'vf_6', 'vf_7', 'vf_8', 'vf_9', 
+          'minio', 'herio', 'nerio', 'limo', 'ec', 'ec_nang_cao'
+        ], // Nếu không chọn dòng xe nào, áp dụng cho tất cả
         createdAt: new Date().toISOString(),
         createdBy: userEmail || username || "admin",
       };
@@ -297,6 +306,7 @@ export default function CalculatorPage() {
       toast.success("Thêm chương trình ưu đãi thành công!");
       setNewPromotionName('');
       setPromotionType('display');
+      setSelectedDongXeList([]);
       setEditingPromotion({
         name: '',
         type: 'display',
@@ -870,6 +880,14 @@ export default function CalculatorPage() {
     }, 250);
   };
 
+  // Auto-update bodyInsuranceFee when model changes (reset to auto mode)
+  useEffect(() => {
+    if (carModel) {
+      setIsBodyInsuranceManual(false);
+      setBodyInsuranceFee(0);
+    }
+  }, [carModel]);
+
   // Calculate all costs
   const calculations = useMemo(() => {
     const basePrice = getCarPrice();
@@ -955,7 +973,8 @@ export default function CalculatorPage() {
 
     const inspectionFee = phi_kiem_dinh;
     const bhvcRate = 0.014;
-    const bodyInsurance = Math.round((finalPayable + bhvc2 + premiumColor) * bhvcRate);
+    // Sử dụng giá trị do người dùng nhập hoặc tính toán tự động
+    const bodyInsurance = isBodyInsuranceManual ? bodyInsuranceFee : Math.round((finalPayable + bhvc2 + premiumColor) * bhvcRate);
     const registrationFeeValue = Number(registrationFee) || 0;
 
     const totalOnRoadCost = plateFee + roadFee + liabilityInsurance + inspectionFee + bodyInsurance + registrationFeeValue;
@@ -1101,6 +1120,8 @@ export default function CalculatorPage() {
       roadFee: calculations.roadFee || 0,
       registrationFee: calculations.registrationFee || 0,
       bodyInsurance: calculations.bodyInsurance || 0,
+      bodyInsuranceFee: bodyInsuranceFee || 0,
+      isBodyInsuranceManual: isBodyInsuranceManual || false,
       totalOnRoadCost: calculations.totalOnRoadCost || 0,
 
       // Loan info
@@ -1265,6 +1286,51 @@ export default function CalculatorPage() {
                         />
                       </div>
 
+                      {/* Chọn dòng xe áp dụng */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Dòng xe áp dụng
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                          {[
+                            { code: 'vf_3', name: 'VF 3' },
+                            { code: 'vf_5', name: 'VF 5' },
+                            { code: 'vf_6', name: 'VF 6' },
+                            { code: 'vf_7', name: 'VF 7' },
+                            { code: 'vf_8', name: 'VF 8' },
+                            { code: 'vf_9', name: 'VF 9' },
+                            { code: 'minio', name: 'Minio' },
+                            { code: 'herio', name: 'Herio' },
+                            { code: 'nerio', name: 'Nerio' },
+                            { code: 'limo', name: 'Limo' },
+                            { code: 'ec', name: 'EC' },
+                            { code: 'ec_nang_cao', name: 'EC Nâng Cao' }
+                          ].map((car) => (
+                            <label key={car.code} className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={selectedDongXeList.includes(car.code)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedDongXeList(prev => [...prev, car.code]);
+                                  } else {
+                                    setSelectedDongXeList(prev => prev.filter(code => code !== car.code));
+                                  }
+                                }}
+                                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                              />
+                              <span className="text-gray-700">{car.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {selectedDongXeList.length === 0 
+                            ? 'Không chọn dòng xe nào = áp dụng cho tất cả dòng xe' 
+                            : `Đã chọn ${selectedDongXeList.length} dòng xe`
+                          }
+                        </p>
+                      </div>
+
                       {promotionType !== 'display' && (
                         <div className="space-y-4">
                           <div>
@@ -1380,6 +1446,17 @@ export default function CalculatorPage() {
                         </div>
                       </div>
                       
+                      {/* Thông báo lọc theo dòng xe */}
+                      {carModel && (
+                        <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-700">
+                            <span className="font-medium">Lọc theo dòng xe:</span> {carModel}
+                            <br />
+                            <span className="text-xs">Chỉ hiển thị ưu đãi áp dụng cho dòng xe này</span>
+                          </p>
+                        </div>
+                      )}
+                      
                       {loadingPromotions ? (
                         <div className="text-center py-4">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
@@ -1393,6 +1470,10 @@ export default function CalculatorPage() {
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
                           {promotions
                             .filter(promotion => filterType === 'all' || promotion.type === filterType)
+                            .filter(promotion => {
+                              // Lọc theo dòng xe đã chọn
+                              return filterPromotionsByDongXe([promotion], selectedDongXe).length > 0;
+                            })
                             .map((promotion) => (
                             <div
                               key={promotion.id}
@@ -2095,11 +2176,37 @@ export default function CalculatorPage() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="flex justify-between py-2">
+                  <div className="flex justify-between items-center py-2">
                     <span className="text-gray-600">BHVC bao gồm Pin</span>
-                    <span className="text-gray-900 font-semibold">
-                      {formatCurrency(calculations.bodyInsurance)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={formatCurrencyInput(isBodyInsuranceManual ? bodyInsuranceFee : calculations.bodyInsurance)}
+                        onChange={(e) => {
+                          const parsedValue = parseCurrencyInput(e.target.value);
+                          setBodyInsuranceFee(Math.max(0, parsedValue));
+                          setIsBodyInsuranceManual(true); // Đánh dấu là chỉnh sửa thủ công
+                        }}
+                        className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-semibold"
+                        placeholder="0"
+                      />
+                      <button
+                        onClick={() => {
+                          setIsBodyInsuranceManual(false); // Reset về chế độ tự động
+                          const basePrice = getCarPrice();
+                          const finalPayable = basePrice + (exteriorColorPrice || 0) + (interiorColorPrice || 0);
+                          const bhvc2 = discountBhvc2 ? 15000000 : 0;
+                          const premiumColor = (exteriorColorPrice || 0) + (interiorColorPrice || 0);
+                          const bhvcRate = 0.014;
+                          const calculatedBodyInsurance = Math.round((finalPayable + bhvc2 + premiumColor) * bhvcRate);
+                          setBodyInsuranceFee(calculatedBodyInsurance);
+                        }}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 transition-colors"
+                        title="Tính lại tự động"
+                      >
+                        ↻
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

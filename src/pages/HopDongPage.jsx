@@ -7,7 +7,7 @@ import { X, Trash2, Plus, Check, AlertTriangle, Edit, Download, ArrowLeft, Gift 
 import { toast } from 'react-toastify';
 import { uniqueNgoaiThatColors, uniqueNoiThatColors } from '../data/calculatorData';
 import { getBranchByShowroomName, getAllBranches } from '../data/branchData';
-import { loadPromotionsFromFirebase } from '../data/promotionsData';
+import { loadPromotionsFromFirebase, filterPromotionsByDongXe } from '../data/promotionsData';
 
 export default function HopDongPage() {
   const [userTeam, setUserTeam] = useState('');
@@ -59,6 +59,8 @@ export default function HopDongPage() {
   const [promotionType, setPromotionType] = useState('display'); // 'display', 'percentage', 'fixed'
   const [filterType, setFilterType] = useState('all'); // 'all', 'display', 'percentage', 'fixed'
   const [selectedPromotionIds, setSelectedPromotionIds] = useState(new Set()); // Track selected promotion IDs
+  const [selectedDongXeFilter, setSelectedDongXeFilter] = useState('all'); // Lọc ưu đãi theo dòng xe
+  const [selectedDongXeList, setSelectedDongXeList] = useState([]); // Danh sách dòng xe được chọn cho promotion mới
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -859,8 +861,10 @@ export default function HopDongPage() {
   const openAddPromotionModal = () => {
     setIsAddPromotionModalOpen(true);
     setFilterType('all'); // Reset to show all promotions
+    setSelectedDongXeFilter('all'); // Reset filter
     setNewPromotionName('');
     setPromotionType('display');
+    setSelectedDongXeList([]);
     setEditingPromotion({
       id: null,
       name: '',
@@ -884,6 +888,7 @@ export default function HopDongPage() {
     });
     setNewPromotionName('');
     setPromotionType('display');
+    setSelectedDongXeList([]);
   };
 
   // Handle promotion type change
@@ -917,6 +922,10 @@ export default function HopDongPage() {
         value: editingPromotion.value || 0,
         maxDiscount: editingPromotion.maxDiscount || 0,
         minPurchase: editingPromotion.minPurchase || 0,
+        dongXe: selectedDongXeList.length > 0 ? selectedDongXeList : [
+          'vf_3', 'vf_5', 'vf_6', 'vf_7', 'vf_8', 'vf_9', 
+          'minio', 'herio', 'nerio', 'limo', 'ec', 'ec_nang_cao'
+        ], // Nếu không chọn dòng xe nào, áp dụng cho tất cả
         createdAt: new Date().toISOString(),
         createdBy: userEmail || username || "admin",
       };
@@ -931,6 +940,7 @@ export default function HopDongPage() {
       
       toast.success("Thêm chương trình ưu đãi thành công!");
       setNewPromotionName('');
+      setSelectedDongXeList([]);
       setEditingPromotion({
         id: null,
         name: '',
@@ -1965,6 +1975,51 @@ export default function HopDongPage() {
                   />
                 </div>
 
+                {/* Chọn dòng xe áp dụng */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dòng xe áp dụng
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                    {[
+                      { code: 'vf_3', name: 'VF 3' },
+                      { code: 'vf_5', name: 'VF 5' },
+                      { code: 'vf_6', name: 'VF 6' },
+                      { code: 'vf_7', name: 'VF 7' },
+                      { code: 'vf_8', name: 'VF 8' },
+                      { code: 'vf_9', name: 'VF 9' },
+                      { code: 'minio', name: 'Minio' },
+                      { code: 'herio', name: 'Herio' },
+                      { code: 'nerio', name: 'Nerio' },
+                      { code: 'limo', name: 'Limo' },
+                      { code: 'ec', name: 'EC' },
+                      { code: 'ec_nang_cao', name: 'EC Nâng Cao' }
+                    ].map((car) => (
+                      <label key={car.code} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedDongXeList.includes(car.code)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDongXeList(prev => [...prev, car.code]);
+                            } else {
+                              setSelectedDongXeList(prev => prev.filter(code => code !== car.code));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-gray-700">{car.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedDongXeList.length === 0 
+                      ? 'Không chọn dòng xe nào = áp dụng cho tất cả dòng xe' 
+                      : `Đã chọn ${selectedDongXeList.length} dòng xe`
+                    }
+                  </p>
+                </div>
+
                 {promotionType !== 'display' && (
                   <div className="space-y-4">
                     <div>
@@ -2097,6 +2152,32 @@ export default function HopDongPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Lọc theo dòng xe */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lọc theo dòng xe
+                  </label>
+                  <select
+                    value={selectedDongXeFilter}
+                    onChange={(e) => setSelectedDongXeFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                  >
+                    <option value="all">Tất cả dòng xe</option>
+                    <option value="vf_3">VF 3</option>
+                    <option value="vf_5">VF 5</option>
+                    <option value="vf_6">VF 6</option>
+                    <option value="vf_7">VF 7</option>
+                    <option value="vf_8">VF 8</option>
+                    <option value="vf_9">VF 9</option>
+                    <option value="minio">Minio</option>
+                    <option value="herio">Herio</option>
+                    <option value="nerio">Nerio</option>
+                    <option value="limo">Limo</option>
+                    <option value="ec">EC</option>
+                    <option value="ec_nang_cao">EC Nâng Cao</option>
+                  </select>
+                </div>
                 
                 {loadingPromotions ? (
                   <div className="text-center py-4">
@@ -2111,6 +2192,11 @@ export default function HopDongPage() {
                   <div className="space-y-2 max-h-[400px] overflow-y-auto">
                     {promotions
                       .filter(promotion => filterType === 'all' || promotion.type === filterType)
+                      .filter(promotion => {
+                        // Lọc theo dòng xe đã chọn
+                        if (selectedDongXeFilter === 'all') return true;
+                        return filterPromotionsByDongXe([promotion], selectedDongXeFilter).length > 0;
+                      })
                       .map((promotion) => (
                       <div
                         key={promotion.id}
@@ -2161,6 +2247,22 @@ export default function HopDongPage() {
                                 Giảm {formatCurrency(promotion.value)} VNĐ
                               </div>
                             )}
+                            
+                            {/* Hiển thị dòng xe áp dụng */}
+                            <div className="text-xs text-gray-500 mt-1">
+                              <span className="font-medium">Dòng xe:</span>{' '}
+                              {promotion.dongXe && Array.isArray(promotion.dongXe) && promotion.dongXe.length > 0
+                                ? promotion.dongXe.map(code => {
+                                    const carMap = {
+                                      'vf_3': 'VF 3', 'vf_5': 'VF 5', 'vf_6': 'VF 6', 'vf_7': 'VF 7', 
+                                      'vf_8': 'VF 8', 'vf_9': 'VF 9', 'minio': 'Minio', 'herio': 'Herio', 
+                                      'nerio': 'Nerio', 'limo': 'Limo', 'ec': 'EC', 'ec_nang_cao': 'EC Nâng Cao'
+                                    };
+                                    return carMap[code] || code;
+                                  }).join(', ')
+                                : 'Tất cả dòng xe'
+                              }
+                            </div>
                             
                             {promotion.minPurchase > 0 && (
                               <div className="text-xs text-gray-500 mt-1">

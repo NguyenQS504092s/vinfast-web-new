@@ -6,7 +6,7 @@ import { X, Check, ArrowLeft, ChevronDown, Search, Gift } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { carPriceData, uniqueNgoaiThatColors, uniqueNoiThatColors } from '../data/calculatorData';
 import { getAllBranches, getBranchByShowroomName } from '../data/branchData';
-import { loadPromotionsFromFirebase, defaultPromotions } from '../data/promotionsData';
+import { loadPromotionsFromFirebase, defaultPromotions, filterPromotionsByDongXe } from '../data/promotionsData';
 
 export default function ContractFormPage() {
   const navigate = useNavigate();
@@ -1589,6 +1589,15 @@ export default function ContractFormPage() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
+              {contract.model && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    <span className="font-medium">Lọc theo dòng xe:</span> {contract.model}
+                    <br />
+                    <span className="text-xs">Chỉ hiển thị ưu đãi áp dụng cho dòng xe này</span>
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Promotions List */}
@@ -1604,6 +1613,31 @@ export default function ContractFormPage() {
                     .filter(promotion => 
                       promotion.name.toLowerCase().includes(promotionSearch.toLowerCase())
                     )
+                    .filter(promotion => {
+                      // Lọc theo dòng xe đã chọn
+                      if (!contract.model) return true; // Hiển thị tất cả nếu chưa chọn dòng xe
+                      
+                      // Chuyển đổi model name thành dong_xe code
+                      const modelToDongXeMap = {
+                        'VF 3': 'vf_3',
+                        'VF 5': 'vf_5', 
+                        'VF 6': 'vf_6',
+                        'VF 7': 'vf_7',
+                        'VF 8': 'vf_8',
+                        'VF 9': 'vf_9',
+                        'Minio': 'minio',
+                        'Herio': 'herio',
+                        'Nerio': 'nerio',
+                        'Limo': 'limo',
+                        'EC': 'ec',
+                        'EC Nâng Cao': 'ec_nang_cao'
+                      };
+                      
+                      const selectedDongXe = modelToDongXeMap[contract.model];
+                      if (!selectedDongXe) return true; // Hiển thị tất cả nếu không tìm thấy mapping
+                      
+                      return filterPromotionsByDongXe([promotion], selectedDongXe).length > 0;
+                    })
                     .map((promotion) => (
                       <div key={promotion.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                         <div className="flex items-start gap-3 flex-1">

@@ -4,7 +4,6 @@ import { ref, get } from "firebase/database";
 import { database } from "../../firebase/config";
 import {
   getBranchByShowroomName,
-  getDefaultBranch,
 } from "../../data/branchData";
 
 const GiayXacNhanKieuLoai = () => {
@@ -53,35 +52,79 @@ const GiayXacNhanKieuLoai = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
       let showroomLoadedFromContracts = false;
 
-      // Nếu có firebaseKey, thử lấy showroom từ contracts trước
+      // Nếu có firebaseKey, thử lấy showroom từ exportedContracts trước, sau đó mới từ contracts
       if (location.state?.firebaseKey) {
         try {
           const contractId = location.state.firebaseKey;
-          const contractsRef = ref(database, `contracts/${contractId}`);
-          const snapshot = await get(contractsRef);
-          if (snapshot.exists()) {
-            const contractData = snapshot.val();
-            console.log("Loaded from contracts:", contractData);
-            if (contractData.showroom) {
+          
+          // Thử load từ exportedContracts trước (dữ liệu mới nhất)
+          const exportedContractsRef = ref(database, `exportedContracts/${contractId}`);
+          const exportedSnapshot = await get(exportedContractsRef);
+          
+          if (exportedSnapshot.exists()) {
+            const contractData = exportedSnapshot.val();
+            console.log("Loaded from exportedContracts:", contractData);
+            console.log("Showroom in exportedContracts:", contractData.showroom);
+            if (contractData.showroom && contractData.showroom.trim() !== "") {
               showroomName = contractData.showroom;
               showroomLoadedFromContracts = true;
-              console.log("Showroom loaded from contracts:", showroomName);
+              console.log("Showroom loaded from exportedContracts:", showroomName);
+
+              // Cập nhật branch info ngay khi load được showroom từ exportedContracts
+              const branchInfo = getBranchByShowroomName(showroomName);
+              setBranch(branchInfo);
+            } else {
+              // Nếu showroom rỗng hoặc null, đảm bảo branch = null
+              showroomLoadedFromContracts = true;
+              setBranch(null);
             }
           } else {
-            console.log("Contract not found in contracts path");
+            // Nếu không có trong exportedContracts, thử load từ contracts
+            const contractsRef = ref(database, `contracts/${contractId}`);
+            const snapshot = await get(contractsRef);
+            if (snapshot.exists()) {
+              const contractData = snapshot.val();
+              console.log("Loaded from contracts:", contractData);
+              if (contractData.showroom && contractData.showroom.trim() !== "") {
+                showroomName = contractData.showroom;
+                showroomLoadedFromContracts = true;
+                console.log("Showroom loaded from contracts:", showroomName);
+
+                // Cập nhật branch info ngay khi load được showroom từ contracts
+                const branchInfo = getBranchByShowroomName(showroomName);
+                setBranch(branchInfo);
+              } else {
+                // Nếu showroom rỗng hoặc null, đảm bảo branch = null
+                showroomLoadedFromContracts = true;
+                setBranch(null);
+              }
+            } else {
+              console.log("Contract not found in both exportedContracts and contracts paths");
+            }
           }
         } catch (error) {
-          console.error("Error loading showroom from contracts:", error);
+          console.error("Error loading showroom from database:", error);
         }
+      } else {
+        // Nếu không có firebaseKey, chỉ dùng location.state
+        console.log("No firebaseKey, using only location.state");
       }
 
-      // Set branch info
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
-      setBranch(branchInfo);
+      // Set branch info nếu chưa load được từ contracts
+      if (!showroomLoadedFromContracts) {
+        if (showroomName && showroomName.trim() !== "") {
+          const branchInfo = getBranchByShowroomName(showroomName);
+          setBranch(branchInfo);
+          console.log("Setting branch from location.state:", branchInfo);
+        } else {
+          // Đảm bảo branch = null khi không có showroom
+          setBranch(null);
+          console.log("No showroom from location.state, setting branch to null");
+        }
+      }
 
       // Set default date to today
       const today = new Date();
@@ -102,13 +145,7 @@ const GiayXacNhanKieuLoai = () => {
             const contractData = snapshot.val();
             console.log("Loaded from exportedContracts:", contractData);
 
-            // Load showroom nếu chưa có từ contracts
-            if (contractData.showroom && !showroomLoadedFromContracts) {
-              showroomName = contractData.showroom;
-              const updatedBranchInfo =
-                getBranchByShowroomName(showroomName) || getDefaultBranch();
-              setBranch(updatedBranchInfo);
-            }
+            // Showroom đã được load ở phần trên
 
             // Số hợp đồng (VSO)
             if (contractData.vso || contractData.VSO || contractData.contractNumber) {
@@ -220,6 +257,14 @@ const GiayXacNhanKieuLoai = () => {
           className="flex-1 bg-white p-8 flex flex-col"
           id="printable-content"
         >
+          {/* Debug info - chỉ hiển thị khi không in */}
+          <div className="print:hidden bg-yellow-100 p-3 mb-4 rounded border">
+            <p className="text-sm"><strong>Debug Info:</strong></p>
+            <p className="text-xs">Showroom từ location.state: {location.state?.showroom || "null"}</p>
+            <p className="text-xs">Branch hiện tại: {branch ? branch.name : "null"}</p>
+            <p className="text-xs">Firebase Key: {location.state?.firebaseKey || "null"}</p>
+          </div>
+
           {/* Title */}
           <div className="text-center mb-4">
             <h1 className="text-xl font-bold uppercase mb-2">
@@ -248,8 +293,11 @@ const GiayXacNhanKieuLoai = () => {
               </strong>{" "}
               giữa{" "}
               <strong>
-                CHI NHÁNH {branch?.shortName?.toUpperCase() || "TRƯỜNG CHINH"}-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô
-                TÔ ĐÔNG SÀI GÒN
+                {branch ? (
+                  `CHI NHÁNH ${branch.shortName?.toUpperCase()}-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN`
+                ) : (
+                  "[Chưa chọn showroom]"
+                )}
               </strong>{" "}
               và Ông/ Bà{" "}
               <strong>
@@ -316,43 +364,31 @@ const GiayXacNhanKieuLoai = () => {
                       Số Loại (Model Code)
                     </td>
                     <td className="border-r border-t-2 border-black p-2 text-center">
-                      <span className="print:hidden">
-                        <input
-                          type="text"
-                          value={thongTinHDMB}
-                          onChange={(e) => setThongTinHDMB(e.target.value)}
-                          className="border-b border-gray-400 px-2 py-1 text-sm w-full focus:outline-none focus:border-blue-500"
-                        />
-                      </span>
-                      <span className="hidden print:inline">
-                        {thongTinHDMB}
-                      </span>
+                      <input
+                        type="text"
+                        value={thongTinHDMB}
+                        onChange={(e) => setThongTinHDMB(e.target.value)}
+                        className="w-full text-center text-sm px-1 py-1 bg-blue-50 border border-blue-300 rounded focus:outline-none focus:border-blue-500 focus:bg-white editable-field"
+                        placeholder="Nhập thông tin HĐMB"
+                      />
                     </td>
                     <td className="border-r border-t-2 border-black p-2 text-center">
-                      <span className="print:hidden">
-                        <input
-                          type="text"
-                          value={thongTinTBPD}
-                          onChange={(e) => setThongTinTBPD(e.target.value)}
-                          className="border-b border-gray-400 px-2 py-1 text-sm w-full focus:outline-none focus:border-blue-500"
-                        />
-                      </span>
-                      <span className="hidden print:inline">
-                        {thongTinTBPD}
-                      </span>
+                      <input
+                        type="text"
+                        value={thongTinTBPD}
+                        onChange={(e) => setThongTinTBPD(e.target.value)}
+                        className="w-full text-center text-sm px-1 py-1 bg-blue-50 border border-blue-300 rounded focus:outline-none focus:border-blue-500 focus:bg-white editable-field"
+                        placeholder="Nhập thông tin TBPĐ"
+                      />
                     </td>
                     <td className="border-t-2 border-black p-2 text-center">
-                      <span className="print:hidden">
-                        <input
-                          type="text"
-                          value={thongTinGiayXN}
-                          onChange={(e) => setThongTinGiayXN(e.target.value)}
-                          className="border-b border-gray-400 px-2 py-1 text-sm w-full focus:outline-none focus:border-blue-500"
-                        />
-                      </span>
-                      <span className="hidden print:inline">
-                        {thongTinGiayXN}
-                      </span>
+                      <input
+                        type="text"
+                        value={thongTinGiayXN}
+                        onChange={(e) => setThongTinGiayXN(e.target.value)}
+                        className="w-full text-center text-sm px-1 py-1 bg-blue-50 border border-blue-300 rounded focus:outline-none focus:border-blue-500 focus:bg-white editable-field"
+                        placeholder="Nhập thông tin giấy XN"
+                      />
                     </td>
                   </tr>
                 </tbody>
@@ -402,9 +438,15 @@ const GiayXacNhanKieuLoai = () => {
 
               <div className="text-center">
                 <p className="font-bold text-sm mb-8 uppercase">
-                  CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI
-                  <br />
-                  GÒN- CHI NHÁNH {branch?.shortName?.toUpperCase() || "TRƯỜNG CHINH"}
+                  {branch ? (
+                    <>
+                      CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI
+                      <br />
+                      GÒN- CHI NHÁNH {branch.shortName?.toUpperCase()}
+                    </>
+                  ) : (
+                    "[Chưa chọn showroom]"
+                  )}
                 </p>
               </div>
             </div>
@@ -478,6 +520,16 @@ const GiayXacNhanKieuLoai = () => {
 
           .print\\:hidden {
             display: none !important;
+          }
+
+          .editable-field {
+            border: none !important;
+            background: transparent !important;
+            text-align: center !important;
+            outline: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
           }
         }
       `}</style>

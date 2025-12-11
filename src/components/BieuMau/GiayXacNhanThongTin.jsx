@@ -10,49 +10,115 @@ const GiayXacNhanThongTin = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper function to get shortName from showroom
-  const getShowroomShortName = (showroomValue) => {
-    if (!showroomValue) return "Trường Chinh";
-    // Try to find branch by showroom name
-    const foundBranch = getBranchByShowroomName(showroomValue);
-    if (foundBranch) {
-      return foundBranch.shortName;
-    }
-    return "Trường Chinh"; // Default fallback
+  // State for branch info
+  const [branch, setBranch] = useState(null);
+
+  // Editable fields for table
+  const [thongTinHDMB, setThongTinHDMB] = useState("");
+  const [thongTinTBPD, setThongTinTBPD] = useState("");
+  const [thongTinGiayXN, setThongTinGiayXN] = useState("");
+
+  // Helper function to get shortName from branch
+  const getShowroomShortName = () => {
+    return branch?.shortName || "[Chưa chọn showroom]";
   };
 
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = "Chi Nhánh Trường Chinh";
-      
-      // Nếu có firebaseKey, thử lấy showroom từ contracts
+      let showroomName = location.state?.showroom || "";
+      let showroomLoadedFromContracts = false;
+
+      // Nếu có firebaseKey, thử lấy showroom từ exportedContracts trước, sau đó mới từ contracts
       if (location.state?.firebaseKey) {
         try {
           const contractId = location.state.firebaseKey;
-          const contractsRef = ref(database, `contracts/${contractId}`);
-          const snapshot = await get(contractsRef);
-          if (snapshot.exists()) {
-            const contractData = snapshot.val();
-            if (contractData.showroom) {
+          
+          // Thử load từ exportedContracts trước (dữ liệu mới nhất)
+          const exportedContractsRef = ref(database, `exportedContracts/${contractId}`);
+          const exportedSnapshot = await get(exportedContractsRef);
+          
+          if (exportedSnapshot.exists()) {
+            const contractData = exportedSnapshot.val();
+            if (contractData.showroom && contractData.showroom.trim() !== "") {
               showroomName = contractData.showroom;
+              showroomLoadedFromContracts = true;
+
+              // Cập nhật branch info ngay khi load được showroom từ exportedContracts
+              const branchInfo = getBranchByShowroomName(showroomName);
+              setBranch(branchInfo);
+            } else {
+              // Nếu showroom rỗng hoặc null, đảm bảo branch = null
+              showroomLoadedFromContracts = true;
+              setBranch(null);
+            }
+          } else {
+            // Nếu không có trong exportedContracts, thử load từ contracts
+            const contractsRef = ref(database, `contracts/${contractId}`);
+            const snapshot = await get(contractsRef);
+            if (snapshot.exists()) {
+              const contractData = snapshot.val();
+              if (contractData.showroom && contractData.showroom.trim() !== "") {
+                showroomName = contractData.showroom;
+                showroomLoadedFromContracts = true;
+
+                // Cập nhật branch info ngay khi load được showroom từ contracts
+                const branchInfo = getBranchByShowroomName(showroomName);
+                setBranch(branchInfo);
+              } else {
+                // Nếu showroom rỗng hoặc null, đảm bảo branch = null
+                showroomLoadedFromContracts = true;
+                setBranch(null);
+              }
             }
           }
-        } catch (err) {
-          console.error("Error loading showroom from contracts:", err);
+        } catch (error) {
+          console.error("Error loading showroom from database:", error);
+        }
+      }
+
+      // Set branch info nếu chưa load được từ contracts
+      if (!showroomLoadedFromContracts) {
+        if (showroomName && showroomName.trim() !== "") {
+          const branchInfo = getBranchByShowroomName(showroomName);
+          setBranch(branchInfo);
+        } else {
+          // Đảm bảo branch = null khi không có showroom
+          setBranch(null);
         }
       }
       
+      // Load dữ liệu từ exportedContracts để lấy thông tin model
+      let modelValue = "";
+      if (location.state?.firebaseKey) {
+        try {
+          const contractRef = ref(database, `exportedContracts/${location.state.firebaseKey}`);
+          const snapshot = await get(contractRef);
+          if (snapshot.exists()) {
+            const contractData = snapshot.val();
+            modelValue = contractData.dongXe || contractData.model || contractData["Dòng xe"] || "";
+          }
+        } catch (error) {
+          console.error("Error loading contract data from exportedContracts:", error);
+        }
+      }
+
       if (location.state) {
         const incoming = location.state;
         const processedData = {
           contractNumber: incoming.vso || "S00901-VSO-24-10-0042",
           customerName: incoming.customerName || incoming["Tên KH"] || "BÙI THỊ KIM OANH",
           contractDate: incoming.contractDate || incoming.createdAt || "2022-10-08",
-          model: incoming.model || incoming.dongXe || "VINFAST VF5",
+          model: incoming.model || incoming.dongXe || modelValue || "VINFAST VF5",
           variant: incoming.variant || "VF 5",
           showroom: incoming.showroom || showroomName,
         };
         setData(processedData);
+        
+        // Set editable fields
+        const model = processedData.model;
+        setThongTinHDMB(model);
+        setThongTinTBPD(`VINFAST, ${model}`);
+        setThongTinGiayXN(model);
       } else {
         setData({
           contractNumber: "S00901-VSO-24-10-0042",
@@ -62,6 +128,11 @@ const GiayXacNhanThongTin = () => {
           variant: "S",
           showroom: showroomName,
         });
+        
+        // Set default editable fields
+        setThongTinHDMB("VINFAST VF5");
+        setThongTinTBPD("VINFAST, VINFAST VF5");
+        setThongTinGiayXN("VINFAST VF5");
       }
       setLoading(false);
     };
@@ -138,6 +209,8 @@ const GiayXacNhanThongTin = () => {
   return (
     <div className="min-h-screen bg-white p-8" style={{ fontFamily: 'Times New Roman' }}>
       <div className="max-w-4xl mx-auto bg-white" id="printable-content">
+
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-lg font-bold mb-2">GIẤY XÁC NHẬN THÔNG TIN</h1>
@@ -149,7 +222,7 @@ const GiayXacNhanThongTin = () => {
           {/* Đoạn văn bản */}
           <div className="space-y-4">
             <p>
-              Căn cứ vào Hợp đồng mua bán số <strong>{data.contractNumber}</strong> giữa <strong>CHI NHÁNH {getShowroomShortName(data?.showroom).toUpperCase()}-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN</strong> và Ông/Bà <strong>{data.customerName}</strong> về việc thỏa thuận ký kết hợp đồng mua bán xe ngày {formatDateShort(data.contractDate)}
+              Căn cứ vào Hợp đồng mua bán số <strong>{data.contractNumber}</strong> giữa <strong>{branch ? `CHI NHÁNH ${branch.shortName?.toUpperCase()}-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN` : "[Chưa chọn showroom]"}</strong> và Ông/Bà <strong>{data.customerName}</strong> về việc thỏa thuận ký kết hợp đồng mua bán xe ngày {formatDateShort(data.contractDate)}
             </p>
             
             <p>
@@ -172,9 +245,33 @@ const GiayXacNhanThongTin = () => {
               <tr>
                 <td className="border border-black px-2 py-1 text-center">1</td>
                 <td className="border border-black px-2 py-1">Số Loại (Model Code)</td>
-                <td className="border border-black px-2 py-1">VINFAST {data.model} {data.variant}</td>
-                <td className="border border-black px-2 py-1">VINFAST, {data.model} {data.variant}</td>
-                <td className="border border-black px-2 py-1">{data.model} {data.variant}</td>
+                <td className="border border-black px-2 py-1 text-center">
+                  <input
+                    type="text"
+                    value={thongTinHDMB}
+                    onChange={(e) => setThongTinHDMB(e.target.value)}
+                    className="w-full text-center text-sm px-1 py-1 bg-blue-50 border border-blue-300 rounded focus:outline-none focus:border-blue-500 focus:bg-white editable-field"
+                    placeholder="Nhập thông tin HĐMB"
+                  />
+                </td>
+                <td className="border border-black px-2 py-1 text-center">
+                  <input
+                    type="text"
+                    value={thongTinTBPD}
+                    onChange={(e) => setThongTinTBPD(e.target.value)}
+                    className="w-full text-center text-sm px-1 py-1 bg-blue-50 border border-blue-300 rounded focus:outline-none focus:border-blue-500 focus:bg-white editable-field"
+                    placeholder="Nhập thông tin TBPĐ"
+                  />
+                </td>
+                <td className="border border-black px-2 py-1 text-center">
+                  <input
+                    type="text"
+                    value={thongTinGiayXN}
+                    onChange={(e) => setThongTinGiayXN(e.target.value)}
+                    className="w-full text-center text-sm px-1 py-1 bg-blue-50 border border-blue-300 rounded focus:outline-none focus:border-blue-500 focus:bg-white editable-field"
+                    placeholder="Nhập thông tin giấy XN"
+                  />
+                </td>
               </tr>
             </tbody>
           </table>
@@ -188,7 +285,7 @@ const GiayXacNhanThongTin = () => {
           <div className="mt-12">
             <p className="text-right mb-4">TP. Hồ Chí Minh, Ngày {dateInfo.formatted}</p>
             <div className="text-justify w-[280px] ml-auto">
-              <p className="font-bold">CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN - CHI NHÁNH {getShowroomShortName(data?.showroom).toUpperCase()}</p>
+              <p className="font-bold">{branch ? `CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN - CHI NHÁNH ${branch.shortName?.toUpperCase()}` : "[Chưa chọn showroom]"}</p>
             </div>
           </div>
         </div>
@@ -235,6 +332,16 @@ const GiayXacNhanThongTin = () => {
           
           .print\\:hidden {
             display: none !important;
+          }
+
+          .editable-field {
+            border: none !important;
+            background: transparent !important;
+            text-align: center !important;
+            outline: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
           }
           
           html, body {

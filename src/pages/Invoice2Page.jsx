@@ -548,7 +548,11 @@ export default function Invoice2Page() {
                 className="border border-gray-900 p-1 text-right"
                 style={{ width: "20%" }}
               >
-                {formatCurrency(invoiceData.bodyInsurance || 0)}
+                {formatCurrency(
+                  invoiceData.isBodyInsuranceManual 
+                    ? invoiceData.bodyInsuranceFee 
+                    : invoiceData.bodyInsurance
+                ) || formatCurrency(invoiceData.bodyInsurance || 0)}
               </td>
               <td
                 className="border border-gray-900 p-1 text-right"

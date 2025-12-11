@@ -65,6 +65,9 @@ const GiayThoaThuanTraThay = () => {
   const [laiSuat, setLaiSuat] = useState("");
   const [bienDo, setBienDo] = useState("");
 
+  // Date fields for policy
+  const [ngayBatDauChinhSach, setNgayBatDauChinhSach] = useState("13/09/2025");
+
   // Helper function to format currency
   const formatCurrency = (value) => {
     if (!value) return "";
@@ -80,22 +83,20 @@ const GiayThoaThuanTraThay = () => {
       const incoming = location.state || {};
       const firebaseKey = incoming.firebaseKey;
 
-      // Get branch info
-      const showroomName =
-        incoming.showroom ||
-        incoming["Showroom"] ||
-        incoming.showroomName ||
-        "";
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
-      setBranch(branchInfo);
-
       // Load from Firebase if firebaseKey exists
       let contractData = null;
       if (firebaseKey) {
         try {
-          const contractRef = ref(database, `exportedContracts/${firebaseKey}`);
-          const snapshot = await get(contractRef);
+          // Thử exportedContracts trước
+          let contractRef = ref(database, `exportedContracts/${firebaseKey}`);
+          let snapshot = await get(contractRef);
+          
+          // Nếu không có trong exportedContracts, thử contracts
+          if (!snapshot.exists()) {
+            contractRef = ref(database, `contracts/${firebaseKey}`);
+            snapshot = await get(contractRef);
+          }
+          
           if (snapshot.exists()) {
             contractData = { ...snapshot.val(), firebaseKey };
           }
@@ -103,6 +104,17 @@ const GiayThoaThuanTraThay = () => {
           console.error("Error loading contract from Firebase:", error);
         }
       }
+
+      // Get branch info - ưu tiên từ contractData, sau đó mới từ incoming
+      let showroomName = "";
+      if (contractData && contractData.showroom) {
+        showroomName = contractData.showroom;
+      } else {
+        showroomName = incoming.showroom || incoming["Showroom"] || incoming.showroomName || "";
+      }
+      
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
+      setBranch(branchInfo);
 
       if (contractData || Object.keys(incoming).length > 0) {
         const dataSource = contractData || incoming;
@@ -387,136 +399,144 @@ const GiayThoaThuanTraThay = () => {
 
           {/* Company Section */}
           <div className="mb-2">
-            <h2 className="text-base font-bold uppercase mb-3">
-              <span className="print:hidden">
-                <input
-                  type="text"
-                  value={congTy}
-                  onChange={(e) => setCongTy(e.target.value)}
-                  className="border-b border-gray-400 px-2 py-1 uppercase text-sm w-full ml-2 focus:outline-none focus:border-blue-500"
-                  placeholder="Nhập tên công ty"
-                />
-              </span>
-              <span className="hidden print:inline ml-2">{congTy || ""}</span>
-            </h2>
-            <div className="text-sm space-y-2">
-              <div>
-                <span className="">Địa chỉ trụ sở chính:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={diaChiTruSo}
-                    onChange={(e) => setDiaChiTruSo(e.target.value)}
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-full max-w-md ml-2 focus:outline-none focus:border-blue-500"
-                    placeholder="Nhập địa chỉ"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {diaChiTruSo || "______"}
-                </span>
+            {branch ? (
+              <>
+                <h2 className="text-base font-bold uppercase mb-3">
+                  <span className="print:hidden">
+                    <input
+                      type="text"
+                      value={congTy}
+                      onChange={(e) => setCongTy(e.target.value)}
+                      className="border-b border-gray-400 px-2 py-1 uppercase text-sm w-full ml-2 focus:outline-none focus:border-blue-500"
+                      placeholder="Nhập tên công ty"
+                    />
+                  </span>
+                  <span className="hidden print:inline ml-2">{congTy || ""}</span>
+                </h2>
+                <div className="text-sm space-y-2">
+                  <div>
+                    <span className="">Địa chỉ trụ sở chính:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={diaChiTruSo}
+                        onChange={(e) => setDiaChiTruSo(e.target.value)}
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-full max-w-md ml-2 focus:outline-none focus:border-blue-500"
+                        placeholder="Nhập địa chỉ"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {diaChiTruSo || "______"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="">Mã số doanh nghiệp:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={maSoDN}
+                        onChange={(e) => setMaSoDN(e.target.value)}
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
+                        placeholder="Nhập mã số doanh nghiệp"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {maSoDN || "______"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="">Tài khoản:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={taiKhoan}
+                        onChange={(e) => setTaiKhoan(e.target.value)}
+                        className="border-b border-gray-400 px-1 py-0 text-sm w-32 focus:outline-none focus:border-blue-500"
+                        placeholder="____"
+                      />
+                    </span>
+                    <span className="hidden print:inline mx-1">
+                      {taiKhoan || "____"}
+                    </span>
+                    tại Ngân hàng
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={nganHang}
+                        onChange={(e) => setNganHang(e.target.value)}
+                        className="border-b border-gray-400 px-1 py-0 text-sm w-32 focus:outline-none focus:border-blue-500"
+                        placeholder="____"
+                      />
+                    </span>
+                    <span className="hidden print:inline mx-1">
+                      {nganHang || "____"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="">Đại diện:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={daiDien}
+                        onChange={(e) => setDaiDien(e.target.value)}
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
+                        placeholder="Nhập tên đại diện"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {daiDien || "______"}
+                    </span>
+                    <span className=" ml-4">Chức vụ:</span>
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={chucVu}
+                        onChange={(e) => setChucVu(e.target.value)}
+                        className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
+                        placeholder="Nhập chức vụ"
+                      />
+                    </span>
+                    <span className="hidden print:inline ml-2">
+                      {chucVu || "______"}
+                    </span>
+                  </div>
+                  <div>
+                    (Theo Giấy uỷ quyền số
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={soGiayUyQuyen}
+                        onChange={(e) => setSoGiayUyQuyen(e.target.value)}
+                        className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
+                        placeholder="____"
+                      />
+                    </span>
+                    <span className="hidden print:inline mx-1">
+                      {soGiayUyQuyen || "____"}
+                    </span>
+                    ngày
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={ngayUyQuyen}
+                        onChange={(e) => setNgayUyQuyen(e.target.value)}
+                        className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
+                        placeholder="____"
+                      />
+                    </span>
+                    <span className="hidden print:inline mx-1">
+                      {ngayUyQuyen || "____"}
+                    </span>
+                    )
+                  </div>
+                  <p className="font-bold">(Bên bán)</p>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-400 text-sm">
+                [Chưa chọn showroom - Thông tin công ty sẽ hiển thị khi chọn showroom]
               </div>
-              <div>
-                <span className="">Mã số doanh nghiệp:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={maSoDN}
-                    onChange={(e) => setMaSoDN(e.target.value)}
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
-                    placeholder="Nhập mã số doanh nghiệp"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {maSoDN || "______"}
-                </span>
-              </div>
-              <div>
-                <span className="">Tài khoản:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={taiKhoan}
-                    onChange={(e) => setTaiKhoan(e.target.value)}
-                    className="border-b border-gray-400 px-1 py-0 text-sm w-32 focus:outline-none focus:border-blue-500"
-                    placeholder="____"
-                  />
-                </span>
-                <span className="hidden print:inline mx-1">
-                  {taiKhoan || "____"}
-                </span>
-                tại Ngân hàng
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={nganHang}
-                    onChange={(e) => setNganHang(e.target.value)}
-                    className="border-b border-gray-400 px-1 py-0 text-sm w-32 focus:outline-none focus:border-blue-500"
-                    placeholder="____"
-                  />
-                </span>
-                <span className="hidden print:inline mx-1">
-                  {nganHang || "____"}
-                </span>
-              </div>
-              <div>
-                <span className="">Đại diện:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={daiDien}
-                    onChange={(e) => setDaiDien(e.target.value)}
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
-                    placeholder="Nhập tên đại diện"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {daiDien || "______"}
-                </span>
-                <span className=" ml-4">Chức vụ:</span>
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={chucVu}
-                    onChange={(e) => setChucVu(e.target.value)}
-                    className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
-                    placeholder="Nhập chức vụ"
-                  />
-                </span>
-                <span className="hidden print:inline ml-2">
-                  {chucVu || "______"}
-                </span>
-              </div>
-              <div>
-                (Theo Giấy uỷ quyền số
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={soGiayUyQuyen}
-                    onChange={(e) => setSoGiayUyQuyen(e.target.value)}
-                    className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
-                    placeholder="____"
-                  />
-                </span>
-                <span className="hidden print:inline mx-1">
-                  {soGiayUyQuyen || "____"}
-                </span>
-                ngày
-                <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={ngayUyQuyen}
-                    onChange={(e) => setNgayUyQuyen(e.target.value)}
-                    className="border-b border-gray-400 px-1 py-0 text-xs w-24 focus:outline-none focus:border-blue-500"
-                    placeholder="____"
-                  />
-                </span>
-                <span className="hidden print:inline mx-1">
-                  {ngayUyQuyen || "____"}
-                </span>
-                )
-              </div>
-              <p className="font-bold">(Bên bán)</p>
-            </div>
+            )}
           </div>
 
           {/* Separator */}
@@ -869,7 +889,19 @@ const GiayThoaThuanTraThay = () => {
                 Vượng (sau đây gọi là "<strong>Ngân Hàng</strong>") theo chính
                 sách hỗ trợ tiền vay của VinFast được đại diện thực hiện bởi Bên
                 bán (“<strong>Chính sách Hỗ trợ Trả thay</strong>”) áp dụng cho
-                (các) Khách hàng đặt cọc mua xe/xuất hóa đơn từ ngày 13/09/2025
+                (các) Khách hàng đặt cọc mua xe/xuất hóa đơn từ ngày
+                <span className="print:hidden">
+                  <input
+                    type="text"
+                    value={ngayBatDauChinhSach}
+                    onChange={(e) => setNgayBatDauChinhSach(e.target.value)}
+                    className="border-b border-gray-400 px-1 py-0 text-sm w-24 focus:outline-none focus:border-blue-500"
+                    placeholder="dd/mm/yyyy"
+                  />
+                </span>
+                <span className="hidden print:inline mx-1">
+                  {ngayBatDauChinhSach || "____"}
+                </span>
                 đến hết ngày 31/12/2025 (tính theo ngày Bên bán xuất hóa đơn giá
                 trị gia tăng bán xe) - Thời hạn giải ngân của khoản vay đến hết
                 ngày 31/12/2025. Công ty TNHH kinh doanh thương mại và dịch vụ

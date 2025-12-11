@@ -16,14 +16,22 @@ const GiayXacNhan = () => {
 
   useEffect(() => {
     const loadShowroom = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
 
-      // Nếu có firebaseKey, thử lấy showroom từ contracts
+      // Nếu có firebaseKey, thử lấy showroom từ exportedContracts hoặc contracts
       if (location.state?.firebaseKey) {
         try {
           const contractId = location.state.firebaseKey;
-          const contractsRef = ref(database, `contracts/${contractId}`);
-          const snapshot = await get(contractsRef);
+          // Thử exportedContracts trước (vì đây là từ trang hợp đồng đã xuất)
+          let contractsRef = ref(database, `exportedContracts/${contractId}`);
+          let snapshot = await get(contractsRef);
+          
+          // Nếu không có trong exportedContracts, thử contracts
+          if (!snapshot.exists()) {
+            contractsRef = ref(database, `contracts/${contractId}`);
+            snapshot = await get(contractsRef);
+          }
+          
           if (snapshot.exists()) {
             const contractData = snapshot.val();
             if (contractData.showroom) {
@@ -31,12 +39,12 @@ const GiayXacNhan = () => {
             }
           }
         } catch (err) {
-          console.error("Error loading showroom from contracts:", err);
+          console.error("Error loading showroom from database:", err);
         }
       }
 
-      // Lấy thông tin chi nhánh
-      const branchInfo = getBranchByShowroomName(showroomName) || getDefaultBranch();
+      // Chỉ set branch khi có showroom được chọn
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
       setBranch(branchInfo);
 
       if (location.state) {
@@ -159,15 +167,23 @@ const GiayXacNhan = () => {
               <div className="flex">
                 {/* Bên trái - Thông tin công ty */}
                 <div className="flex-1 border-r-2 border-black p-2">
-                  <p className="text-[10px] font-bold uppercase leading-tight mb-0.5">
-                    CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ
-                  </p>
-                  <p className="text-[10px] font-bold uppercase leading-tight mb-0.5">
-                    ĐÔNG SÀI GÒN - CHI NHÁNH {branch ? branch.shortName.toUpperCase() : "TRƯỜNG CHINH"}
-                  </p>
-                  <p className="text-[10px] font-bold leading-tight">
-                    {branch ? branch.address : "682A Trương Chinh, Phường 15, Tân Bình, Hồ Chí Minh"}
-                  </p>
+                  {branch ? (
+                    <>
+                      <p className="text-[10px] font-bold uppercase leading-tight mb-0.5">
+                        CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ
+                      </p>
+                      <p className="text-[10px] font-bold uppercase leading-tight mb-0.5">
+                        ĐÔNG SÀI GÒN - CHI NHÁNH {branch.shortName.toUpperCase()}
+                      </p>
+                      <p className="text-[10px] font-bold leading-tight">
+                        {branch.address}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[10px] text-gray-400 leading-tight">
+                      [Chưa chọn showroom]
+                    </p>
+                  )}
                 </div>
 
                 {/* Bên phải - Quốc hiệu */}
@@ -222,15 +238,14 @@ const GiayXacNhan = () => {
                   </td>
                   <td className="py-0.5 w-4 text-center align-top">:</td>
                   <td className="py-0.5 font-bold">
-                    CHI NHÁNH {branch ? branch.shortName.toUpperCase() : "TRƯỜNG CHINH"}-CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH
-                    VỤ Ô TÔ ĐÔNG SÀI GÒN
+                    {branch ? branch.name : "[Chưa chọn showroom]"}
                   </td>
                 </tr>
                 <tr>
                   <td className="py-0.5 align-top">Địa chỉ</td>
                   <td className="py-0.5 text-center align-top">:</td>
                   <td className="py-0.5">
-                    {branch ? branch.address : "682A Trường Chinh, Phường Tân Bình, Tp Hồ Chí Minh"}
+                    {branch ? branch.address : "[Chưa có địa chỉ]"}
                   </td>
                 </tr>
                 <tr>
@@ -238,7 +253,7 @@ const GiayXacNhan = () => {
                   <td className="py-0.5 text-center align-top">:</td>
                   <td className="py-0.5">
                     <strong>
-                      Ông {branch ? branch.representativeName : "Nguyễn Thành Trai"}
+                      {branch ? `Ông ${branch.representativeName || "Nguyễn Thành Trai"}` : "[Chưa có đại diện]"}
                     </strong>
                   </td>
                 </tr>
@@ -246,18 +261,18 @@ const GiayXacNhan = () => {
                   <td className="py-0.5 align-top">Chức vụ</td>
                   <td className="py-0.5 text-center align-top">:</td>
                   <td className="py-0.5 font-bold">
-                    {branch ? branch.position : "Tổng Giám đốc"}
+                    {branch ? (branch.position || "Tổng Giám đốc") : "[Chưa có chức vụ]"}
                   </td>
                 </tr>
                 <tr>
                   <td className="py-0.5 align-top">Tài khoản</td>
                   <td className="py-0.5 text-center align-top">:</td>
-                  <td className="py-0.5">{branch ? `${branch.bankAccount} – tại ${branch.bankName}` : "288999 – tại VP Bank"}</td>
+                  <td className="py-0.5">{branch ? `${branch.bankAccount} – tại ${branch.bankName}` : "[Chưa có tài khoản]"}</td>
                 </tr>
                 <tr>
                   <td className="py-0.5 align-top">Mã số thuế</td>
                   <td className="py-0.5 text-center align-top">:</td>
-                  <td className="py-0.5">{branch ? branch.taxCode : "0316801817-002"}</td>
+                  <td className="py-0.5">{branch ? branch.taxCode : "[Chưa có mã số thuế]"}</td>
                 </tr>
               </tbody>
             </table>
