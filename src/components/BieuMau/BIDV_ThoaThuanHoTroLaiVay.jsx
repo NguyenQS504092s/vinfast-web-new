@@ -57,6 +57,7 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
   const [soTienVayToiDa, setSoTienVayToiDa] = useState("");
   const [laiSuatUuDai, setLaiSuatUuDai] = useState("");
   const [laiSuatThapHon, setLaiSuatThapHon] = useState("");
+  const [thoiHanVay, setThoiHanVay] = useState("96");
 
   useEffect(() => {
     const loadData = async () => {
@@ -689,12 +690,32 @@ const BIDV_ThoaThuanHoTroLaiVay = () => {
                     </span>
                     <span className="hidden print:inline">{soTienVayToiDa || "___"}</span>% giá trị hợp đồng mua bán xe <em>(sau khi đã trừ các ưu đãi chiết khấu giảm giá bán xe)</em>.
                   </p>
-                  <p>- Thời hạn vay tối đa bằng 96 tháng;</p>
+                  <p>- Thời hạn vay tối đa bằng{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={thoiHanVay}
+                        onChange={(e) => setThoiHanVay(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-12 text-center focus:outline-none focus:border-blue-500"
+                        placeholder="96"
+                      />
+                    </span>
+                    <span className="hidden print:inline">{thoiHanVay || "96"}</span> tháng;</p>
                   <p>
                     - Lãi suất cho vay theo các quy định và điều kiện tại Chương Trình Hợp Tác (Đã bao gồm mức lãi suất hỗ trợ của Ngân Hàng so với Khách hàng thông thường); được tính trên dư nợ giảm dần;
                   </p>
                   <p className="text-justify">
-                    - VinFast sẽ hỗ trợ Khách Hàng một khoản tiền ("<strong>Khoản Hỗ Trợ Lãi Vay</strong>") tương đương khoản chênh lệch giữa (i) số tiền lãi của Ngân Hàng theo các quy định và điều kiện tại Chương Trình Hợp Tác và (ii) số tiền lãi mà Khách Hàng phải thanh toán, trong thời gian vay (tối đa bằng 96 tháng) kể từ ngày bắt đầu tính lãi theo Hợp Đồng Tín Dụng ("<strong>Thời Hạn Hỗ Trợ Lãi Vay</strong>") hoặc cho đến khi Thời Hạn Hỗ Trợ Lãi Vay chấm dứt trước thời hạn theo quy định tại Thỏa Thuận này, tùy thời điểm nào đến trước.
+                    - VinFast sẽ hỗ trợ Khách Hàng một khoản tiền ("<strong>Khoản Hỗ Trợ Lãi Vay</strong>") tương đương khoản chênh lệch giữa (i) số tiền lãi của Ngân Hàng theo các quy định và điều kiện tại Chương Trình Hợp Tác và (ii) số tiền lãi mà Khách Hàng phải thanh toán, trong thời gian vay (tối đa bằng{" "}
+                    <span className="print:hidden">
+                      <input
+                        type="text"
+                        value={thoiHanVay}
+                        onChange={(e) => setThoiHanVay(e.target.value)}
+                        className="border-b border-gray-400 px-1 w-12 text-center focus:outline-none focus:border-blue-500"
+                        placeholder="96"
+                      />
+                    </span>
+                    <span className="hidden print:inline">{thoiHanVay || "96"}</span> tháng) kể từ ngày bắt đầu tính lãi theo Hợp Đồng Tín Dụng ("<strong>Thời Hạn Hỗ Trợ Lãi Vay</strong>") hoặc cho đến khi Thời Hạn Hỗ Trợ Lãi Vay chấm dứt trước thời hạn theo quy định tại Thỏa Thuận này, tùy thời điểm nào đến trước.
                   </p>
                   <p className="text-justify">
                     Số tiền gốc và lãi Khách Hàng thanh toán hàng tháng phương án gốc trả đều, lãi theo dư nợ giảm dần, trong đó lãi suất thực tế Khách Hàng phải chi trả như sau:

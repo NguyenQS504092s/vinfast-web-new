@@ -8,6 +8,7 @@ import {
   getBranchByShowroomName,
   getDefaultBranch,
 } from "../../data/branchData";
+import CurrencyInput from "../shared/CurrencyInput";
 
 const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
   const location = useLocation();
@@ -829,16 +830,12 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
                 <p>
                   - Số tiền Khách Hàng vay LFVN để thanh toán:{" "}
                   <span className="print:hidden">
-                    <input
-                      type="text"
-                      value={formatCurrency(soTienVay)}
-                      onChange={(e) => {
-                        // Parse raw value (remove all non-digit characters)
-                        const rawValue = e.target.value.replace(/\D/g, "");
-                        setSoTienVay(rawValue);
-                        // Auto-update amount in words
-                        if (rawValue) {
-                          setSoTienVayBangChu(vndToWords(rawValue));
+                    <CurrencyInput
+                      value={soTienVay}
+                      onChange={(val) => {
+                        setSoTienVay(val);
+                        if (val) {
+                          setSoTienVayBangChu(vndToWords(val));
                         } else {
                           setSoTienVayBangChu("");
                         }

@@ -7,6 +7,7 @@ import {
 import { ref, get } from "firebase/database";
 import { database } from "../../firebase/config";
 import { vndToWords } from "../../utils/vndToWords";
+import CurrencyInput from "../shared/CurrencyInput";
 
 const GiayThoaThuanTraThay = () => {
   const location = useLocation();
@@ -860,13 +861,9 @@ const GiayThoaThuanTraThay = () => {
                 <p>
                   - Giá trị xe mua (đã bao gồm ưu đãi/giảm giá):
                   <span className="print:hidden">
-                    <input
-                      type="text"
-                      value={formatCurrency(giaTriXe)}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "");
-                        setGiaTriXe(val);
-                      }}
+                    <CurrencyInput
+                      value={giaTriXe}
+                      onChange={(val) => setGiaTriXe(val)}
                       className="border-b border-gray-400 px-1 py-0 text-sm w-48 ml-2 focus:outline-none focus:border-blue-500"
                       placeholder="Nhập giá trị"
                     />
@@ -967,21 +964,12 @@ const GiayThoaThuanTraThay = () => {
                   <p>
                     a) Số tiền Khách Hàng vay Ngân hàng để thanh toán:{" "}
                     <span className="print:hidden">
-                      <input
-                        type="text"
-                        value={formatCurrency(soTienVay)}
-                        onChange={(e) => {
-                          const rawValue = e.target.value;
-                          const val = rawValue.replace(/\D/g, "");
+                      <CurrencyInput
+                        value={soTienVay}
+                        onChange={(val) => {
                           setSoTienVay(val);
-                          // Tự động chuyển số tiền sang chữ khi nhập
-                          if (val && val.length > 0) {
-                            const numValue = parseInt(val, 10);
-                            if (!isNaN(numValue) && numValue > 0) {
-                              setSoTienVayBangChu(vndToWords(val));
-                            } else {
-                              setSoTienVayBangChu("");
-                            }
+                          if (val && val > 0) {
+                            setSoTienVayBangChu(vndToWords(val));
                           } else {
                             setSoTienVayBangChu("");
                           }

@@ -7,6 +7,7 @@ import {
 import { ref, get } from "firebase/database";
 import { database } from "../../firebase/config";
 import { vndToWords } from "../../utils/vndToWords";
+import CurrencyInput from "../shared/CurrencyInput";
 
 const GiayThoaThuanTraCham = () => {
   const location = useLocation();
@@ -895,13 +896,9 @@ const GiayThoaThuanTraCham = () => {
                   đã trừ đi các ưu đãi bằng tiền nếu có):
                 </span>
                 <span className="print:hidden">
-                  <input
-                    type="text"
-                    value={formatCurrency(giaTriThanhToan)}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      setGiaTriThanhToan(val);
-                    }}
+                  <CurrencyInput
+                    value={giaTriThanhToan}
+                    onChange={(val) => setGiaTriThanhToan(val)}
                     className="border-b border-gray-400 px-2 py-1 text-sm w-48 focus:outline-none focus:border-blue-500"
                     placeholder="Nhập giá trị"
                   />
@@ -996,11 +993,9 @@ const GiayThoaThuanTraCham = () => {
                   <p>
                     <span>a) Số tiền Khách Hàng được trả chậm:</span>
                     <span className="print:hidden">
-                      <input
-                        type="text"
-                        value={formatCurrency(soTienTraCham)}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "");
+                      <CurrencyInput
+                        value={soTienTraCham}
+                        onChange={(val) => {
                           setSoTienTraCham(val);
                           setSoTienTraChamBangChu(vndToWords(val));
                         }}

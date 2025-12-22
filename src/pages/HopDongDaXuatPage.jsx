@@ -298,7 +298,7 @@ export default function HopDongDaXuatPage() {
       stt: c.stt || "",
       ngayXhd: c["ngày xhd"] || "",
       tvbh: c.tvbh || "",
-      showroom: c.showroom || "",
+      showroom: c.showroom || c.Showroom || c["Showroom"] || "",
       vso: c.VSO || "",
       tenKh: c["Tên Kh"] || "",
       soDienThoai: c["Số Điện Thoại"] || "",
@@ -850,13 +850,12 @@ export default function HopDongDaXuatPage() {
     };
 
     // Check required fields (using mapped field names)
+    // Lưu ý: soKhung và soMay không bắt buộc vì xe có thể chưa được phân khi xuất hợp đồng
     const checks = [
       // Tên KH
       isEmpty(contract.tenKh),
       // Số điện thoại
       isEmpty(contract.soDienThoai),
-      // Email
-      isEmpty(contract.email),
       // Địa chỉ
       isEmpty(contract.diaChi),
       // CCCD
@@ -865,12 +864,6 @@ export default function HopDongDaXuatPage() {
       isEmpty(contract.dongXe),
       // Giá hợp đồng
       isEmpty(contract.giaHopDong),
-      // Ngày XHD
-      isEmpty(contract.ngayXhd),
-      // Số khung
-      isEmpty(contract.soKhung),
-      // Số máy
-      isEmpty(contract.soMay),
     ];
 
     return checks.some((check) => check);

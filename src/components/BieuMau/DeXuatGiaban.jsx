@@ -11,6 +11,7 @@ import {
   uniqueNoiThatColors,
 } from "../../data/calculatorData";
 import VinfastLogo from "../../assets/images/logo.svg";
+import CurrencyInput from "../shared/CurrencyInput";
 
 const DeXuatGiaban = () => {
   const location = useLocation();
@@ -1051,10 +1052,9 @@ const DeXuatGiaban = () => {
                   <td className="border-r border-black p-1 font-bold">
                     <strong>Trả thẳng:</strong>{" "}
                     <span className="print:hidden">
-                      <input
-                        type="text"
-                        value={formatCurrency(traThang)}
-                        onChange={(e) => setTraThang(e.target.value)}
+                      <CurrencyInput
+                        value={traThang}
+                        onChange={(val) => setTraThang(val)}
                         className="border-b border-gray-400 px-1 w-24 focus:outline-none focus:border-blue-500"
                       />
                     </span>
@@ -1065,10 +1065,9 @@ const DeXuatGiaban = () => {
                   <td className="border-r border-black p-1 font-bold">
                     <strong>Trả góp:</strong>{" "}
                     <span className="print:hidden">
-                      <input
-                        type="text"
-                        value={formatCurrency(traGop)}
-                        onChange={(e) => setTraGop(e.target.value)}
+                      <CurrencyInput
+                        value={traGop}
+                        onChange={(val) => setTraGop(val)}
                         className="border-b border-gray-400 px-1 w-32 focus:outline-none focus:border-blue-500"
                       />
                     </span>

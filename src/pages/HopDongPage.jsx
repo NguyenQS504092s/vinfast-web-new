@@ -1071,6 +1071,7 @@ export default function HopDongPage() {
           stt: safeValue(contract.stt),
           "ngày xhd": ngayXhd, // Export date - now
           tvbh: safeValue(contract.TVBH || contract.tvbh),
+          showroom: safeValue(contract.showroom || contract.Showroom || contract["Showroom"] || ""),
           VSO: safeValue(contract.vso),
           "Tên Kh": safeValue(contract.customerName),
           "Số Điện Thoại": safeValue(contract.phone),

@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { carPriceData, uniqueNgoaiThatColors, uniqueNoiThatColors } from '../data/calculatorData';
 import { getAllBranches, getBranchByShowroomName } from '../data/branchData';
 import { loadPromotionsFromFirebase, defaultPromotions, filterPromotionsByDongXe } from '../data/promotionsData';
+import CurrencyInput from '../components/shared/CurrencyInput';
 
 export default function ContractFormPage() {
   const navigate = useNavigate();
@@ -700,6 +701,7 @@ export default function ContractFormPage() {
             stt: safeValue(contractData.stt),
             "ngày xhd": ngayXhd, // Export date - now
             tvbh: safeValue(contract.tvbh),
+            showroom: safeValue(contract.showroom),
             VSO: safeValue(contract.vso),
             "Tên Kh": safeValue(contract.customerName),
             "Số Điện Thoại": safeValue(contract.phone),
@@ -811,6 +813,7 @@ export default function ContractFormPage() {
               stt: "",
               "ngày xhd": ngayXhd,
               tvbh: safeValue(contract.tvbh),
+              showroom: safeValue(contract.showroom),
               VSO: safeValue(contract.vso),
               "Tên Kh": safeValue(contract.customerName),
               "Số Điện Thoại": safeValue(contract.phone),
@@ -1344,10 +1347,9 @@ export default function ContractFormPage() {
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Giá hợp đồng
                   </label>
-                  <input
-                    type="text"
-                    value={formatCurrency(contract.contractPrice)}
-                    onChange={(e) => handleCurrencyChange("contractPrice", e.target.value)}
+                  <CurrencyInput
+                    value={contract.contractPrice}
+                    onChange={(val) => handleInputChange("contractPrice", val)}
                     disabled={isDetailsMode}
                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Nhập giá hợp đồng"
@@ -1359,10 +1361,9 @@ export default function ContractFormPage() {
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Số tiền cọc
                   </label>
-                  <input
-                    type="text"
-                    value={formatCurrency(contract.deposit)}
-                    onChange={(e) => handleCurrencyChange("deposit", e.target.value)}
+                  <CurrencyInput
+                    value={contract.deposit}
+                    onChange={(val) => handleInputChange("deposit", val)}
                     disabled={isDetailsMode}
                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Nhập số tiền cọc"
@@ -1392,10 +1393,9 @@ export default function ContractFormPage() {
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                       Số tiền vay
                     </label>
-                    <input
-                      type="text"
-                      value={formatCurrency(contract.loanAmount)}
-                      onChange={(e) => handleCurrencyChange("loanAmount", e.target.value)}
+                    <CurrencyInput
+                      value={contract.loanAmount}
+                      onChange={(val) => handleInputChange("loanAmount", val)}
                       disabled={isDetailsMode}
                       className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                       placeholder="Nhập số tiền vay"
@@ -1515,10 +1515,9 @@ export default function ContractFormPage() {
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Số tiền vay
                   </label>
-                  <input
-                    type="text"
-                    value={formatCurrency(contract.soTienVay)}
-                    onChange={(e) => handleCurrencyChange("soTienVay", e.target.value)}
+                  <CurrencyInput
+                    value={contract.soTienVay}
+                    onChange={(val) => handleInputChange("soTienVay", val)}
                     disabled={isDetailsMode}
                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Nhập số tiền vay"
@@ -1530,10 +1529,9 @@ export default function ContractFormPage() {
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Số tiền phải thu
                   </label>
-                  <input
-                    type="text"
-                    value={formatCurrency(contract.soTienPhaiThu)}
-                    onChange={(e) => handleCurrencyChange("soTienPhaiThu", e.target.value)}
+                  <CurrencyInput
+                    value={contract.soTienPhaiThu}
+                    onChange={(val) => handleInputChange("soTienPhaiThu", val)}
                     disabled={isDetailsMode}
                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Nhập số tiền phải thu"

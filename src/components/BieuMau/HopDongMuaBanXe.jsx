@@ -11,6 +11,7 @@ import {
   uniqueNoiThatColors,
 } from "../../data/calculatorData";
 import { vndToWords } from "../../utils/vndToWords";
+import CurrencyInput from "../shared/CurrencyInput";
 
 const HopDongMuaBanXe = () => {
   const location = useLocation();
@@ -945,16 +946,12 @@ const HopDongMuaBanXe = () => {
                 <p className="pl-8">
                   <strong>Đợt 2:</strong>{" "}
                   <span className="print:hidden">
-                    <input
-                      type="text"
-                      value={formatCurrency(soTienDot2)}
-                      onChange={(e) => {
-                        // Parse giá trị thô (loại bỏ dấu chấm)
-                        const rawValue = e.target.value.replace(/\./g, "");
-                        setSoTienDot2(rawValue);
-                        // Tự động cập nhật bằng chữ
-                        if (rawValue) {
-                          setSoTienDot2BangChu(vndToWords(rawValue));
+                    <CurrencyInput
+                      value={soTienDot2}
+                      onChange={(val) => {
+                        setSoTienDot2(val);
+                        if (val) {
+                          setSoTienDot2BangChu(vndToWords(val));
                         } else {
                           setSoTienDot2BangChu("");
                         }
@@ -989,16 +986,12 @@ const HopDongMuaBanXe = () => {
                   Hàng đồng thời bàn giao cho Bên Bán bản gốc Thông Báo Tín Dụng
                   của ngân hàng cam kết cho Khách Hàng vay số tiền{" "}
                   <span className="print:hidden">
-                    <input
-                      type="text"
-                      value={formatCurrency(soTienVay)}
-                      onChange={(e) => {
-                        // Parse giá trị thô (loại bỏ dấu chấm)
-                        const rawValue = e.target.value.replace(/\./g, "");
-                        setSoTienVay(rawValue);
-                        // Tự động cập nhật bằng chữ
-                        if (rawValue) {
-                          setSoTienVayBangChu(vndToWords(rawValue));
+                    <CurrencyInput
+                      value={soTienVay}
+                      onChange={(val) => {
+                        setSoTienVay(val);
+                        if (val) {
+                          setSoTienVayBangChu(vndToWords(val));
                         } else {
                           setSoTienVayBangChu("");
                         }
@@ -1032,16 +1025,12 @@ const HopDongMuaBanXe = () => {
                 <p className="pl-8">
                   <strong>Đợt 3:</strong>{" "}
                   <span className="print:hidden">
-                    <input
-                      type="text"
-                      value={formatCurrency(soTienDot3)}
-                      onChange={(e) => {
-                        // Parse giá trị thô (loại bỏ dấu chấm)
-                        const rawValue = e.target.value.replace(/\./g, "");
-                        setSoTienDot3(rawValue);
-                        // Tự động cập nhật bằng chữ
-                        if (rawValue) {
-                          setSoTienDot3BangChu(vndToWords(rawValue));
+                    <CurrencyInput
+                      value={soTienDot3}
+                      onChange={(val) => {
+                        setSoTienDot3(val);
+                        if (val) {
+                          setSoTienDot3BangChu(vndToWords(val));
                         } else {
                           setSoTienDot3BangChu("");
                         }

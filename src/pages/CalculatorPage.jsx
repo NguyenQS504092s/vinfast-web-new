@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { ref, push, set, update, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { loadPromotionsFromFirebase, filterPromotionsByDongXe } from '../data/promotionsData';
+import CurrencyInput from '../components/shared/CurrencyInput';
 import {
   phi_duong_bo,
   phi_cap_bien_so,
@@ -142,6 +143,7 @@ export default function CalculatorPage() {
   const [depositAmount, setDepositAmount] = useState(0);
   const [depositDate, setDepositDate] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [gifts, setGifts] = useState([]);
 
   // Car configuration
   const [carModel, setCarModel] = useState('');
@@ -1095,6 +1097,7 @@ export default function CalculatorPage() {
       depositAmount: depositAmount || 0,
       depositDate: depositDate || '',
       deliveryDate: deliveryDate || '',
+      gifts: gifts || [],
 
       // Car info
       carModel: carModel || '',
@@ -1905,8 +1908,79 @@ export default function CalculatorPage() {
                 <label className="block text-sm font-medium text-gray-600 mb-2">
                   Số tiền cọc
                 </label>
-                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-900 font-semibold">
-                  {formatCurrency(depositAmount)}
+                <CurrencyInput
+                  value={depositAmount}
+                  onChange={(val) => setDepositAmount(val)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 font-semibold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Nhập số tiền cọc"
+                />
+              </div>
+
+              {/* Quà tặng & Phụ kiện */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Quà tặng & Phụ kiện
+                </label>
+                <div className="border border-gray-300 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-blue-50">
+                      <tr>
+                        <th className="border-b border-r border-gray-300 px-2 py-1.5 text-left w-10">STT</th>
+                        <th className="border-b border-r border-gray-300 px-2 py-1.5 text-left">Tên Quà Tặng & Phụ Kiện</th>
+                        <th className="border-b border-gray-300 px-2 py-1.5 text-center w-28">Tặng/Giá</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gifts.map((gift, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="border-b border-r border-gray-300 px-2 py-1 text-center">{index + 1}</td>
+                          <td className="border-b border-r border-gray-300 px-1 py-1">
+                            <input
+                              type="text"
+                              value={gift.name}
+                              onChange={(e) => {
+                                const newGifts = [...gifts];
+                                newGifts[index].name = e.target.value;
+                                setGifts(newGifts);
+                              }}
+                              className="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500 rounded"
+                              placeholder="Nhập tên quà tặng"
+                            />
+                          </td>
+                          <td className="border-b border-gray-300 px-1 py-1">
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={gift.price}
+                                onChange={(e) => {
+                                  const newGifts = [...gifts];
+                                  newGifts[index].price = e.target.value;
+                                  setGifts(newGifts);
+                                }}
+                                className="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500 rounded text-center"
+                                placeholder="Tặng"
+                              />
+                              <button
+                                onClick={() => {
+                                  const newGifts = gifts.filter((_, i) => i !== index);
+                                  setGifts(newGifts);
+                                }}
+                                className="text-red-500 hover:text-red-700 p-1"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <button
+                    onClick={() => setGifts([...gifts, { name: '', price: 'Tặng' }])}
+                    className="w-full py-2 text-red-600 hover:bg-red-50 flex items-center justify-center gap-1 border-t border-gray-300"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>

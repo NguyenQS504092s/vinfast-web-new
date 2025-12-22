@@ -5,6 +5,7 @@ import { database } from "../../firebase/config";
 import { getBranchByShowroomName, getDefaultBranch } from "../../data/branchData";
 import { vndToWords } from "../../utils/vndToWords";
 import vinfastLogo from "../../assets/vinfast.svg";
+import CurrencyInput from "../shared/CurrencyInput";
 
 const TT_HTLV_CĐX_TPB = () => {
   const location = useLocation();
@@ -1112,21 +1113,12 @@ const TT_HTLV_CĐX_TPB = () => {
                   <p>
                     a) Số tiền Khách Hàng vay Ngân Hàng để thanh toán:{" "}
                     <span className="print:hidden">
-                      <input
-                        type="text"
-                        value={formatCurrency(soTienVay)}
-                        onChange={(e) => {
-                          const rawValue = e.target.value;
-                          const val = rawValue.replace(/\D/g, "");
+                      <CurrencyInput
+                        value={soTienVay}
+                        onChange={(val) => {
                           setSoTienVay(val);
-                          // Tự động chuyển số tiền sang chữ khi nhập
-                          if (val && val.length > 0) {
-                            const numValue = parseInt(val, 10);
-                            if (!isNaN(numValue) && numValue > 0) {
-                              setSoTienVayBangChu(vndToWords(val));
-                            } else {
-                              setSoTienVayBangChu("");
-                            }
+                          if (val && val > 0) {
+                            setSoTienVayBangChu(vndToWords(val));
                           } else {
                             setSoTienVayBangChu("");
                           }
