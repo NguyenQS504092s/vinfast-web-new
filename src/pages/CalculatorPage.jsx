@@ -961,9 +961,10 @@ export default function CalculatorPage() {
     // Amount before other discounts (for compatibility)
     const amountBeforeVinClub = Math.max(0, priceAfterBasicPromotions - convertSupportDiscount - bhvc2 - premiumColor);
 
-    // Final payable (Giá thanh toán thực tế)
-    const finalPayable = Math.max(0, giaXuatHoaDon - convertSupportDiscount - bhvc2 - premiumColor);
-    const totalDiscount = totalPromotionDiscounts + (vinClubDiscount || 0) + (convertSupportDiscount || 0) + (bhvc2 || 0) + (premiumColor || 0);    const priceAfterDiscount = Math.max(0, basePrice - totalDiscount);
+    // Giá thanh toán thực tế = Giá XHD - PT51 (convertSupportDiscount)
+    const finalPayable = Math.max(0, giaXuatHoaDon - convertSupportDiscount);
+    const totalDiscount = totalPromotionDiscounts + (vinClubDiscount || 0) + (convertSupportDiscount || 0);
+    const priceAfterDiscount = Math.max(0, basePrice - totalDiscount);
 
     // On-road costs
     const locationKey = locationMap[registrationLocation] || 'tinh_khac';
@@ -980,8 +981,8 @@ export default function CalculatorPage() {
 
     const inspectionFee = phi_kiem_dinh;
     const bhvcRate = 0.014;
-    // Sử dụng giá trị do người dùng nhập hoặc tính toán tự động
-    const bodyInsurance = isBodyInsuranceManual ? bodyInsuranceFee : Math.round((finalPayable + bhvc2 + premiumColor) * bhvcRate);
+    // BHVC tính trên Giá XHD
+    const bodyInsurance = isBodyInsuranceManual ? bodyInsuranceFee : Math.round(giaXuatHoaDon * bhvcRate);
     const registrationFeeValue = Number(registrationFee) || 0;
 
     const totalOnRoadCost = plateFee + roadFee + liabilityInsurance + inspectionFee + bodyInsurance + registrationFeeValue;
@@ -2321,12 +2322,8 @@ export default function CalculatorPage() {
                       <button
                         onClick={() => {
                           setIsBodyInsuranceManual(false); // Reset về chế độ tự động
-                          const basePrice = getCarPrice();
-                          const finalPayable = basePrice + (exteriorColorPrice || 0) + (interiorColorPrice || 0);
-                          const bhvc2 = discountBhvc2 ? 15000000 : 0;
-                          const premiumColor = (exteriorColorPrice || 0) + (interiorColorPrice || 0);
-                          const bhvcRate = 0.014;
-                          const calculatedBodyInsurance = Math.round((finalPayable + bhvc2 + premiumColor) * bhvcRate);
+                          // BHVC tính trên Giá XHD
+                          const calculatedBodyInsurance = Math.round(calculations.giaXuatHoaDon * 0.014);
                           setBodyInsuranceFee(calculatedBodyInsurance);
                         }}
                         className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 transition-colors"
