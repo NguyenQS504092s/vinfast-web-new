@@ -827,46 +827,45 @@ export default function HopDongDaXuatPage() {
     }
   };
 
-  // Check if contract has missing required fields
-  const hasMissingData = (contract) => {
-    if (!contract) return true;
+  // Helper function to check if a value is missing
+  const isEmpty = (value) => {
+    if (value === null || value === undefined) return true;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return (
+        trimmed === "" ||
+        trimmed === "-" ||
+        trimmed === "null" ||
+        trimmed === "undefined"
+      );
+    }
+    if (typeof value === "number") {
+      return isNaN(value);
+    }
+    return false;
+  };
 
-    // Helper function to check if a value is missing
-    const isEmpty = (value) => {
-      if (value === null || value === undefined) return true;
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        return (
-          trimmed === "" ||
-          trimmed === "-" ||
-          trimmed === "null" ||
-          trimmed === "undefined"
-        );
-      }
-      if (typeof value === "number") {
-        return isNaN(value);
-      }
-      return false;
-    };
+  // Get list of missing required fields
+  const getMissingFields = (contract) => {
+    if (!contract) return ["Hợp đồng không tồn tại"];
 
-    // Check required fields (using mapped field names)
-    // Lưu ý: soKhung và soMay không bắt buộc vì xe có thể chưa được phân khi xuất hợp đồng
-    const checks = [
-      // Tên KH
-      isEmpty(contract.tenKh),
-      // Số điện thoại
-      isEmpty(contract.soDienThoai),
-      // Địa chỉ
-      isEmpty(contract.diaChi),
-      // CCCD
-      isEmpty(contract.cccd),
-      // Dòng xe
-      isEmpty(contract.dongXe),
-      // Giá hợp đồng
-      isEmpty(contract.giaHopDong),
+    const requiredFields = [
+      { key: "tenKh", label: "Tên khách hàng" },
+      { key: "soDienThoai", label: "Số điện thoại" },
+      { key: "diaChi", label: "Địa chỉ" },
+      { key: "cccd", label: "CCCD" },
+      { key: "dongXe", label: "Dòng xe" },
+      { key: "giaHopDong", label: "Giá hợp đồng" },
     ];
 
-    return checks.some((check) => check);
+    return requiredFields
+      .filter((field) => isEmpty(contract[field.key]))
+      .map((field) => field.label);
+  };
+
+  // Check if contract has missing required fields
+  const hasMissingData = (contract) => {
+    return getMissingFields(contract).length > 0;
   };
 
   // Open delete confirmation modal
@@ -1250,6 +1249,7 @@ export default function HopDongDaXuatPage() {
                   <tbody className="bg-neutral-white divide-y divide-secondary-100">
                     {currentContracts.map((contract, index) => {
                       const isMissingData = hasMissingData(contract);
+                      const missingFields = getMissingFields(contract);
                       
                       // Debug log for first contract
                       if (index === 0) {
@@ -1465,7 +1465,7 @@ export default function HopDongDaXuatPage() {
                                 onClick={() => {
                                   if (isMissingData) {
                                     toast.warning(
-                                      "Vui lòng điền đầy đủ thông tin hợp đồng trước khi in!"
+                                      `Thiếu thông tin: ${missingFields.join(", ")}. Vui lòng bổ sung trước khi in!`
                                     );
                                     return;
                                   }
@@ -1528,15 +1528,13 @@ export default function HopDongDaXuatPage() {
                                   }`}
                                 title={
                                   isMissingData
-                                    ? "Vui lòng điền đầy đủ thông tin hợp đồng trước khi in"
-                                    : `Chọn mẫu in ${contract.tenKh || contract.id
-                                    }`
+                                    ? `Thiếu: ${missingFields.join(", ")}`
+                                    : `Chọn mẫu in ${contract.tenKh || contract.id}`
                                 }
                                 aria-label={
                                   isMissingData
-                                    ? "Không thể in - thiếu dữ liệu"
-                                    : `Chọn mẫu in ${contract.tenKh || contract.id
-                                    }`
+                                    ? `Không thể in - thiếu: ${missingFields.join(", ")}`
+                                    : `Chọn mẫu in ${contract.tenKh || contract.id}`
                                 }
                               >
                                 <svg
