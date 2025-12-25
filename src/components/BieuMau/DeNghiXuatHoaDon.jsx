@@ -122,7 +122,7 @@ const DeNghiXuatHoaDon = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
       let tvbhName = "";
 
       // Nếu có firebaseKey, thử lấy showroom và TVBH từ contracts

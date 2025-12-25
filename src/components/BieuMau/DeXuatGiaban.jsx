@@ -121,7 +121,7 @@ const DeXuatGiaban = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
 
       // Thử load showroom từ contracts trước
       let showroomLoadedFromContracts = false;
@@ -599,7 +599,11 @@ const DeXuatGiaban = () => {
             {/* Company Info */}
             <div className="flex-1 text-center">
               <p className="font-bold text-sm">
-                CN TRƯỜNG CHINH-CÔNG TY CPĐT VÀ TMDV Ô TÔ ĐÔNG SÀI GÒN
+                {branch ? (
+                  branch.shortName === "Thủ Đức" 
+                    ? "CÔNG TY CPĐT VÀ TMDV Ô TÔ ĐÔNG SÀI GÒN"
+                    : `CN ${branch.shortName.toUpperCase()}-CÔNG TY CPĐT VÀ TMDV Ô TÔ ĐÔNG SÀI GÒN`
+                ) : "[Chưa chọn showroom]"}
               </p>
               <h1 className="font-bold text-lg mt-2">ĐỀ XUẤT GIÁ BÁN XE</h1>
             </div>

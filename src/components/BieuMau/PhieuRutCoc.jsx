@@ -45,7 +45,7 @@ const PhieuRutCoc = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
 
       if (location.state?.firebaseKey) {
         try {

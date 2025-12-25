@@ -87,7 +87,7 @@ const GiayDeNghiThanhToan = () => {
         };
 
         // Lấy thông tin chi nhánh
-        let showroomName = incoming.showroom || "Chi Nhánh Trường Chinh";
+        let showroomName = incoming.showroom || "";
 
         // Nếu có firebaseKey, thử lấy showroom từ contracts
         if (incoming.firebaseKey) {

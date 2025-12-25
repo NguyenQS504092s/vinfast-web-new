@@ -8,6 +8,7 @@ import { carPriceData, uniqueNgoaiThatColors, uniqueNoiThatColors } from '../dat
 import { getAllBranches, getBranchByShowroomName } from '../data/branchData';
 import { loadPromotionsFromFirebase, defaultPromotions, filterPromotionsByDongXe } from '../data/promotionsData';
 import CurrencyInput from '../components/shared/CurrencyInput';
+import { generateVSO } from '../utils/vsoGenerator';
 
 export default function ContractFormPage() {
   const navigate = useNavigate();
@@ -455,7 +456,32 @@ export default function ContractFormPage() {
     return String(value).replace(/\D/g, '');
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = async (field, value) => {
+    // Auto-generate VSO when showroom changes
+    if (field === 'showroom' && value) {
+      const selectedBranch = branches.find(b => b.name === value);
+      if (selectedBranch) {
+        try {
+          const newVSO = await generateVSO(selectedBranch.maDms);
+          setContract((prev) => ({
+            ...prev,
+            showroom: value,
+            vso: newVSO,
+          }));
+          return;
+        } catch (error) {
+          console.error('Error generating VSO:', error);
+          // Fallback to maDms if generation fails
+          setContract((prev) => ({
+            ...prev,
+            showroom: value,
+            vso: selectedBranch.maDms,
+          }));
+          return;
+        }
+      }
+    }
+
     setContract((prev) => {
       const updated = {
         ...prev,

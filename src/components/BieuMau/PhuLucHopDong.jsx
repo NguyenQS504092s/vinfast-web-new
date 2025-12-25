@@ -35,7 +35,7 @@ const PhuLucHopDong = () => {
 
   useEffect(() => {
     const loadShowroom = async () => {
-      let showroomName = location.state?.showroom || "Chi Nhánh Trường Chinh";
+      let showroomName = location.state?.showroom || "";
       
       // Nếu có firebaseKey, thử lấy showroom từ contracts
       if (location.state?.firebaseKey) {

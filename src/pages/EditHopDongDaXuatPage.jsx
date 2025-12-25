@@ -8,6 +8,7 @@ import { carPriceData, uniqueNgoaiThatColors, uniqueNoiThatColors } from '../dat
 import { uploadImageToCloudinary } from '../config/cloudinary';
 import { getAllBranches } from '../data/branchData';
 import CurrencyInput from '../components/shared/CurrencyInput';
+import { generateVSO, isFullVSOFormat } from '../utils/vsoGenerator';
 
 export default function EditHopDongDaXuatPage() {
   const { id } = useParams();
@@ -311,7 +312,35 @@ export default function EditHopDongDaXuatPage() {
   };
 
   // Handle form input change
-  const handleChange = (field, value) => {
+  const handleChange = async (field, value) => {
+    // Auto-generate VSO when showroom changes (only if current VSO is not full format)
+    if (field === 'showroom' && value) {
+      const selectedBranch = getAllBranches().find(b => b.name === value);
+      if (selectedBranch) {
+        // Only generate new VSO if current one is not in full format
+        const currentVSO = contract.VSO || '';
+        if (!isFullVSOFormat(currentVSO)) {
+          try {
+            const newVSO = await generateVSO(selectedBranch.maDms);
+            setContract((prev) => ({
+              ...prev,
+              showroom: value,
+              VSO: newVSO,
+            }));
+            return;
+          } catch (error) {
+            console.error('Error generating VSO:', error);
+          }
+        }
+        // If VSO already has full format, just update showroom
+        setContract((prev) => ({
+          ...prev,
+          showroom: value,
+        }));
+        return;
+      }
+    }
+
     setContract((prev) => {
       const updated = {
         ...prev,
