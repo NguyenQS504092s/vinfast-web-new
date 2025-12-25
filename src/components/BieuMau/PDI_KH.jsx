@@ -123,8 +123,7 @@ const PDI_KH = () => {
         }
       }
 
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
       setBranch(branchInfo);
 
       if (location.state) {

@@ -151,7 +151,7 @@ const TTHTLV_CĐX_Shinhan_gui_DL = () => {
 
           // Set branch info if showroom found
           if (showroomLoadedFromContracts && showroomName) {
-            const branchInfo = getBranchByShowroomName(showroomName) || getDefaultBranch();
+            const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
             setBranch(branchInfo);
             if (branchInfo) {
               setCongTy(`CHI NHÁNH ${branchInfo.shortName.toUpperCase()} - CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN`);
@@ -170,7 +170,7 @@ const TTHTLV_CĐX_Shinhan_gui_DL = () => {
 
       // If showroom from location.state and not loaded from contracts
       if (!showroomLoadedFromContracts && location.state?.showroom) {
-        const branchInfo = getBranchByShowroomName(location.state.showroom) || getDefaultBranch();
+        const branchInfo = location.state.showroom ? getBranchByShowroomName(location.state.showroom) : null;
         setBranch(branchInfo);
         if (branchInfo) {
           setCongTy(`CHI NHÁNH ${branchInfo.shortName.toUpperCase()} - CÔNG TY CP ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN`);

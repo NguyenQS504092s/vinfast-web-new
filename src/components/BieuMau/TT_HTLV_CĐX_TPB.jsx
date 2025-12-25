@@ -126,7 +126,7 @@ const TT_HTLV_CĐX_TPB = () => {
               console.log("Showroom loaded from contracts:", showroomName);
 
               // Cập nhật thông tin công ty và địa chỉ dựa trên showroom
-              const branchInfo = getBranchByShowroomName(showroomName) || getDefaultBranch();
+              const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
               setBranch(branchInfo);
               if (branchInfo) {
                 setCongTy(
@@ -303,7 +303,7 @@ const TT_HTLV_CĐX_TPB = () => {
               );
 
               // Cập nhật thông tin công ty và địa chỉ dựa trên showroom
-              const branchInfo = getBranchByShowroomName(showroomName) || getDefaultBranch();
+              const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
               setBranch(branchInfo);
               if (branchInfo) {
                 setCongTy(

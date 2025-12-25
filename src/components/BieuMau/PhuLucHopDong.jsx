@@ -54,9 +54,8 @@ const PhuLucHopDong = () => {
         }
       }
       
-      // Lấy thông tin chi nhánh
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
+      // Lấy thông tin chi nhánh - không dùng default
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
       setBranch(branchInfo);
 
     if (location.state) {
@@ -130,9 +129,8 @@ const PhuLucHopDong = () => {
         setBangChu(incoming.bangChu || "");
       }
     } else {
-      // Dữ liệu mẫu
-      const defaultBranch = getDefaultBranch();
-      setBranch(defaultBranch);
+      // Dữ liệu mẫu - không set branch mặc định
+      setBranch(null);
       const today = new Date();
       const pad = (n) => String(n).padStart(2, "0");
       const todayStr = `${pad(today.getDate())}/${pad(

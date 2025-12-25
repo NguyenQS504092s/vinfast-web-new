@@ -106,8 +106,7 @@ const GiayDeNghiThanhToan = () => {
           }
         }
 
-        const branchInfo =
-          getBranchByShowroomName(showroomName) || getDefaultBranch();
+        const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
         setBranch(branchInfo);
 
         // Logic mới: Giá bán = Giá xuất hóa đơn

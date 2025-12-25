@@ -141,8 +141,7 @@ const Thoa_thuan_ho_tro_lai_suat_vay_CĐX_Vinfast_va_LFVN = () => {
           }
         }
 
-        const branchInfo =
-          getBranchByShowroomName(showroomName) || getDefaultBranch();
+        const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
         setBranch(branchInfo);
 
         // Initialize company fields from branch only if showroom is selected

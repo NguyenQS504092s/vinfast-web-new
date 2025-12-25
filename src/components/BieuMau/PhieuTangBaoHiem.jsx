@@ -55,8 +55,7 @@ const PhieuTangBaoHiem = () => {
         }
       }
 
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
       setBranch(branchInfo);
 
       // Set default date

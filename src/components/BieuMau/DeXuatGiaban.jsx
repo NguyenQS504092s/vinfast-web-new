@@ -492,8 +492,7 @@ const DeXuatGiaban = () => {
         }
       }
 
-      const branchInfo =
-        getBranchByShowroomName(showroomName) || getDefaultBranch();
+      const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
       setBranch(branchInfo);
 
       const today = new Date();

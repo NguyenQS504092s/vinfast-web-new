@@ -84,8 +84,7 @@ const GiayXacNhanSKSM = () => {
               console.log("Showroom loaded from exportedContracts:", showroomName);
 
               // Cập nhật branch info ngay khi load được showroom từ exportedContracts
-              const branchInfo =
-                getBranchByShowroomName(showroomName) || getDefaultBranch();
+              const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
               setBranch(branchInfo);
 
               // Set mã số thuế từ branch
@@ -115,8 +114,7 @@ const GiayXacNhanSKSM = () => {
                 console.log("Showroom loaded from contracts:", showroomName);
 
                 // Cập nhật branch info ngay khi load được showroom từ contracts
-                const branchInfo =
-                  getBranchByShowroomName(showroomName) || getDefaultBranch();
+                const branchInfo = showroomName ? getBranchByShowroomName(showroomName) : null;
                 setBranch(branchInfo);
 
                 // Set mã số thuế từ branch
