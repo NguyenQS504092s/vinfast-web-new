@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "vinfast-dealer-mgmt"
+    "default": "vinfast-web-prod"
   },
   "targets": {},
   "etags": {}

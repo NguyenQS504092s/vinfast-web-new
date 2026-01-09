@@ -143,7 +143,7 @@ src/
 ### 3.1 Firebase Services
 
 ```
-Firebase Project: vinfast-d5bd8
+Firebase Project: vinfast-dealer-mgmt (migrated from vinfast-d5bd8)
 Region: asia-southeast1
 
 Services:
@@ -155,7 +155,7 @@ Services:
 ### 3.2 Realtime Database Schema
 
 ```
-vinfast-d5bd8-default-rtdb/
+vinfast-dealer-mgmt-default-rtdb/
 │
 ├── contracts/                      # Draft contracts
 │   └── {contractId}/
@@ -553,10 +553,10 @@ function ProtectedRoute({ children }) {
 ```bash
 # Firebase Configuration
 VITE_FIREBASE_API_KEY=xxx
-VITE_FIREBASE_AUTH_DOMAIN=vinfast-d5bd8.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=vinfast-d5bd8
-VITE_FIREBASE_DATABASE_URL=https://vinfast-d5bd8-default-rtdb.asia-southeast1.firebasedatabase.app
-VITE_FIREBASE_STORAGE_BUCKET=vinfast-d5bd8.appspot.com
+VITE_FIREBASE_AUTH_DOMAIN=vinfast-dealer-mgmt.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=vinfast-dealer-mgmt
+VITE_FIREBASE_DATABASE_URL=https://vinfast-dealer-mgmt-default-rtdb.asia-southeast1.firebasedatabase.app
+VITE_FIREBASE_STORAGE_BUCKET=vinfast-dealer-mgmt.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=xxx
 VITE_FIREBASE_APP_ID=xxx
 VITE_FIREBASE_MEASUREMENT_ID=xxx
