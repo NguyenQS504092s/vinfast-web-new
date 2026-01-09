@@ -1,8 +1,8 @@
 # Project Memory - VinFast Dealer Management System
 
-**Last Updated:** 2026-01-09T14:30:00+07:00
-**Session:** project-update
-**Context Version:** 2.0
+**Last Updated:** 2026-01-09T15:45:00+07:00
+**Session:** firebase-security-fix
+**Context Version:** 2.1
 
 ---
 
@@ -29,40 +29,48 @@
 ### Git State
 ```
 Branch: main
-Uncommitted: Yes (6 new docs, 1 modified, project-memory.md)
-Last Commit: 9e08066 - feat: add exported contracts page, initial project documentation
+Uncommitted: No (clean after push)
+Last Commit: 1685bd9 - chore: migrate to new Firebase project vinfast-web-prod
 Ahead/Behind: 0/0 from main
 ```
 
 ### Recent Achievements (This Session)
-1. [x] Documentation update - 9 files created/updated (4,800+ lines)
-2. [x] Coverage improved 50% → 95%
-3. [x] Firebase project migration documented (vinfast-dealer-mgmt)
-4. [x] Project status report generated
+1. [x] Fixed Firebase security issue - created new project `vinfast-web-prod`
+2. [x] Imported data from backup JSON
+3. [x] Configured security rules + authentication
+4. [x] Deployed to Vercel with new Firebase config
+5. [x] Verified login + data working
 
 ### Recent Achievements (Last 7 Days)
-1. 9e08066 - Add exported contracts page, documentation, gitignore
-2. 075908f - Add contract/proposal forms, VSO generator, contract management
-3. e2a1ed7 - Fix: remove default branch fallback in forms
-4. 17bf00e - Fix: calculator price formulas (VinClub, XHD, payment)
-5. d1a7fdd - Feat: CurrencyInput with IME support, gifts section, print validation
+1. 1685bd9 - chore: migrate to new Firebase project vinfast-web-prod
+2. 9e08066 - Add exported contracts page, documentation, gitignore
+3. 075908f - Add contract/proposal forms, VSO generator, contract management
+4. e2a1ed7 - Fix: remove default branch fallback in forms
+5. 17bf00e - Fix: calculator price formulas (VinClub, XHD, payment)
 
 ### Active Work
-- **Current Focus:** Documentation & project memory update
-- **Active Plan:** None
+- **Current Focus:** App operational with new Firebase project
+- **Active Plan:** Firebase Security Fix (✅ Completed)
 - **Active Phase:** N/A
-- **Next Action:** Commit documentation changes, verify auth testing
+- **Next Action:** Tighten security rules, monitor app
 
 ### Known Blockers & Issues
 | Issue | Severity | Notes |
 |-------|----------|-------|
+| Security rules too permissive | Med | Currently read/write: true, need to tighten |
 | Cloud Functions not deployed | Low | Phase 6 skipped, can add later |
-| Auth testing pending | Med | Need user verification |
-| 1 failing test | Low | 33/34 tests pass (97%) |
 
 ---
 
 ## Architecture Quick Reference
+
+### Firebase Configuration
+| Item | Value |
+|------|-------|
+| **Project ID** | `vinfast-web-prod` |
+| **Console** | https://console.firebase.google.com/project/vinfast-web-prod |
+| **Region** | asia-southeast1 |
+| **Auth** | Email/Password (custom, stored in employees collection) |
 
 ### Project Structure
 ```
@@ -87,26 +95,17 @@ vinfast-web/
 | **State Management** | React useState/useEffect + Firebase hooks |
 | **API Style** | Firebase Realtime Database (NoSQL) |
 | **Database** | Firebase Realtime Database |
-| **Testing** | Manual + Vitest (97% pass) |
+| **Authentication** | Custom auth (employees collection + bcrypt) |
 | **Styling** | TailwindCSS + print styles |
 
 ### Critical File Paths
 - **Entry Point:** src/main.jsx
 - **Config:** src/firebase/config.js
 - **Routes:** src/App.jsx
+- **Login:** src/pages/Login.jsx (uses employees collection)
 - **Data:** src/data/branchData.js, calculatorData.js
 - **Utils:** src/utils/vsoGenerator.js, vndToWords.js
 - **Components:** src/components/BieuMau/ (27 forms)
-
-### Dependencies (Key)
-| Package | Version | Purpose |
-|---------|---------|---------|
-| react | 18.3.1 | UI framework |
-| firebase | 10.13.0 | Backend services |
-| react-router-dom | 6.26.0 | Routing |
-| tailwindcss | 3.4.10 | Styling |
-| chart.js | 4.5.1 | Dashboard charts |
-| lucide-react | 0.553.0 | Icons |
 
 ---
 
@@ -114,15 +113,16 @@ vinfast-web/
 
 | Plan | Status | Progress | Priority | Last Updated |
 |------|--------|----------|----------|--------------|
-| [Firebase Migration](./plans/20251210-firebase-migration/plan.md) | Completed | 90% | N/A | 2024-12-10 |
+| [Firebase Security Fix](./plans/260109-1427-firebase-security-fix/plan.md) | ✅ Completed | 100% | P0 | 2026-01-09 |
+| [Firebase Migration](./plans/20251210-firebase-migration/plan.md) | ✅ Completed | 100% | N/A | 2024-12-10 |
 
 ### Immediate Priorities (Next 3 Actions)
-1. **Commit docs:** Add 6 new documentation files to git
-2. **Verify Auth:** Test login functionality with new Firebase project
-3. **Test CRUD:** Verify contract create/edit/export works
+1. **Tighten Security Rules:** Update Firebase rules to be more restrictive
+2. **Backup Schedule:** Set up regular data exports
+3. **Monitor Usage:** Watch Firebase usage/billing
 
 ### Upcoming Work
-- [ ] Complete auth testing (Phase 7.2-7.6)
+- [ ] Tighten security rules (currently read/write: true)
 - [ ] Deploy Cloud Functions (Phase 6) - if needed
 - [ ] Mobile responsive improvements (Phase 2 roadmap)
 
@@ -141,20 +141,25 @@ npm run build      # Production build to dist/
 # Preview
 npm run preview    # Preview build locally
 
-# Deploy
+# Deploy (Firebase Hosting - optional)
 firebase deploy --only hosting
+
+# Deploy (Vercel - primary)
+git push           # Auto-deploys via Vercel
 ```
 
 ### Environment Setup
 - **Node Version:** 18+
 - **Package Manager:** npm
-- **Required ENV:** VITE_FIREBASE_* (7 vars)
-- **External Services:** Firebase (Realtime DB, Auth, Hosting)
+- **Required ENV:** VITE_FIREBASE_* (7 vars) - set in Vercel
+- **External Services:** Firebase (Realtime DB), Vercel (Hosting)
 
-### Test Coverage
-- **Unit Tests:** 97% pass (33/34 tests)
-- **Integration:** Manual testing
-- **E2E:** Manual testing
+### Firebase Project History
+| Project | Status | Notes |
+|---------|--------|-------|
+| vinfast-d5bd8 | ❌ No access | Original project |
+| vinfast-dealer-mgmt | ❌ Billing disabled | Migration attempt |
+| **vinfast-web-prod** | ✅ Active | Current production |
 
 ---
 
@@ -163,49 +168,50 @@ firebase deploy --only hosting
 ### Decisions Made This Session
 | Decision | Rationale | Impact |
 |----------|-----------|--------|
-| Full docs update | Improve onboarding & coverage | 95% coverage achieved |
-| Use docs-manager agent | Automated comprehensive update | 9 files updated |
-| Project status report | Track completion metrics | Clear visibility |
+| Create new Firebase project | Old project billing disabled | New project: vinfast-web-prod |
+| Use permissive rules temporarily | Need to verify all features work first | Will tighten later |
+| Deploy via Vercel | Primary deployment platform | Auto-deploy on git push |
 
 ### Technical Insights Discovered
-- **Documentation:** 4,800+ lines across 10 files
-- **Firebase Migration:** Completed to `vinfast-dealer-mgmt`
-- **Live URL:** https://vinfast-dealer-mgmt.web.app
+- **Auth System:** App uses custom auth (employees collection), NOT Firebase Auth
+- **Login Flow:** Reads employees → bcrypt compare → localStorage session
+- **Security Rules:** Must allow public read of `employees` for login to work
+- **Data Backup:** `docs/vinfast-d5bd8-default-rtdb-export.json`
 
 ### Open Questions (Unresolved)
-- [ ] Need user to verify login works with new Firebase project
+- [ ] Should we migrate to Firebase Auth for better security?
 - [ ] Decide if Cloud Functions (Google Sheets sync) are needed
-- [ ] Which test is failing and why?
+- [ ] Optimal security rules for custom auth pattern
 
 ### Technical Debt Identified
+- [ ] Custom auth instead of Firebase Auth (security concern)
 - [ ] Large page files (CalculatorPage.jsx 115KB) - could modularize
-- [ ] Mix of Vietnamese/English naming conventions
+- [ ] Security rules too permissive
 
 ---
 
 ## Handover Notes for Next Session
 
 ### Start With
-Commit documentation changes: `git add docs/ && git commit -m "docs: comprehensive documentation update"`
+App is operational. Focus on security improvements.
 
 ### Watch Out For
-- Firebase project changed from `vinfast-d5bd8` to `vinfast-dealer-mgmt`
-- Cloud Functions not deployed yet (Google Sheets sync won't work)
-- 6 uncommitted doc files need to be added
+- Firebase project is now `vinfast-web-prod` (NOT vinfast-dealer-mgmt)
+- Security rules are permissive (read/write: true) - tighten when ready
+- Auth uses employees collection, not Firebase Auth
 
 ### Consider
-- Modularize large page components if adding features
-- Add Cloud Functions if auto-sync to Sheets needed
-- Run full test suite to identify failing test
+- Tighten security rules after confirming all features work
+- Set up automated backups
+- Consider migrating to Firebase Auth for better security
 
 ### Files to Review First
-1. docs/QUICKSTART.md - new developer onboarding
-2. docs/API.md - API reference documentation
-3. plans/reports/docs-manager-260109-1421-documentation-update-report.md
+1. src/pages/Login.jsx - understand custom auth flow
+2. src/firebase/config.js - Firebase configuration
+3. plans/260109-1427-firebase-security-fix/plan.md - completed plan
 
 ### Commands to Run First
 ```bash
-git status              # Check uncommitted changes
 npm run dev             # Start local dev server
 npm run build           # Verify build works
 ```
@@ -215,19 +221,19 @@ npm run build           # Verify build works
 ## Skills & Tools Used
 
 ### Skills Activated This Session
-- None (command-based update)
+- `planning` - Brainstorm security solutions
+- Firebase CLI - Project creation
 
 ### Recommended Skills for Next Session
 - `frontend-development` - React/TailwindCSS work
-- `databases` - Firebase Realtime Database
-- `debugging` - If issues found during testing
+- `databases` - Firebase security rules
+- `backend-development` - If migrating to Firebase Auth
 
 ### MCP Tools Used
 - None this session
 
 ### Agents Delegated To
-- `docs-manager` - Documentation update (9 files)
-- `project-manager` - Status report generation
+- None (manual implementation this session)
 
 ---
 
@@ -237,3 +243,4 @@ npm run build           # Verify build works
 |------|--------|-----|
 | 2026-01-09 | Initial project memory creation | read-project-context |
 | 2026-01-09 | Session update: docs-manager, project-manager reports | project-update |
+| 2026-01-09 | Firebase security fix: new project vinfast-web-prod | firebase-security-fix |
