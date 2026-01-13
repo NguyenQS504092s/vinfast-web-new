@@ -129,12 +129,12 @@ const GiayDeNghiThanhToan = () => {
           salePrice: giaXuatHoaDon,
           advancePayment: calculatedAdvancePayment,
           remainingAmount: soTienVay || "0",
-          bankAccount: incoming.bankAccount || branchInfo.bankAccount,
+          bankAccount: incoming.bankAccount || branchInfo?.bankAccount || "",
           bankBranch:
             incoming.bankBranch ||
-            `${branchInfo.bankName} - ${branchInfo.bankBranch}`,
+            (branchInfo ? `${branchInfo.bankName} - ${branchInfo.bankBranch}` : ""),
           exterior: incoming.exterior || "Đỏ",
-          showroom: incoming.showroom || branchInfo.shortName,
+          showroom: incoming.showroom || branchInfo?.shortName || "",
         };
         setData(processedData);
         // Initialize vehicleInfo from data

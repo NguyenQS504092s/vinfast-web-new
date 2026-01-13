@@ -104,7 +104,7 @@ const PhuLucHopDong = () => {
           incoming.counterpartImage || incoming["Ảnh chụp đối ứng"] || "",
         depositImage:
           incoming.depositImage || incoming["Ảnh chụp hình đặt cọc"] || "",
-        showroom: incoming.showroom || branchInfo.shortName,
+        showroom: incoming.showroom || branchInfo?.shortName || "",
       };
       setData(processedData);
       setNgayHopDong(processedData.contractDate);

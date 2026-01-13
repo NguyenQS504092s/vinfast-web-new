@@ -1369,9 +1369,11 @@ const GiayThoaThuanTraThay = () => {
           <div className="mt-12 flex justify-between">
             <div className="text-center flex-1">
               <p className="font-bold mb-1">ĐẠI DIỆN BÊN BÁN</p>
+              <p className="text-sm italic mb-16">(Ký và ghi rõ họ tên)</p>
             </div>
             <div className="text-center flex-1">
               <p className="font-bold mb-1">KHÁCH HÀNG</p>
+              <p className="text-sm italic mb-16">(Ký và ghi rõ họ tên)</p>
             </div>
           </div>
         </div>

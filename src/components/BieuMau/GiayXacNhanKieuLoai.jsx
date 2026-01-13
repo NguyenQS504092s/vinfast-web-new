@@ -278,7 +278,7 @@ const GiayXacNhanKieuLoai = () => {
           {/* Main Content */}
           <div className="text-sm space-y-4">
             {/* Paragraph 1 */}
-            <p className="text-justify leading-relaxed">
+            <p className="text-left leading-relaxed leading-relaxed">
               Căn cứ vào Hợp đồng mua bán số:{" "}
               <strong>
                 <span className="print:hidden">
@@ -324,7 +324,7 @@ const GiayXacNhanKieuLoai = () => {
             </p>
 
             {/* Paragraph 2 */}
-            <p className="text-justify leading-relaxed">
+            <p className="text-left leading-relaxed leading-relaxed">
               Xác nhận ô tô trong hợp đồng mua bán nêu trên và một số thông tin
               bên dưới là cùng một số loại xe của nhà sản xuất.
             </p>
@@ -396,7 +396,7 @@ const GiayXacNhanKieuLoai = () => {
             </div>
 
             {/* Paragraph 3 */}
-            <p className="text-justify leading-relaxed">
+            <p className="text-left leading-relaxed leading-relaxed">
               Tôi hoàn toàn chịu trách nhiệm cho các xác nhận nêu trên, trong
               trường hợp phát hiện ra các sai phạm và gây thiệt hại cho VPBank
               sẽ chịu mọi hình thức xử lý ký luật theo quy định của VPBank tùng

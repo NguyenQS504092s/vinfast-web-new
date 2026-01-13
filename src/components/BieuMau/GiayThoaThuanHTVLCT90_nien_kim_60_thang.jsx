@@ -533,7 +533,7 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
               <p className="mb-2 text-center font-bold">("Khách Hàng")</p>
             </div>
 
-            <p className="text-justify">
+            <p className="text-left leading-relaxed">
               <strong>Bên bán</strong> và <strong>Khách Hàng</strong> sau đây
               được gọi riêng là <strong>"Bên"</strong> và gọi chung là{" "}
               <strong>"Các Bên"</strong>
@@ -544,7 +544,7 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
               <p className="font-bold text-center mb-4">XÉT RẰNG:</p>
 
               <div className="space-y-3">
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   1. Khách Hàng là Khách hàng cá nhân vay mua xe ô tô điện
                   VinFast theo{" "}
                   <em>
@@ -619,7 +619,7 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
                   </p>
                 </div>
 
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   2. Khách Hàng thuộc trường hợp được áp dụng chính sách hỗ trợ
                   một khoản tiền tương đương một phần nợ gốc và lãi trong hạn
                   của khoản vay mua xe tại Ngân hàng Thương Mại Cổ Phần Việt Nam
@@ -628,20 +628,20 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
                   bởi Bên bán ("<strong>Chính sách Hỗ trợ Trả thay</strong>")...
                 </p>
 
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   3. Khách Hàng và Ngân Hàng đã hoặc sẽ ký kết một hợp đồng cho
                   vay (hoặc hợp đồng/thỏa thuận/khế ước khác có bản chất là hợp
                   đồng cho vay) và hợp đồng thế chấp...
                 </p>
 
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   4. Bên bán được VinFast Trading ủy quyền giao kết Thỏa Thuận
                   này với Khách Hàng để triển khai Chính sách Hỗ trợ Trả thay.
                 </p>
               </div>
             </div>
 
-            <p className="text-justify mt-4">
+            <p className="text-left leading-relaxed mt-4">
               Do vậy, để thực hiện Chính sách Hỗ trợ Trả thay nêu trên, Các Bên
               thống nhất ký kết Thỏa Thuận này với những nội dung như sau:
             </p>
@@ -734,7 +734,7 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
                     như sau:
                   </p>
                   <div className="ml-6 space-y-2">
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       -{" "}
                       <strong>
                         <em>
@@ -749,7 +749,7 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
                       tiền nêu trên (sau đây gọi chung là "
                       <strong>Khoản Hỗ Trợ Tiền Vay</strong>").
                     </p>
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       -{" "}
                       <strong>
                         <em>
@@ -778,7 +778,7 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
                 <p className="font-bold mt-4">
                   2. Để tránh hiểu nhầm Các Bên thống nhất rằng:
                 </p>
-                <p className="text-justify ml-6">
+                <p className="text-left leading-relaxed ml-6">
                   Trong mọi trường hợp VinFast, VinFast Trading không chịu trách
                   nhiệm đối với bất kỳ số tiền trả nợ nào ngoài số tiền trả thay
                   quy định trên đây vì lý do Khách Hàng không tuân thủ các quy
@@ -787,21 +787,21 @@ const GiayThoaThuanHTVLCT90_nien_kim_60_thang = () => {
                 </p>
 
                 <p className="font-bold mt-4">3. Thời Hạn Hỗ Trợ Trả Thay:</p>
-                <p className="text-justify ml-6">
+                <p className="text-left leading-relaxed ml-6">
                   Thời Hạn Hỗ Trợ Trả Thay sẽ tự động chấm dứt trước hạn trong
                   trường hợp (i) Hợp Đồng Tín Dụng chấm dứt trước khi hết Thời
                   Hạn Hỗ Trợ Trả Thay vì bất cứ lý do gì...
                 </p>
 
                 <p className="font-bold mt-4">4. Điều khoản bổ sung:</p>
-                <p className="text-justify ml-6">
+                <p className="text-left leading-relaxed ml-6">
                   Không phụ thuộc vào các thỏa thuận nêu trên, Các Bên đồng ý
                   rằng, thỏa thuận trả thay theo Thỏa Thuận này là thỏa thuận
                   riêng giữa các Bên...
                 </p>
 
                 <p className="font-bold mt-4">5. Cam kết chia sẻ thông tin:</p>
-                <p className="text-justify ml-6">
+                <p className="text-left leading-relaxed ml-6">
                   Khách Hàng đồng ý cho phép Ngân Hàng, VinFast, VinFast
                   Trading, Bên bán được cung cấp các thông tin cá nhân, thông
                   tin liên quan đến xe ô tô, khoản vay được VinFast, VinFast

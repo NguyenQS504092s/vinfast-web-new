@@ -363,6 +363,46 @@ export default function NhanSuPage() {
   };
 
   // Add new user
+  // Helper: calculate max birthdate (18 years ago from today)
+  const getMaxBirthdate = () => {
+    const today = new Date();
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return maxDate.toISOString().split('T')[0];
+  };
+
+  // Helper: validate Vietnamese phone number (10 digits)
+  const isValidPhone = (phone) => {
+    if (!phone) return true; // Optional field
+    const phoneRegex = /^[0-9]{10}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  // Helper: validate email format
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Helper: validate birthdate (>= 18 years old, not in future)
+  const isValidBirthdate = (birthdate) => {
+    if (!birthdate) return true; // Optional field
+    const today = new Date();
+    const birth = new Date(birthdate);
+
+    // Check if date is in the future
+    if (birth > today) return false;
+
+    // Check if age >= 18
+    const age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    const dayDiff = today.getDate() - birth.getDate();
+
+    if (age < 18) return false;
+    if (age === 18 && (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0))) return false;
+
+    return true;
+  };
+
   const handleAddUser = async () => {
     if (!newUser["Họ Và Tên"] || !newUser.username || !newUser.password || !newUser.email) {
       toast.error("Vui lòng điền đầy đủ thông tin bắt buộc: TVBH, user, pass, Mail");
@@ -371,6 +411,24 @@ export default function NhanSuPage() {
 
     if (newUser.password.length < 6) {
       toast.error("Mật khẩu phải có ít nhất 6 ký tự!");
+      return;
+    }
+
+    // Validate phone number (10 digits)
+    if (newUser.phone && !isValidPhone(newUser.phone)) {
+      toast.error("Số điện thoại phải có đúng 10 chữ số!");
+      return;
+    }
+
+    // Validate email format
+    if (!isValidEmail(newUser.email)) {
+      toast.error("Email không hợp lệ! Vui lòng nhập đúng định dạng (ví dụ: example@gmail.com)");
+      return;
+    }
+
+    // Validate birthdate (>= 18 years old)
+    if (newUser.birthdate && !isValidBirthdate(newUser.birthdate)) {
+      toast.error("Ngày sinh không hợp lệ! Nhân viên phải từ 18 tuổi trở lên và ngày sinh không thể là ngày tương lai.");
       return;
     }
 
@@ -1025,9 +1083,14 @@ export default function NhanSuPage() {
                       <input
                         type="tel"
                         value={editingUser.phone || ""}
-                        onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                        maxLength={10}
+                        pattern="[0-9]{10}"
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setEditingUser({ ...editingUser, phone: value });
+                        }}
                         className="w-full px-3 py-2 border border-secondary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="Số điện thoại"
+                        placeholder="Số điện thoại (10 số)"
                       />
                     </div>
 
@@ -1049,6 +1112,7 @@ export default function NhanSuPage() {
                       <input
                         type="date"
                         value={editingUser.birthdate || ""}
+                        max={getMaxBirthdate()}
                         onChange={(e) => setEditingUser({ ...editingUser, birthdate: e.target.value })}
                         className="w-full px-3 py-2 border border-secondary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
@@ -1349,9 +1413,14 @@ export default function NhanSuPage() {
                       <input
                         type="tel"
                         value={newUser.phone}
-                        onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                        maxLength={10}
+                        pattern="[0-9]{10}"
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setNewUser({ ...newUser, phone: value });
+                        }}
                         className="w-full px-3 py-2 border border-secondary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="Số điện thoại"
+                        placeholder="Số điện thoại (10 số)"
                       />
                     </div>
 
@@ -1373,6 +1442,7 @@ export default function NhanSuPage() {
                       <input
                         type="date"
                         value={newUser.birthdate}
+                        max={getMaxBirthdate()}
                         onChange={(e) => setNewUser({ ...newUser, birthdate: e.target.value })}
                         className="w-full px-3 py-2 border border-secondary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />

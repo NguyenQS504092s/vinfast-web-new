@@ -941,6 +941,7 @@ export default function ContractFormPage() {
                   <input
                     type="date"
                     value={(contract.createdAt || "").slice(0, 10)}
+                    max={new Date().toISOString().split('T')[0]}
                     onChange={(e) => handleInputChange("createdAt", e.target.value)}
                     disabled={isDetailsMode}
                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
@@ -1434,14 +1435,37 @@ export default function ContractFormPage() {
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Ngân hàng
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={contract.bank || ""}
                     onChange={(e) => handleInputChange("bank", e.target.value)}
                     disabled={isDetailsMode}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    placeholder="Nhập tên ngân hàng"
-                  />
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-xs sm:text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Chọn ngân hàng</option>
+                    <option value="BIDV">BIDV</option>
+                    <option value="Vietcombank">Vietcombank</option>
+                    <option value="VietinBank">VietinBank</option>
+                    <option value="Techcombank">Techcombank (TCB)</option>
+                    <option value="MB Bank">MB Bank</option>
+                    <option value="ACB">ACB</option>
+                    <option value="VPBank">VPBank</option>
+                    <option value="Sacombank">Sacombank</option>
+                    <option value="TPBank">TPBank</option>
+                    <option value="Shinhan Bank">Shinhan Bank</option>
+                    <option value="HDBank">HDBank</option>
+                    <option value="MSB">MSB</option>
+                    <option value="SHB">SHB</option>
+                    <option value="OCB">OCB</option>
+                    <option value="LPBank">LPBank</option>
+                    <option value="Agribank">Agribank</option>
+                    <option value="Khác">Khác</option>
+                    {/* Show current value if it doesn't match any option */}
+                    {contract.bank && !["", "BIDV", "Vietcombank", "VietinBank", "Techcombank", "MB Bank", "ACB", "VPBank", "Sacombank", "TPBank", "Shinhan Bank", "HDBank", "MSB", "SHB", "OCB", "LPBank", "Agribank", "Khác"].includes(contract.bank) && (
+                      <option value={contract.bank}>
+                        {contract.bank} (giá trị hiện tại)
+                      </option>
+                    )}
+                  </select>
                 </div>
 
                 {/* Uu Dai - Dropdown with checkboxes */}

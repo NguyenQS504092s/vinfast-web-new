@@ -231,7 +231,7 @@ const GiayXacNhanThanhToanNH = () => {
           {/* Main Content */}
           <div className="text-sm space-y-3">
             {/* Paragraph 1 */}
-            <p className="text-justify leading-relaxed italic">
+            <p className="text-left leading-relaxed leading-relaxed italic">
               Căn cứ Hợp đồng mua bán xe ô tô số:{" "}
               <strong>
                 <span className="print:hidden">
@@ -280,7 +280,7 @@ const GiayXacNhanThanhToanNH = () => {
             </p>
 
             {/* Paragraph 2 */}
-            <p className="text-justify leading-relaxed">
+            <p className="text-left leading-relaxed leading-relaxed">
               Nay{" "}
               <strong>
                 {branch ? branch.name : "[Chưa chọn showroom]"}
@@ -493,7 +493,7 @@ const GiayXacNhanThanhToanNH = () => {
                   <td className="border-r border-black p-2 text-center w-1/3">
                     <p className="italic">Ký tên</p>
                   </td>
-                  <td className="p-2"></td>
+                  <td className="p-2 h-20"></td>
                 </tr>
                 <tr className="border-b border-black">
                   <td className="border-r border-black p-2 text-center">

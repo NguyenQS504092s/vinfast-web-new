@@ -284,7 +284,7 @@ const GiayXacNhanThongTin = () => {
           {/* Ngày tháng và chữ ký */}
           <div className="mt-12">
             <p className="text-right mb-4">TP. Hồ Chí Minh, Ngày {dateInfo.formatted}</p>
-            <div className="text-justify w-[280px] ml-auto">
+            <div className="text-left leading-relaxed w-[280px] ml-auto">
               <p className="font-bold">{branch ? `CÔNG TY CỔ PHẦN ĐẦU TƯ THƯƠNG MẠI VÀ DỊCH VỤ Ô TÔ ĐÔNG SÀI GÒN - CHI NHÁNH ${branch.shortName?.toUpperCase()}` : "[Chưa chọn showroom]"}</p>
             </div>
           </div>

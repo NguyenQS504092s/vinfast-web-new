@@ -1181,9 +1181,14 @@ const GiayThoaThuanTraCham = () => {
                     ý cho phép VinFast và Bên Bán xử lý thông tin, dữ liệu cá
                     nhân của mình theo Chính Sách Bảo Vệ Dữ Liệu Cá Nhân của
                     VinFast công bố tại{" "}
-                    <span className="text-blue-600 underline">
+                    <a
+                      href="https://vinfastauto.com/vn_vi/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline print:text-black"
+                    >
                       https://vinfastauto.com/vn_vi/privacy-policy
-                    </span>{" "}
+                    </a>{" "}
                     và quy định pháp luật hiện hành về bảo vệ dữ liệu cá nhân.
                   </p>
                 </div>

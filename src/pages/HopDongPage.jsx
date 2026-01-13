@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { uniqueNgoaiThatColors, uniqueNoiThatColors } from '../data/calculatorData';
 import { getBranchByShowroomName, getAllBranches } from '../data/branchData';
 import { loadPromotionsFromFirebase, filterPromotionsByDongXe } from '../data/promotionsData';
+import CurrencyInput from '../components/shared/CurrencyInput';
 
 export default function HopDongPage() {
   const [userTeam, setUserTeam] = useState('');
@@ -1298,6 +1299,9 @@ export default function HopDongPage() {
                         STT
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
+                        Mã HĐ
+                      </th>
+                      <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
                         Ngày tạo
                       </th>
                       <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-secondary-900 uppercase tracking-wider border border-secondary-400 whitespace-nowrap">
@@ -1389,6 +1393,12 @@ export default function HopDongPage() {
                       )}
                       <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm font-semibold text-black border border-secondary-400">
                         {startIndex + index + 1}
+                      </td>
+
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
+                        <div className="max-w-[80px] sm:max-w-none truncate font-mono text-[10px] sm:text-xs" title={contract.firebaseKey || contract.id || "-"}>
+                          {(contract.firebaseKey || contract.id || "-").slice(-8)}
+                        </div>
                       </td>
 
                       <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-black border border-secondary-400">
@@ -2027,28 +2037,34 @@ export default function HopDongPage() {
                       <label htmlFor="promotionValue" className="block text-sm font-medium text-gray-700 mb-2">
                         {promotionType === 'percentage' ? 'Phần trăm giảm giá (%)' : 'Số tiền giảm (VNĐ)'} <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        id="promotionValue"
-                        type="number"
-                        min="0"
-                        max={promotionType === 'percentage' ? '100' : ''}
-                        value={editingPromotion.value}
-                        onChange={(e) => setEditingPromotion({...editingPromotion, value: parseFloat(e.target.value) || 0})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
-                        placeholder={promotionType === 'percentage' ? '0-100%' : '0'}
-                      />
+                      {promotionType === 'percentage' ? (
+                        <input
+                          id="promotionValue"
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={editingPromotion.value}
+                          onChange={(e) => setEditingPromotion({...editingPromotion, value: parseFloat(e.target.value) || 0})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
+                          placeholder="0-100%"
+                        />
+                      ) : (
+                        <CurrencyInput
+                          value={editingPromotion.value}
+                          onChange={(val) => setEditingPromotion({...editingPromotion, value: val})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
+                          placeholder="0"
+                        />
+                      )}
                     </div>
 
                     <div>
                       <label htmlFor="minPurchase" className="block text-sm font-medium text-gray-700 mb-2">
                         Đơn hàng tối thiểu (VNĐ)
                       </label>
-                      <input
-                        id="minPurchase"
-                        type="number"
-                        min="0"
+                      <CurrencyInput
                         value={editingPromotion.minPurchase}
-                        onChange={(e) => setEditingPromotion({...editingPromotion, minPurchase: parseFloat(e.target.value) || 0})}
+                        onChange={(val) => setEditingPromotion({...editingPromotion, minPurchase: val})}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
                         placeholder="0"
                       />
@@ -2059,12 +2075,9 @@ export default function HopDongPage() {
                         <label htmlFor="maxDiscount" className="block text-sm font-medium text-gray-700 mb-2">
                           Giảm tối đa (VNĐ)
                         </label>
-                        <input
-                          id="maxDiscount"
-                          type="number"
-                          min="0"
+                        <CurrencyInput
                           value={editingPromotion.maxDiscount}
-                          onChange={(e) => setEditingPromotion({...editingPromotion, maxDiscount: parseFloat(e.target.value) || 0})}
+                          onChange={(val) => setEditingPromotion({...editingPromotion, maxDiscount: val})}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
                           placeholder="0 (không giới hạn)"
                         />

@@ -60,6 +60,11 @@ function Home() {
     }).format(value);
   };
 
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 min-h-screen bg-gradient-to-br from-slate-100 to-slate-200">
       {/* Header */}
@@ -68,7 +73,9 @@ function Home() {
           <img
             src={VinfastLogo}
             alt="VinFast Logo"
-            className="h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0"
+            className="h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={scrollToTop}
+            title="Quay về đầu trang"
           />
           <div className="text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary-700">

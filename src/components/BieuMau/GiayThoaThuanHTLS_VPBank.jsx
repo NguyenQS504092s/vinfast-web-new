@@ -60,7 +60,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
   const [giaTriXe, setGiaTriXe] = useState("");
 
   // Thông tin vay
-  const [soTienVay, setSoTienVay] = useState("");
+  const [soTienVay, setSoTienVay] = useState(0);
   const [soTienVayBangChu, setSoTienVayBangChu] = useState("");
   const [laiSuatNH, setLaiSuatNH] = useState("8.9");
   const [thoiHanVay, setThoiHanVay] = useState("");
@@ -965,7 +965,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
               <p className="mb-2 font-bold">("Khách Hàng")</p>
             </div>
 
-            <p className="text-justify">
+            <p className="text-left leading-relaxed">
               <strong>Bên bán</strong> và <strong>Khách Hàng</strong> sau đây
               được gọi riêng là <strong>"Bên"</strong> và gọi chung là{" "}
               <strong>"Các Bên"</strong>
@@ -976,7 +976,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
               <p className="font-bold mb-4">XÉT RẰNG:</p>
 
               <div className="space-y-3">
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   1. Khách Hàng là Khách hàng cá nhân vay mua xe ô tô điện
                   VinFast theo Chương trình Chuyển đổi Xanh và/hoặc là (ii)
                   vợ/chồng của Khách hàng đã ký Hợp đồng mua bán xe ô tô số{" "}
@@ -1054,7 +1054,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   </p>
                 </div>
 
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   2. Khách Hàng thuộc trường hợp được áp dụng chính sách hỗ trợ
                   một khoản tiền tương đương một phần khoản lãi vay của khoản
                   vay mua xe tại Ngân hàng Thương Mại Cổ Phần Việt Nam Thịnh
@@ -1106,7 +1106,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   .
                 </p>
 
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   3. Khách Hàng và Ngân Hàng đã hoặc sẽ ký kết một hợp đồng cho
                   vay và hợp đồng thế chấp (sau đây gọi chung là "
                   <strong>Hợp Đồng Tín Dụng</strong>"). Theo đó, Ngân Hàng cho
@@ -1114,14 +1114,14 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   VinFast theo Hợp Đồng Mua Bán Xe.
                 </p>
 
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   4. Bên bán được VinFast Trading ủy quyền giao kết Thỏa Thuận
                   này với Khách Hàng để triển khai Chính sách Hỗ trợ lãi vay.
                 </p>
               </div>
             </div>
 
-            <p className="text-justify mt-4">
+            <p className="text-left leading-relaxed mt-4">
               Do vậy, để thực hiện Chính sách Hỗ trợ lãi vay nêu trên, Các Bên
               thống nhất ký kết Thỏa Thuận này với những nội dung như sau:
             </p>
@@ -1133,7 +1133,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
               </p>
 
               <div className="space-y-3">
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   1.1. Các Bên tại đây đồng ý rằng, khoản lãi vay mà VinFast sẽ
                   hỗ trợ trả thay Khách Hàng cho Ngân Hàng thông qua VinFast
                   Trading đối với mỗi Hợp Đồng Tín Dụng (sau đây là "
@@ -1245,7 +1245,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                     </span>{" "}
                     tháng;
                   </p>
-                  <p className="text-justify">
+                  <p className="text-left leading-relaxed">
                     f) VinFast sẽ hỗ trợ trả thay cho Khách Hàng một khoản tiền
                     lãi ("<strong>Khoản Hỗ Trợ Lãi Vay</strong>") trong suốt
                     thời gian vay (tối đa bằng 96 tháng) nhưng không quá 36
@@ -1281,7 +1281,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   </div>
                 </div>
 
-                <p className="text-justify mt-4">
+                <p className="text-left leading-relaxed mt-4">
                   1.3. Để tránh hiểu nhầm Các Bên thống nhất rằng: Trong mọi
                   trường hợp VinFast, VinFast Trading không chịu trách nhiệm đối
                   với bất kỳ mức lãi nào ngoài mức lãi quy định trên đây vì lý
@@ -1298,7 +1298,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   thanh toán thay các khoản tiền này cho Khách Hàng.
                 </p>
 
-                <p className="text-justify mt-4">
+                <p className="text-left leading-relaxed mt-4">
                   1.4. Thời Hạn Hỗ Trợ Lãi Vay sẽ tự động chấm dứt trước hạn
                   trong trường hợp (i) Hợp Đồng Tín Dụng chấm dứt trước khi hết
                   Thời Hạn Hỗ Trợ Lãi Vay vì bất cứ lý do gì hoặc (ii) theo thỏa
@@ -1310,7 +1310,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   Hàng.
                 </p>
 
-                <p className="text-justify mt-4">
+                <p className="text-left leading-relaxed mt-4">
                   1.5. Không phụ thuộc vào các thỏa thuận nêu trên, Các Bên đồng
                   ý rằng, thỏa thuận trả thay lãi vay theo Thỏa Thuận này là
                   thỏa thuận riêng giữa các Bên (bao gồm cả VinFast, VinFast
@@ -1330,7 +1330,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   Đồng Tín Dụng.
                 </p>
 
-                <p className="text-justify mt-4">
+                <p className="text-left leading-relaxed mt-4">
                   1.6. Khách Hàng đồng ý cho phép Ngân Hàng, VinFast, VinFast
                   Trading, Bên bán được cung cấp các thông tin cá nhân, thông
                   tin liên quan đến xe ô tô, khoản vay được VinFast, VinFast
@@ -1357,17 +1357,17 @@ const GiayThoaThuanHTLS_VPBank = () => {
                     2.1. Quyền và nghĩa vụ của VinFast Trading:
                   </p>
                   <div className="ml-6 space-y-2">
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       a) Thực hiện kiểm tra, đối chiếu và xác nhận với Ngân Hàng
                       các Khoản Hỗ Trợ Lãi Vay hỗ trợ cho Khách Hàng theo thỏa
                       thuận giữa Ngân Hàng, VinFast và VinFast Trading tại Thỏa
                       Thuận Hợp Tác;
                     </p>
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       b) Thực hiện việc hỗ trợ Khoản Hỗ Trợ Lãi Vay của Khách
                       Hàng theo Chính sách Hỗ trợ lãi vay theo Thỏa Thuận này;
                     </p>
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       c) Không chịu trách nhiệm đối với các mâu thuẫn, tranh
                       chấp, khiếu kiện hay khiếu nại nào liên quan đến và/hoặc
                       phát sinh giữa Ngân Hàng, Khách Hàng và các tổ chức, cá
@@ -1383,18 +1383,18 @@ const GiayThoaThuanHTLS_VPBank = () => {
                     2.2. Quyền và nghĩa vụ của Khách Hàng:
                   </p>
                   <div className="ml-6 space-y-2">
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       a) Được VinFast (thông qua VinFast Trading) thực hiện việc
                       hỗ trợ Khoản Hỗ Trợ Lãi Vay và áp dụng Chính sách Hỗ trợ
                       lãi vay theo quy định của Thỏa Thuận này.
                     </p>
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       b) Tự chi trả, thanh toán nợ gốc, phí trả nợ trước hạn và
                       bất kỳ khoản lãi, lãi quá hạn nào phát sinh ngoài phạm vi
                       Khoản Hỗ Trợ Lãi Vay, Thời Hạn Hỗ Trợ Lãi Vay và Chính
                       sách Hỗ trợ lãi vay.
                     </p>
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       c) Trong Thời Hạn Hỗ Trợ Lãi Vay, trường hợp
                       VinFast/VinFast Trading chậm/không thanh toán Khoản Hỗ Trợ
                       Lãi Vay đến hạn cho Ngân Hàng, và việc VinFast/VinFast
@@ -1414,14 +1414,14 @@ const GiayThoaThuanHTLS_VPBank = () => {
                       Hợp đồng thế chấp ký giữa Khách Hàng và Ngân Hàng, bên
                       liên quan (nếu có).
                     </p>
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       d) Khách Hàng không được VinFast/VinFast Trading hỗ trợ
                       Khoản Hỗ Trợ Lãi Vay kể từ thời điểm Khách Hàng ký Văn bản
                       chuyển nhượng Hợp Đồng Mua Bán và/hoặc xe ô tô là đối
                       tượng của hợp đồng mua bán/chuyển nhượng với bất kỳ bên
                       thứ ba nào khác.
                     </p>
-                    <p className="text-justify">
+                    <p className="text-left leading-relaxed">
                       e) Trong Thời Hạn Hỗ Trợ Lãi Vay, nếu Khách Hàng tất toán
                       khoản vay trước hạn, ký Văn bản chuyển nhượng Hợp Đồng Mua
                       Bán và/hoặc xe ô tô là đối tượng của hợp đồng mua bán/
@@ -1448,7 +1448,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
               </p>
 
               <div className="space-y-3">
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   Khách Hàng cam kết không có bất kỳ khiếu nại, khiếu kiện nào
                   và đảm bảo Đơn Vị Hỗ Trợ Kỹ Thuật (như được định nghĩa phía
                   dưới) và Ngân Hàng, cán bộ nhân viên của Ngân Hàng và Đơn Vị
@@ -1457,14 +1457,14 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   liên quan đến việc thực thi các nội dung nêu dưới đây:
                 </p>
                 <div className="space-y-3">
-                  <p className="text-justify">
+                  <p className="text-left leading-relaxed">
                     3.1. Khách Hàng cho phép Ngân Hàng thu thập, xử lý các thông
                     tin về xe, vị trí xe, tình trạng xe cho mục đích quản lý tài
                     sản bảo đảm, xử lý tài sản bảo đảm cho khoản vay theo Hợp
                     Đồng Tín Dụng thông qua bên thứ ba là Đơn Vị Hỗ Trợ Kỹ
                     Thuật, như được định nghĩa phía dưới.
                   </p>
-                  <p className="text-justify">
+                  <p className="text-left leading-relaxed">
                     3.2. Trong trường hợp Khách Hàng vi phạm nghĩa vụ trả nợ quá{" "}
                     <strong>10 ngày</strong> hoặc thời hạn khác theo yêu cầu của
                     Ngân Hàng, Ngân Hàng có quyền đề nghị VinFast Trading
@@ -1477,7 +1477,7 @@ const GiayThoaThuanHTLS_VPBank = () => {
                     và/hoặc sử dụng vào bất kỳ mục đích nào khác theo thỏa thuận
                     giữa Khách Hàng và Ngân Hàng;
                   </p>
-                  <p className="text-justify">
+                  <p className="text-left leading-relaxed">
                     3.3. Trong trường hợp Khách Hàng vi phạm nghĩa vụ trả nợ quá{" "}
                     <strong>30 ngày</strong> hoặc thời hạn khác theo yêu cầu từ
                     Ngân Hàng, Ngân Hàng có quyền gửi yêu cầu cho Đơn Vị Hỗ Trợ
@@ -1494,11 +1494,11 @@ const GiayThoaThuanHTLS_VPBank = () => {
               <p className="font-bold mb-3">Điều 4. Hiệu lực của Thỏa Thuận</p>
 
               <div className="space-y-3">
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   4.1. Thỏa Thuận này có hiệu lực kể từ ngày ký đến ngày hết hiệu
                   lực của Hợp Đồng Tín Dụng.
                 </p>
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   4.2. Khách Hàng không được chuyển nhượng, chuyển giao quyền và
                   nghĩa vụ của mình theo Thỏa Thuận này cho bất kỳ bên thứ ba
                   nào nếu không được chấp thuận trước bằng văn bản của
@@ -1514,17 +1514,17 @@ const GiayThoaThuanHTLS_VPBank = () => {
                   trách nhiệm tiếp tục thực hiện đầy đủ các quyền và nghĩa vụ
                   đối với Khách hàng theo Thỏa thuận này.
                 </p>
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   4.3. Mọi sửa đổi, bổ sung Thỏa Thuận này phải được lập thành văn
                   bản và được ký bởi người đại diện hợp pháp của mỗi Bên.
                 </p>
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   4.4. Thỏa Thuận này được điều chỉnh theo các quy định của pháp
                   luật Việt Nam. Mọi tranh chấp phát sinh từ Thỏa Thuận này nếu
                   không được giải quyết bằng thương lượng và hòa giải giữa Các
                   Bên, thì sẽ được giải quyết tại Tòa án có thẩm quyền.
                 </p>
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   4.5. Thỏa Thuận này được lập thành 04 (bốn) bản có giá trị như
                   nhau, mỗi Bên giữ 02 (hai) bản để thực hiện.
                 </p>

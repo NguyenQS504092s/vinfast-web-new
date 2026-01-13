@@ -1074,7 +1074,7 @@ const TT_HTLV_CĐX_TPB = () => {
               </h3>
 
               <div className="mb-4">
-                <p className="text-justify">
+                <p className="text-left leading-relaxed">
                   1.1. Các Bên tại đây đồng ý rằng, khoản lãi vay mà VinFast sẽ
                   hỗ trợ trả thay Khách Hàng cho Ngân Hàng thông qua VinFast
                   Trading đối với mỗi Hợp Đồng Tín Dụng (sau đây là "

@@ -420,7 +420,7 @@ const GiayXacNhanPhaiThuKH_DL_Gui_NH = () => {
           </div>
 
           {/* Content */}
-          <div className="mb-6 space-y-3 text-justify">
+          <div className="mb-6 space-y-3 text-left leading-relaxed">
             <p>Nội dung xác nhận:</p>
 
             <p>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   getBranchByShowroomName,
   getDefaultBranch,
@@ -255,6 +256,39 @@ const HopDongMuaBanXe = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  // Validate required fields before printing
+  const validateBeforePrint = () => {
+    const requiredFields = [
+      { value: data?.customerName || customerName, label: "Tên khách hàng" },
+      { value: data?.cccd, label: "Số CCCD" },
+      { value: data?.phone || customerPhone, label: "Số điện thoại" },
+      { value: data?.address || customerAddress, label: "Địa chỉ" },
+      { value: data?.model, label: "Dòng xe" },
+      { value: data?.exterior, label: "Màu ngoại thất" },
+    ];
+
+    const missingFields = requiredFields.filter(field => !field.value || field.value.trim() === "");
+
+    if (missingFields.length > 0) {
+      const fieldNames = missingFields.map(f => f.label).join(", ");
+      toast.error(`Thiếu thông tin bắt buộc: ${fieldNames}`);
+      return false;
+    }
+
+    if (!branch) {
+      toast.error("Chưa chọn showroom. Vui lòng quay lại và chọn showroom.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handlePrint = () => {
+    if (validateBeforePrint()) {
+      window.print();
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -823,7 +857,7 @@ const HopDongMuaBanXe = () => {
               </p>
 
               {/* Price Inclusion Clause */}
-              <p className="mb-4 text-justify">
+              <p className="mb-4 text-left leading-relaxed">
                 Giá Xe đã bao gồm thuế tiêu thụ đặc biệt, thuế giá trị gia tăng
                 (VAT), nhưng không bao gồm lệ phí trước bạ, chi phí đăng ký, lưu
                 hành, bảo hiểm xe, phí dịch vụ thuê pin và các chi phí khác.
@@ -891,12 +925,19 @@ const HopDongMuaBanXe = () => {
                 )}
               </div>
               <div className="hidden print:block">{formatUuDaiList(uuDai)}</div>
-              <p className="mb-2 text-justify">
+              <p className="mb-2 text-left leading-relaxed">
                 Thông tin chi tiết được công bố tại website:{" "}
-                <span className="">https://vinfastauto.com</span> ("
+                <a
+                  href="https://vinfastauto.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline print:text-black"
+                >
+                  https://vinfastauto.com
+                </a> ("
                 <strong>Website</strong>").
               </p>
-              <p className="text-justify">
+              <p className="text-left leading-relaxed">
                 Trường hợp Khách Hàng chậm trễ thanh toán/nhận Xe hoặc vi phạm
                 bất kỳ nghĩa vụ nào trong Hợp Đồng, chính sách ưu đãi có thể
                 được điều chỉnh hoặc hủy bỏ tùy thuộc vào quyết định của Bên
@@ -907,7 +948,7 @@ const HopDongMuaBanXe = () => {
             {/* 1.3 */}
             <div className="mb-4">
               <h3 className="">1.3. Thanh toán tiền mua Xe</h3>
-              <div className="space-y-2 text-justify">
+              <div className="space-y-2 text-left leading-relaxed">
                 <p>
                   a) <strong>Đợt 1:</strong> Khách Hàng đặt cọc cho Bên Bán số
                   tiền {formatCurrency(data.deposit) || "[---]"} VNĐ (bằng chữ:{" "}
@@ -1069,7 +1110,7 @@ const HopDongMuaBanXe = () => {
             {/* 1.4 */}
             <div className="mb-4">
               <h3 className="">1.4. Phương thức thanh toán</h3>
-              <div className="space-y-2 text-justify">
+              <div className="space-y-2 text-left leading-relaxed">
                 Khách Hàng có thể thanh toán cho Bên Bán bằng cách: (i) chuyển
                 khoản vào tài khoản của Bên Bán theo thông tin nêu tại phần đầu
                 Hợp Đồng. Nội dung chuyển khoản ghi theo cú pháp:{" "}
@@ -1088,7 +1129,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 2 */}
           <div className="mb-6 text-sm">
             <h2 className="font-bold">Điều 2. Thời gian và địa điểm giao Xe</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 2.1. Thời gian giao Xe:{" "}
                 <span className="print:hidden">
@@ -1141,7 +1182,7 @@ const HopDongMuaBanXe = () => {
               Điều 3. Thủ tục mua xe khi Khách Hàng thanh toán bằng hình thức
               trả góp
             </h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 3.1. Khi nhận được thanh toán Đợt 2 và chấp nhận Thông Báo Tín
                 Dụng, Bên Bán sẽ xuất hoá đơn cho Khách Hàng. Khách Hàng phải
@@ -1180,7 +1221,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 4 */}
           <div className="mb-2 text-sm">
             <h2 className="font-bold">Điều 4. Bảo hành</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 4.1. Chính sách bảo hành: quy định tại sổ bảo hành do Bên Bán
                 cung cấp cho Khách Hàng.
@@ -1195,7 +1236,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 5 */}
           <div className="mb-2 text-sm">
             <h2 className="font-bold">Điều 5. Trách nhiệm của Các Bên</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 5.1. Bên Bán có nghĩa vụ cung cấp đầy đủ hóa đơn, chứng từ, tài
                 liệu hợp lệ cho Khách Hàng.
@@ -1249,7 +1290,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 6 */}
           <div className="mb-2 text-sm">
             <h2 className="font-bold">Điều 6. Chuyển rủi ro và quyền sở hữu</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 Trừ trường hợp Hợp Đồng có quy định khác, toàn bộ quyền sở hữu
                 đối với Xe, rủi ro và lợi ích liên quan đến Xe sẽ được chuyển
@@ -1265,7 +1306,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 7 */}
           <div className="mb-2 text-sm">
             <h2 className="font-bold">Điều 7. Bảo vệ dữ liệu cá nhân</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 7.1. Cùng với việc thực hiện Hợp Đồng này, VinFast Trading và
                 VinFast có thể xử lý dữ liệu cá nhân của Khách Hàng, như các dữ
@@ -1299,7 +1340,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 8 */}
           <div className="mb-2 text-sm">
             <h2 className="font-bold">Điều 8. Bất khả kháng</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 Nếu xảy ra sự kiện bất khả kháng sẽ được Các Bên xử lý theo quy
                 định của pháp luật.
@@ -1310,7 +1351,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 9 */}
           <div className="mb-2 text-sm">
             <h2 className="font-bold">Điều 9. Hiệu lực và Chấm dứt Hợp Đồng</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 Hợp Đồng có hiệu lực kể từ ngày ký tại phần đầu của Hợp Đồng và
                 chấm dứt trong trường hợp sau:
@@ -1334,7 +1375,7 @@ const HopDongMuaBanXe = () => {
           {/* Điều 10 */}
           <div className="mb-2 text-sm">
             <h2 className="font-bold">Điều 10. Các điều khoản khác</h2>
-            <div className="space-y-2 text-justify">
+            <div className="space-y-2 text-left leading-relaxed">
               <p>
                 10.1. Nếu không thương lượng được, các tranh chấp về Hợp Đồng sẽ
                 được giải quyết tại tòa án có thẩm quyền.
@@ -1377,7 +1418,7 @@ const HopDongMuaBanXe = () => {
           Quay lại
         </button>
         <button
-          onClick={() => window.print()}
+          onClick={handlePrint}
           className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
         >
           In Hợp Đồng
