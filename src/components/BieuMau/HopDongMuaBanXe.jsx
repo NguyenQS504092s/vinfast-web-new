@@ -778,11 +778,47 @@ const HopDongMuaBanXe = () => {
                     <td className="border-2 border-black p-2">
                       <div className="space-y-1">
                         <p>
-                          VinFast {data.model || "[---]"} - Phiên bản:{" "}
-                          {data.variant || "[---]"} - Màu:{" "}
-                          {getColorName(data.exterior, true) ||
-                            data.exterior ||
-                            "[---]"}
+                          {/* Print view */}
+                          <span className="hidden print:inline">
+                            VinFast {data.model || "[---]"} - Phiên bản:{" "}
+                            {data.variant || "[---]"} - Màu:{" "}
+                            {getColorName(data.exterior, true) ||
+                              data.exterior ||
+                              "[---]"}
+                          </span>
+                          {/* Edit view */}
+                          <span className="print:hidden">
+                            VinFast{" "}
+                            <input
+                              type="text"
+                              value={data.model || ""}
+                              onChange={(e) =>
+                                setData({ ...data, model: e.target.value })
+                              }
+                              className="border-b border-gray-400 px-2 py-1 text-sm font-normal w-20 focus:outline-none focus:border-blue-500"
+                              placeholder="VF 5"
+                            />
+                            {" "}- Phiên bản:{" "}
+                            <input
+                              type="text"
+                              value={data.variant || ""}
+                              onChange={(e) =>
+                                setData({ ...data, variant: e.target.value })
+                              }
+                              className="border-b border-gray-400 px-2 py-1 text-sm font-normal w-24 focus:outline-none focus:border-blue-500"
+                              placeholder="Plus"
+                            />
+                            {" "}- Màu:{" "}
+                            <input
+                              type="text"
+                              value={getColorName(data.exterior, true) || data.exterior || ""}
+                              onChange={(e) =>
+                                setData({ ...data, exterior: e.target.value })
+                              }
+                              className="border-b border-gray-400 px-2 py-1 text-sm font-normal w-32 focus:outline-none focus:border-blue-500"
+                              placeholder="Infinity Blanc"
+                            />
+                          </span>
                         </p>
                         <p>
                           <span className="print:hidden">
