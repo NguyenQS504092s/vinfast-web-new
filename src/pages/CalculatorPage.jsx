@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { ref, push, set, update, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { loadPromotionsFromFirebase, filterPromotionsByDongXe } from '../data/promotionsData';
+import { provinces } from '../data/provincesData';
 import CurrencyInput from '../components/shared/CurrencyInput';
 import {
   phi_duong_bo,
@@ -140,6 +141,7 @@ export default function CalculatorPage() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerType, setCustomerType] = useState('ca_nhan');
   const [businessType, setBusinessType] = useState('khong_kinh_doanh');
+  const [provinceSatNhap, setProvinceSatNhap] = useState('');
   const [depositAmount, setDepositAmount] = useState(0);
   const [depositDate, setDepositDate] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -1095,6 +1097,7 @@ export default function CalculatorPage() {
       customerAddress: customerAddress || 'Thành phố Hồ Chí Minh',
       customerType: customerType || 'ca_nhan',
       businessType: businessType || 'khong_kinh_doanh',
+      provinceSatNhap: provinceSatNhap || '',
       depositAmount: depositAmount || 0,
       depositDate: depositDate || '',
       deliveryDate: deliveryDate || '',
@@ -1826,6 +1829,22 @@ export default function CalculatorPage() {
                 >
                   <option value="khong_kinh_doanh">Không kinh doanh</option>
                   <option value="kinh_doanh">Kinh doanh</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Tỉnh/TP sau sát nhập
+                </label>
+                <select
+                  value={provinceSatNhap}
+                  onChange={(e) => setProvinceSatNhap(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white cursor-pointer"
+                >
+                  <option value="">-- Chọn tỉnh/thành --</option>
+                  {provinces.map((province, idx) => (
+                    <option key={idx} value={province}>{province}</option>
+                  ))}
                 </select>
               </div>
 
