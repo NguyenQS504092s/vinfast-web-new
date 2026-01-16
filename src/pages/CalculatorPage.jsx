@@ -1388,37 +1388,6 @@ export default function CalculatorPage() {
                             />
                           </div>
 
-                          <div>
-                            <label htmlFor="minPurchase" className="block text-sm font-medium text-gray-700 mb-2">
-                              Đơn hàng tối thiểu (VNĐ)
-                            </label>
-                            <input
-                              id="minPurchase"
-                              type="number"
-                              min="0"
-                              value={editingPromotion.minPurchase}
-                              onChange={(e) => setEditingPromotion({...editingPromotion, minPurchase: parseFloat(e.target.value) || 0})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
-                              placeholder="0"
-                            />
-                          </div>
-
-                          {promotionType === 'percentage' && (
-                            <div>
-                              <label htmlFor="maxDiscount" className="block text-sm font-medium text-gray-700 mb-2">
-                                Giảm tối đa (VNĐ)
-                              </label>
-                              <input
-                                id="maxDiscount"
-                                type="number"
-                                min="0"
-                                value={editingPromotion.maxDiscount}
-                                onChange={(e) => setEditingPromotion({...editingPromotion, maxDiscount: parseFloat(e.target.value) || 0})}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm sm:text-base"
-                                placeholder="0 (không giới hạn)"
-                              />
-                            </div>
-                          )}
                         </div>
                       )}
 
@@ -1608,46 +1577,6 @@ export default function CalculatorPage() {
                                           className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
                                         />
                                       </div>
-
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Đơn hàng tối thiểu (VNĐ)
-                                        </label>
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          value={editingPromotion.minPurchase}
-                                          onChange={(e) =>
-                                            setEditingPromotion({
-                                              ...editingPromotion,
-                                              minPurchase: parseFloat(e.target.value) || 0,
-                                            })
-                                          }
-                                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
-                                          placeholder="0 (không bắt buộc)"
-                                        />
-                                      </div>
-
-                                      {editingPromotion.type === 'percentage' && (
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Giảm tối đa (VNĐ)
-                                          </label>
-                                          <input
-                                            type="number"
-                                            min="0"
-                                            value={editingPromotion.maxDiscount}
-                                            onChange={(e) =>
-                                              setEditingPromotion({
-                                                ...editingPromotion,
-                                                maxDiscount: parseFloat(e.target.value) || 0,
-                                              })
-                                            }
-                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
-                                            placeholder="0 (không giới hạn)"
-                                          />
-                                        </div>
-                                      )}
                                     </div>
                                   )}
 
@@ -1693,7 +1622,7 @@ export default function CalculatorPage() {
                                       )}
                                       {promotion.type === 'percentage' && (
                                         <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded whitespace-nowrap">
-                                          Giảm {promotion.value}%{promotion.maxDiscount ? ` (tối đa ${formatCurrency(promotion.maxDiscount)})` : ''}
+                                          Giảm {promotion.value}%
                                         </span>
                                       )}
                                       {promotion.type === 'display' && (
@@ -1702,11 +1631,6 @@ export default function CalculatorPage() {
                                         </span>
                                       )}
                                     </div>
-                                    {promotion.minPurchase > 0 && (
-                                      <p className="mt-1 text-xs text-gray-500">
-                                        Áp dụng cho đơn hàng từ: {formatCurrency(promotion.minPurchase)}
-                                      </p>
-                                    )}
                                     {promotion.createdAt && (
                                       <p className="text-xs text-gray-500">
                                         Tạo lúc: {new Date(promotion.createdAt).toLocaleString('vi-VN')}
