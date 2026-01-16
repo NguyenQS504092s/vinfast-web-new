@@ -157,6 +157,16 @@ export default function CalculatorPage() {
   const [bodyInsuranceFee, setBodyInsuranceFee] = useState(0); // BHVC bao gồm Pin có thể chỉnh sửa
   const [isBodyInsuranceManual, setIsBodyInsuranceManual] = useState(false); // Theo dõi xem có chỉnh sửa thủ công không
 
+  // Manual override states for rolling costs (Phase 5)
+  const [liabilityInsuranceValue, setLiabilityInsuranceValue] = useState(0);
+  const [isLiabilityInsuranceManual, setIsLiabilityInsuranceManual] = useState(false);
+  const [plateFeeValue, setPlateFeeValue] = useState(0);
+  const [isPlateFeeManual, setIsPlateFeeManual] = useState(false);
+  const [inspectionFeeValue, setInspectionFeeValue] = useState(0);
+  const [isInspectionFeeManual, setIsInspectionFeeManual] = useState(false);
+  const [roadFeeValue, setRoadFeeValue] = useState(0);
+  const [isRoadFeeManual, setIsRoadFeeManual] = useState(false);
+
   // Discounts and promotions
   const [discount2, setDiscount2] = useState(false);
   const [discount3, setDiscount3] = useState(false);
@@ -971,17 +981,21 @@ export default function CalculatorPage() {
     // On-road costs
     const locationKey = locationMap[registrationLocation] || 'tinh_khac';
     const plateFeeData = getDataByKey(phi_cap_bien_so, 'khu_vuc', locationKey);
-    const plateFee = plateFeeData ? plateFeeData.gia_tri : getDataByKey(phi_cap_bien_so, 'khu_vuc', 'tinh_khac').gia_tri;
+    const plateFeeAuto = plateFeeData ? plateFeeData.gia_tri : getDataByKey(phi_cap_bien_so, 'khu_vuc', 'tinh_khac').gia_tri;
+    const plateFee = isPlateFeeManual ? plateFeeValue : plateFeeAuto;
 
     const roadFeeData = getDataByKey(phi_duong_bo, 'loai', customerType);
-    const roadFee = roadFeeData ? roadFeeData.gia_tri : getDataByKey(phi_duong_bo, 'loai', 'ca_nhan').gia_tri;
+    const roadFeeAuto = roadFeeData ? roadFeeData.gia_tri : getDataByKey(phi_duong_bo, 'loai', 'ca_nhan').gia_tri;
+    const roadFee = isRoadFeeManual ? roadFeeValue : roadFeeAuto;
 
     const carInfo = getDataByKey(thong_tin_ky_thuat_xe, 'dong_xe', selectedDongXe);
-    const liabilityInsurance = carInfo
+    const liabilityInsuranceAuto = carInfo
       ? businessType === 'khong_kinh_doanh' ? carInfo.phi_tnds_ca_nhan : carInfo.phi_tnds_kinh_doanh
       : getDataByKey(thong_tin_ky_thuat_xe, 'dong_xe', 'vf_7').phi_tnds_ca_nhan;
+    const liabilityInsurance = isLiabilityInsuranceManual ? liabilityInsuranceValue : liabilityInsuranceAuto;
 
-    const inspectionFee = phi_kiem_dinh;
+    const inspectionFeeAuto = phi_kiem_dinh;
+    const inspectionFee = isInspectionFeeManual ? inspectionFeeValue : inspectionFeeAuto;
     const bhvcRate = 0.014;
     // BHVC tính trên Giá XHD
     const bodyInsurance = isBodyInsuranceManual ? bodyInsuranceFee : Math.round(giaXuatHoaDon * bhvcRate);
@@ -1056,9 +1070,13 @@ export default function CalculatorPage() {
       priceAfterDiscount,
       plateFee,
       plateFeeData,
+      plateFeeAuto,
       roadFee,
+      roadFeeAuto,
       liabilityInsurance,
+      liabilityInsuranceAuto,
       inspectionFee,
+      inspectionFeeAuto,
       bodyInsurance,
       registrationFee: registrationFeeValue,
       totalOnRoadCost,
@@ -1087,6 +1105,16 @@ export default function CalculatorPage() {
     loanTerm,
     customInterestRate,
     registrationFee,
+    isBodyInsuranceManual,
+    bodyInsuranceFee,
+    isLiabilityInsuranceManual,
+    liabilityInsuranceValue,
+    isPlateFeeManual,
+    plateFeeValue,
+    isInspectionFeeManual,
+    inspectionFeeValue,
+    isRoadFeeManual,
+    roadFeeValue,
   ]);
 
   // Collect invoice data
@@ -1129,9 +1157,13 @@ export default function CalculatorPage() {
       // On-road costs
       registrationLocation: getRegistrationLocationLabel(),
       plateFee: calculations.plateFee || 0,
+      isPlateFeeManual: isPlateFeeManual || false,
       liabilityInsurance: calculations.liabilityInsurance || 0,
+      isLiabilityInsuranceManual: isLiabilityInsuranceManual || false,
       inspectionFee: calculations.inspectionFee || 0,
+      isInspectionFeeManual: isInspectionFeeManual || false,
       roadFee: calculations.roadFee || 0,
+      isRoadFeeManual: isRoadFeeManual || false,
       registrationFee: calculations.registrationFee || 0,
       bodyInsurance: calculations.bodyInsurance || 0,
       bodyInsuranceFee: bodyInsuranceFee || 0,
@@ -2213,27 +2245,115 @@ export default function CalculatorPage() {
               <div className="mt-5">
                 <div className="text-sm font-semibold text-gray-600 mb-3">Chi phí lăn bánh dự tính</div>
                 <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-gray-200">
+                  {/* Phí 01 năm BH Dân sự - Editable */}
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
                     <span className="text-gray-600">Phí 01 năm BH Dân sự</span>
-                    <span className="text-gray-900 font-semibold">
-                      {formatCurrency(calculations.liabilityInsurance)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={formatCurrencyInput(isLiabilityInsuranceManual ? liabilityInsuranceValue : calculations.liabilityInsurance)}
+                        onChange={(e) => {
+                          const parsedValue = parseCurrencyInput(e.target.value);
+                          setLiabilityInsuranceValue(Math.max(0, parsedValue));
+                          setIsLiabilityInsuranceManual(true);
+                        }}
+                        className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-semibold"
+                        placeholder="0"
+                      />
+                      <button
+                        onClick={() => {
+                          setIsLiabilityInsuranceManual(false);
+                          setLiabilityInsuranceValue(0);
+                        }}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 transition-colors"
+                        title="Tính lại tự động"
+                      >
+                        ↻
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
+                  {/* Phí biển số - Editable */}
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
                     <span className="text-gray-600">
                       Phí biển số ({calculations.plateFeeData?.ten_khu_vuc || 'N/A'})
                     </span>
-                    <span className="text-gray-900 font-semibold">{formatCurrency(calculations.plateFee)}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={formatCurrencyInput(isPlateFeeManual ? plateFeeValue : calculations.plateFee)}
+                        onChange={(e) => {
+                          const parsedValue = parseCurrencyInput(e.target.value);
+                          setPlateFeeValue(Math.max(0, parsedValue));
+                          setIsPlateFeeManual(true);
+                        }}
+                        className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-semibold"
+                        placeholder="0"
+                      />
+                      <button
+                        onClick={() => {
+                          setIsPlateFeeManual(false);
+                          setPlateFeeValue(0);
+                        }}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 transition-colors"
+                        title="Tính lại tự động"
+                      >
+                        ↻
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
+                  {/* Phí kiểm định - Editable */}
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
                     <span className="text-gray-600">Phí kiểm định</span>
-                    <span className="text-gray-900 font-semibold">
-                      {formatCurrency(calculations.inspectionFee)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={formatCurrencyInput(isInspectionFeeManual ? inspectionFeeValue : calculations.inspectionFee)}
+                        onChange={(e) => {
+                          const parsedValue = parseCurrencyInput(e.target.value);
+                          setInspectionFeeValue(Math.max(0, parsedValue));
+                          setIsInspectionFeeManual(true);
+                        }}
+                        className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-semibold"
+                        placeholder="0"
+                      />
+                      <button
+                        onClick={() => {
+                          setIsInspectionFeeManual(false);
+                          setInspectionFeeValue(0);
+                        }}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 transition-colors"
+                        title="Tính lại tự động"
+                      >
+                        ↻
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
+                  {/* Phí bảo trì đường bộ - Editable */}
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
                     <span className="text-gray-600">Phí bảo trì đường bộ</span>
-                    <span className="text-gray-900 font-semibold">{formatCurrency(calculations.roadFee)}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={formatCurrencyInput(isRoadFeeManual ? roadFeeValue : calculations.roadFee)}
+                        onChange={(e) => {
+                          const parsedValue = parseCurrencyInput(e.target.value);
+                          setRoadFeeValue(Math.max(0, parsedValue));
+                          setIsRoadFeeManual(true);
+                        }}
+                        className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-semibold"
+                        placeholder="0"
+                      />
+                      <button
+                        onClick={() => {
+                          setIsRoadFeeManual(false);
+                          setRoadFeeValue(0);
+                        }}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 transition-colors"
+                        title="Tính lại tự động"
+                      >
+                        ↻
+                      </button>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-gray-200">
                     <span className="text-gray-600">Phí dịch vụ</span>
