@@ -440,6 +440,27 @@ export default function Invoice2Page() {
                 <strong>{formatCurrency(invoiceData.giaThanhToanThucTe || invoiceData.priceFinalPayment || invoiceData.carTotal || 0)}</strong>
               </td>
             </tr>
+            {/* Phase 7: Số tiền thanh toán đối ứng (khi có vay) */}
+            {invoiceData.hasLoan && (
+              <>
+                <tr className="bg-red-50">
+                  <td className="border border-gray-900 p-1" colSpan="3">
+                    Tiền vay ngân hàng
+                  </td>
+                  <td className="border border-gray-900 p-1 text-right text-red-600" colSpan="2">
+                    <strong>-{formatCurrency(invoiceData.tienVayTuGiaXHD || 0)}</strong>
+                  </td>
+                </tr>
+                <tr className="bg-green-100">
+                  <td className="border border-gray-900 p-1" colSpan="3">
+                    <strong>Số tiền thanh toán (đối ứng)</strong>
+                  </td>
+                  <td className="border border-gray-900 p-1 text-right text-green-700" colSpan="2">
+                    <strong>{formatCurrency(invoiceData.soTienThanhToanDoiUng || 0)}</strong>
+                  </td>
+                </tr>
+              </>
+            )}
           </tbody>
         </table>
 

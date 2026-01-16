@@ -1050,6 +1050,14 @@ export default function CalculatorPage() {
       };
     }
 
+    // Phase 7: Số tiền thanh toán đối ứng = Giá XHD - Tiền vay (dựa trên Giá XHD)
+    let tienVayTuGiaXHD = 0;
+    let soTienThanhToanDoiUng = giaXuatHoaDon;
+    if (loanToggle && loanRatio > 0) {
+      tienVayTuGiaXHD = Math.round(giaXuatHoaDon * (loanRatio / 100));
+      soTienThanhToanDoiUng = Math.max(0, giaXuatHoaDon - tienVayTuGiaXHD);
+    }
+
     return {
       basePrice,
       discount2Potential,
@@ -1082,6 +1090,8 @@ export default function CalculatorPage() {
       totalOnRoadCost,
       totalCost,
       loanData,
+      tienVayTuGiaXHD,
+      soTienThanhToanDoiUng,
     };
   }, [
     carModel,
@@ -1203,6 +1213,9 @@ export default function CalculatorPage() {
       // Giá thanh toán thực tế = Giá XHD - các ưu đãi khác (BHVC2, màu, xăng điện)
       giaThanhToanThucTe: calculations.finalPayable || 0,
       tongChiPhiLanBanh: calculations.totalOnRoadCost || 0,
+      // Phase 7: Số tiền thanh toán đối ứng
+      tienVayTuGiaXHD: calculations.tienVayTuGiaXHD || 0,
+      soTienThanhToanDoiUng: calculations.soTienThanhToanDoiUng || 0,
     };
 
     // Save to localStorage
@@ -2241,6 +2254,20 @@ export default function CalculatorPage() {
                 <span className="text-gray-600 font-medium">Giá thanh toán thực tế</span>
                 <span className="text-gray-900 font-semibold">{formatCurrency(calculations.finalPayable)}</span>
               </div>
+
+              {/* Phase 7: Số tiền thanh toán đối ứng (chỉ hiển thị khi có vay) */}
+              {loanToggle && (
+                <>
+                  <div className="flex justify-between py-3 border-b border-gray-200">
+                    <span className="text-gray-600">Tiền vay ngân hàng ({loanRatio}%)</span>
+                    <span className="text-red-600 font-semibold">-{formatCurrency(calculations.tienVayTuGiaXHD)}</span>
+                  </div>
+                  <div className="flex justify-between py-3 border-b border-gray-200 bg-green-50 -mx-4 px-4">
+                    <span className="text-green-700 font-medium">Số tiền thanh toán (đối ứng)</span>
+                    <span className="text-green-700 font-bold">{formatCurrency(calculations.soTienThanhToanDoiUng)}</span>
+                  </div>
+                </>
+              )}
 
               <div className="mt-5">
                 <div className="text-sm font-semibold text-gray-600 mb-3">Chi phí lăn bánh dự tính</div>
